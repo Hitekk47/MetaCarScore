@@ -1,126 +1,172 @@
 import Header from "@/components/Header";
 import ReviewsTableCompact from "@/components/tables/ReviewsTableCompact";
-import ScoreBadge from "@/components/ui/ScoreBadge";
+import RecentScoresCarousel from "@/components/bento/RecentScoresCarousel";
 import { supabase } from "@/lib/supabase";
 import { Review } from "@/lib/types";
+import { Search, Database, Layers, Swords } from "lucide-react";
+import LatestReviewsSection from "@/components/sections/LatestReviewsSection";
+import SearchBar from "@/components/ui/SearchBar";
 
-// Cette fonction rend le composant asynchrone pour fetcher les données sur le serveur
+// --- OPTIMISATION 1 : CACHE ---
+// La page est générée sur le serveur et mise en cache pour 1 heure (3600s).
+// Le prochain visiteur recevra la version HTML instantanément sans toucher à la BDD.
+export const revalidate = 3600; 
+
+// Helper moyenne
+const average = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+
 export default async function Home() {
   
-  // 1. REQUÊTE SUPABASE : Récupérer les 30 derniers essais
-  const { data: recentReviews, error } = await supabase
-    .from('reviews')
-    .select('*')
-    .order('Test_date', { ascending: false }) // Du plus récent au plus vieux
-    .limit(30);
+  // --- OPTIMISATION 2 : REQUÊTES LÉGÈRES ---
+  const [recentReq, statsReq] = await Promise.all([
+    // 1. On récupère juste ce qu'il faut pour le carrousel (1500 suffisent largement)
+    supabase
+      .from('reviews')
+      .select('*')
+      .order('Test_date', { ascending: false })
+      .limit(1500),
 
-  if (error) {
-    console.error("Erreur Supabase:", error);
-  }
+    // 2. APPEL RPC : On exécute la fonction SQL créée dans Supabase.
+    // Coût bande passante : ~50 octets (vs ~5 Mo avant !)
+    supabase.rpc('get_homepage_stats')
+  ]);
 
-  // On caste les données pour être sûr qu'elles correspondent à notre type Review
-  const reviews = (recentReviews || []) as Review[];
+  const reviews = (recentReq.data || []) as Review[];
+  
+  // Récupération des stats depuis le RPC (avec valeurs par défaut au cas où)
+  const stats = statsReq.data as { total_reviews: number, unique_models: number } | null;
+  const totalEssais = stats?.total_reviews || 20000;
+  const totalModeles = stats?.unique_models || 1200;
+
+
+  // --- LOGIQUE MÉTIER (Inchangée) ---
+  const modelGroups: Record<string, { 
+    Marque: string; 
+    Famille: string; 
+    Modele: string; 
+    MY: number; 
+    Scores: number[]; 
+    Powers: number[]; 
+    Dates: string[] 
+  }> = {};
+
+  reviews.forEach(r => {
+    const key = `${r.Marque}|${r.MY}|${r.Modele}`;
+    if (!modelGroups[key]) {
+      modelGroups[key] = {
+        Marque: r.Marque,
+        Famille: r.Famille,
+        Modele: r.Modele,
+        MY: r.MY,
+        Scores: [],
+        Powers: [],
+        Dates: []
+      };
+    }
+    modelGroups[key].Scores.push(r.Score);
+    modelGroups[key].Powers.push(r.Puissance);
+    modelGroups[key].Dates.push(r.Test_date);
+  });
+  
+  const metaScores = Object.values(modelGroups)
+    .map(group => {
+      const sortedDatesAsc = group.Dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+      
+      return {
+        Marque: group.Marque,
+        Famille: group.Famille,
+        Modele: group.Modele,
+        MY: group.MY,
+        AvgScore: average(group.Scores),
+        ReviewCount: group.Scores.length,
+        FirstTestDate: sortedDatesAsc[0],
+        MinPower: Math.min(...group.Powers),
+        MaxPower: Math.max(...group.Powers)
+      };
+    })
+    .filter(item => item.ReviewCount >= 3)
+    .sort((a, b) => new Date(b.FirstTestDate).getTime() - new Date(a.FirstTestDate).getTime())
+    .slice(0, 15);
+
+  const latestAdditions = reviews.slice(0, 10);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 py-8 space-y-12">
-        
-        {/* SECTION HERO : BENTO GRID (Statique pour l'instant, mais jolie) */}
-        <section>
-          <div className="flex items-baseline justify-between mb-6">
-            <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900">À la une</h2>
-            <span className="text-xs font-bold text-slate-400 uppercase">Sélection de la rédaction</span>
+      <main>
+{/* === HERO SEARCH === */}
+        {/* Note : On retire overflow-hidden d'ici pour laisser passer le menu */}
+        <section className="bg-slate-900 text-white py-20 px-4 relative z-40">
+          
+          {/* BACKGROUND CONTAINER : C'est lui qui gère le débordement des blobs */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]"></div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-auto md:h-[400px]">
+          <div className="max-w-4xl mx-auto text-center relative z-10 space-y-8">
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4">
+              Trouver le véhicule <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                parfait.
+              </span>
+            </h1>
             
-            {/* GRANDE CARTE (Vedette) */}
-            <div className="md:col-span-2 md:row-span-2 bg-slate-900 text-white rounded-2xl p-8 relative overflow-hidden group cursor-pointer hover:shadow-2xl transition-all duration-300 min-h-[300px]">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500 rounded-full blur-[100px] opacity-20 group-hover:opacity-30 transition"></div>
-              
-              <div className="relative z-10 h-full flex flex-col justify-between">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur rounded-full text-[10px] font-bold uppercase tracking-wider mb-4 border border-white/10">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    Tendance
-                  </div>
-                  <h3 className="text-4xl md:text-5xl font-black tracking-tighter leading-[0.9]">
-                    XPENG <br/> <span className="text-emerald-400">G9</span>
-                  </h3>
-                  <p className="mt-2 text-slate-400 font-medium">Performance Edition</p>
-                </div>
-
-                <div className="flex items-end justify-between mt-8 md:mt-0">
-                  <div>
-                    <span className="block text-xs uppercase text-slate-500 font-bold mb-1">Moyenne</span>
-                    <ScoreBadge score={88} size="xl" />
-                  </div>
-                  <div className="text-right hidden sm:block">
-                     <div className="text-3xl font-mono font-bold">650<span className="text-sm">ch</span></div>
-                     <div className="text-sm text-slate-400 uppercase">Électrique</div>
-                  </div>
-                </div>
-              </div>
+            {/* SEARCH BAR CONTAINER */}
+            <div className="relative max-w-2xl mx-auto z-50">
+              <div className="absolute inset-0 bg-blue-500 rounded-full blur opacity-20 animate-pulse pointer-events-none"></div>
+              {/* Le z-50 ici assure qu'il passe au dessus de tout */}
+              <SearchBar 
+                variant="hero" 
+                placeholder="Quelle voiture cherchez-vous ? (ex: Renault Megane...)" 
+              />
             </div>
-
-            {/* PETITE CARTE 1 */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-400 transition cursor-pointer min-h-[180px]">
-              <div className="flex justify-between items-start">
-                 <div>
-                    <div className="text-[10px] font-bold uppercase text-slate-400">Nouveauté</div>
-                    <div className="font-black text-xl uppercase leading-none mt-1">Toyota <br/> Aygo X</div>
-                 </div>
-                 <ScoreBadge score={80} size="md" />
-              </div>
-              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between text-xs font-bold text-slate-500">
-                 <span>116 ch</span>
-                 <span>Hybride</span>
-              </div>
-            </div>
-
-            {/* PETITE CARTE 2 (STATISTIQUES) */}
-            <div className="bg-blue-600 text-white rounded-2xl p-6 flex flex-col justify-center items-center text-center cursor-pointer hover:bg-blue-700 transition min-h-[180px]">
-               <div className="text-sm font-bold uppercase opacity-80 mb-2">Base de données</div>
-               <div className="text-5xl font-black tracking-tighter mb-1">20k+</div>
-               <div className="text-xs font-medium opacity-60">Essais référencés</div>
-            </div>
-
-            {/* PETITE CARTE 3 */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 flex flex-col justify-between hover:border-slate-400 transition cursor-pointer min-h-[180px]">
-              <div className="flex justify-between items-start">
-                 <div>
-                    <div className="text-[10px] font-bold uppercase text-slate-400">Familiale</div>
-                    <div className="font-black text-xl uppercase leading-none mt-1">VW <br/> ID.Buzz</div>
-                 </div>
-                 <ScoreBadge score={80} size="md" />
-              </div>
-              <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between text-xs font-bold text-slate-500">
-                 <span>340 ch</span>
-                 <span>LWB</span>
-              </div>
-            </div>
-
+            
+            <p className="text-slate-400 font-medium text-sm mt-4">
+              Recherchez parmi plus de 20 000 essais agrégés.
+            </p>
           </div>
         </section>
 
-        {/* SECTION TABLEAU : VRAIES DONNÉES */}
-        <section>
-          <div className="flex items-center gap-4 mb-6">
-            <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900">Derniers ajouts</h2>
-            <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded">Mis à jour en temps réel</span>
+        {/* CARROUSEL */}
+        <section className="max-w-7xl mx-auto px-4 py-12 border-b border-slate-200">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 flex items-center gap-3">
+              Derniers MetaCarScores
+              <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-[10px] rounded font-bold uppercase tracking-wide">Tendances</span>
+            </h2>
           </div>
-          
-          {/* Le tableau reçoit les données Supabase */}
-          <ReviewsTableCompact data={reviews} />
-          
-          <div className="mt-4 text-center">
-            <button className="px-6 py-2 bg-white border border-slate-200 text-slate-700 font-bold text-sm uppercase rounded shadow-sm hover:bg-slate-50 transition">
-              Voir tous les essais
-            </button>
+          <RecentScoresCarousel items={metaScores} />
+        </section>
+
+        {/* STATS & NAV (Optimisé) */}
+        <section className="bg-white border-y border-slate-200 py-12">
+          <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="flex flex-col justify-center border-l-4 border-slate-100 pl-6">
+              <div className="flex items-center gap-2 text-slate-400 mb-1"><Database size={16} /><span className="text-xs font-bold uppercase">Depuis 2019</span></div>
+              <div className="text-4xl font-black text-slate-900 tracking-tighter">{totalEssais.toLocaleString('fr-FR')}</div>
+              <div className="text-sm font-medium text-slate-500">Essais référencés</div>
+            </div>
+            <div className="flex flex-col justify-center border-l-4 border-slate-100 pl-6">
+              <div className="flex items-center gap-2 text-slate-400 mb-1"><Layers size={16} /><span className="text-xs font-bold uppercase">Catalogue</span></div>
+              <div className="text-4xl font-black text-slate-900 tracking-tighter">{totalModeles.toLocaleString('fr-FR')}</div>
+              <div className="text-sm font-medium text-slate-500">Modèles uniques</div>
+            </div>
+            <a href="/tops" className="group bg-slate-50 hover:bg-slate-900 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100">
+              <div className="flex justify-between items-start mb-2"><span className="font-bold text-lg">Top Classements</span><Layers className="text-slate-300 group-hover:text-white" /></div>
+              <p className="text-xs text-slate-500 group-hover:text-slate-400">Les meilleurs par catégorie.</p>
+            </a>
+            <a href="/duels" className="group bg-slate-50 hover:bg-blue-600 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100">
+              <div className="flex justify-between items-start mb-2"><span className="font-bold text-lg">Comparateur</span><Swords className="text-slate-300 group-hover:text-white" /></div>
+              <p className="text-xs text-slate-500 group-hover:text-blue-100">Duel de fiches techniques.</p>
+            </a>
           </div>
         </section>
+
+        {/* TABLEAU */}
+{/* === SECTION DYNAMIQUE : TABLEAU DERNIERS AJOUTS === */}
+        {/* On passe les 10 premières données chargées par le serveur comme état initial */}
+        <LatestReviewsSection initialData={latestAdditions} />
 
       </main>
     </div>
