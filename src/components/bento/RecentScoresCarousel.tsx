@@ -1,6 +1,8 @@
 "use client";
+
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Gauge } from 'lucide-react'; // Import de Gauge
+import Link from 'next/link';
+import { ChevronLeft, ChevronRight, Gauge } from 'lucide-react';
 import ScoreBadge from '../ui/ScoreBadge';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +24,7 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
   const [showRightArrow, setShowRightArrow] = useState(true);
 
   // LOGIQUE BADGE NEW :
-  // On compare avec la date du premier élément (le plus récent)
+  // On compare avec la date du premier élément (le plus récent car la liste est triée par date)
   const latestDate = items.length > 0 ? items[0].FirstTestDate : null;
 
   const handleScroll = () => {
@@ -48,20 +50,32 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
     <div className="relative group/carousel">
       
       {/* --- FLÈCHE GAUCHE --- */}
-      <div className={cn("absolute top-1/2 -left-4 -translate-y-1/2 z-20 transition-all duration-300", showLeftArrow ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none")}>
-        <button onClick={() => scroll('left')} className="w-12 h-12 bg-white rounded-full shadow-xl border border-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-900 hover:text-white transition-colors">
+      <div className={cn(
+        "absolute top-1/2 -left-4 -translate-y-1/2 z-20 transition-all duration-300",
+        showLeftArrow ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"
+      )}>
+        <button 
+          onClick={() => scroll('left')}
+          className="w-12 h-12 bg-white rounded-full shadow-xl border border-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-900 hover:text-white transition-colors"
+        >
             <ChevronLeft size={24} strokeWidth={3} />
         </button>
       </div>
 
       {/* --- FLÈCHE DROITE --- */}
-      <div className={cn("absolute top-1/2 -right-4 -translate-y-1/2 z-20 transition-all duration-300", showRightArrow ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none")}>
-        <button onClick={() => scroll('right')} className="w-12 h-12 bg-white rounded-full shadow-xl border border-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-900 hover:text-white transition-colors">
+      <div className={cn(
+        "absolute top-1/2 -right-4 -translate-y-1/2 z-20 transition-all duration-300",
+        showRightArrow ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"
+      )}>
+        <button 
+          onClick={() => scroll('right')}
+          className="w-12 h-12 bg-white rounded-full shadow-xl border border-slate-100 flex items-center justify-center text-slate-700 hover:bg-slate-900 hover:text-white transition-colors"
+        >
             <ChevronRight size={24} strokeWidth={3} />
         </button>
       </div>
 
-      {/* --- CONTENEUR --- */}
+      {/* --- CONTENEUR SCROLLABLE --- */}
       <div 
         ref={scrollContainerRef} 
         onScroll={handleScroll} 
@@ -74,7 +88,12 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
 
             return (
               <div key={`${item.Marque}-${item.MY}-${item.Modele}`} className="snap-center shrink-0 w-[280px] md:w-[320px]">
-                <div className="bg-white border border-slate-200 rounded-xl p-6 h-full hover:shadow-xl hover:border-slate-300 transition-all cursor-pointer group/card relative flex flex-col justify-between min-h-[200px]">
+                
+                {/* LIEN GLOBAL SUR LA CARTE VERS LA PAGE MODÈLE */}
+                <Link 
+                    href={`/${item.Marque}/${item.Famille}/${item.MY}/${item.Modele}`}
+                    className="block bg-white border border-slate-200 rounded-xl p-6 h-full hover:shadow-xl hover:border-blue-300 transition-all cursor-pointer group/card relative flex flex-col justify-between min-h-[200px]"
+                >
                   
                   {/* BADGE NEW */}
                   {isNew && (
@@ -87,10 +106,16 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
                   <div className="flex justify-between items-start">
                     <div className="pr-2">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">{item.Famille}</span>
-                            <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black rounded border border-slate-200 uppercase tracking-tighter">MY {item.MY}</span>
+                            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                                {item.Famille}
+                            </span>
+                            <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black rounded border border-slate-200 uppercase tracking-tighter">
+                                MY {item.MY}
+                            </span>
                         </div>
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-tight">{item.Marque} <br/> {item.Modele}</h3>
+                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-tight group-hover/card:text-blue-600 transition-colors">
+                            {item.Marque} <br/> {item.Modele}
+                        </h3>
                     </div>
                     <ScoreBadge score={Math.round(item.AvgScore)} size="md" />
                   </div>
@@ -98,14 +123,14 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
                   {/* FOOTER CARD */}
                   <div className="mt-6 pt-4 border-t border-slate-100 flex items-end justify-between">
                     
-                    {/* MODIFICATION ICI : "essais" au lieu de "avis" */}
+                    {/* Nombre d'essais */}
                     <div className="text-xs text-slate-400 font-medium">
                        <strong className="text-slate-700">{item.ReviewCount}</strong> essais
                     </div>
 
+                    {/* Puissance avec Icône Gauge */}
                     <div className="text-right">
                         <div className="flex items-center justify-end gap-1.5 text-slate-900 font-mono font-bold text-sm">
-                            {/* MODIFICATION ICI : Icône Gauge */}
                             <Gauge className="w-4 h-4 text-slate-400" strokeWidth={2.5} /> 
                             
                             {item.MinPower === item.MaxPower 
@@ -117,8 +142,8 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
                     </div>
                   </div>
 
-                  {/* BARRE DE SCORE */}
-                  <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-50">
+                  {/* BARRE DE PROGRESSION */}
+                  <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-50 overflow-hidden rounded-b-xl">
                     <div 
                       className={cn("h-full transition-all duration-500", 
                         item.AvgScore >= 61 ? 'bg-score-good' : item.AvgScore >= 40 ? 'bg-score-mixed' : 'bg-score-bad'
@@ -126,13 +151,14 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
                       style={{ width: `${item.AvgScore}%` }}
                     ></div>
                   </div>
-                </div>
+
+                </Link>
               </div>
             );
         })}
       </div>
       
-       {/* Ombres de défilement */}
+       {/* Ombres de défilement latérales */}
        <div className={cn("absolute top-0 right-0 h-full w-24 bg-gradient-to-l from-[#f8fafc] to-transparent pointer-events-none transition-opacity", showRightArrow ? 'opacity-100' : 'opacity-0')}></div>
        <div className={cn("absolute top-0 left-0 h-full w-24 bg-gradient-to-r from-[#f8fafc] to-transparent pointer-events-none transition-opacity", showLeftArrow ? 'opacity-100' : 'opacity-0')}></div>
     </div>

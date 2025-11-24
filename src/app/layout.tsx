@@ -22,10 +22,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={cn(
-        "min-h-screen bg-[#f8fafc] font-sans antialiased", // Fond gris très clair par défaut
-        dmSans.variable // Injection de la variable CSS
-      )}>
+      {/* AJOUT DE L'ATTRIBUT ICI 👇 */}
+      <body 
+        className={cn(
+          "min-h-screen bg-[#f8fafc] font-sans antialiased",
+          dmSans.variable
+        )}
+        suppressHydrationWarning={true}
+      >
         {children}
       </body>
     </html>

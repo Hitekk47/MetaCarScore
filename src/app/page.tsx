@@ -118,12 +118,12 @@ export default async function Home() {
               {/* Le z-50 ici assure qu'il passe au dessus de tout */}
               <SearchBar 
                 variant="hero" 
-                placeholder="Quelle voiture cherchez-vous ? (ex: Renault Megane...)" 
+                placeholder="Trouvez le score de n'importe quel véhicule..." 
               />
             </div>
             
             <p className="text-slate-400 font-medium text-sm mt-4">
-              Recherchez parmi plus de 20 000 essais agrégés.
+              Toute la presse auto synthétisée en un score unique.
             </p>
           </div>
         </section>
