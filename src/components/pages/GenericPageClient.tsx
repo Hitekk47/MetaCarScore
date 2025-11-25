@@ -112,10 +112,9 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                     </div>
                     <div className="flex-grow pb-1">
                         
-                        {/* MARQUE + CHEVRON */}
+                        {/* MARQUE */}
                         <div className="text-lg md:text-xl font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
                            {marque}
-                           <ChevronRight size={16} className="text-slate-700" strokeWidth={3} />
                         </div>
                         
                         {/* TITRE PRINCIPAL */}

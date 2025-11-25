@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, Loader2, ChevronRight, CarFront, Library, Clock, History, LayoutGrid } from "lucide-react";
+import { Search, Loader2, ChevronRight, CarFront, Layers, Clock, History, LayoutGrid, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -158,7 +158,7 @@ export default function SearchBar({ placeholder, variant = "header", className }
       setIsOpen(true);
 
       const { data, error } = await supabase
-        .rpc('search_cars_v8', { search_term: debouncedQuery });
+        .rpc('search_cars_v10', { search_term: debouncedQuery });
 
       if (data) {
         setResults(data as SearchResult[]);
@@ -188,15 +188,28 @@ export default function SearchBar({ placeholder, variant = "header", className }
     setQuery("");
   };
 
+  const handleClear = () => {
+    setQuery("");
+    setResults([]); // On vide aussi les résultats
+    setIsOpen(false); // On ferme le menu
+    inputRef.current?.focus(); // On remet le focus dans le champ pour retaper direct
+  };  
+
   // --- RENDU ---
 
   return (
     <div ref={wrapperRef} className={cn("relative group w-full", className)}>
       
       {/* INPUT */}
+      {/* CONTAINER INPUT */}
       <div className={cn(
         "relative flex items-center transition-all duration-300",
-        isHero ? "bg-white rounded-full p-2 shadow-2xl hover:scale-[1.01]" : "bg-slate-100 rounded-full"
+        "focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2",        
+        isHero ? "focus-within:ring-offset-slate-900" : "focus-within:ring-offset-white",
+
+        isHero 
+          ? "bg-white rounded-full p-2 shadow-2xl hover:scale-[1.01]" 
+          : "bg-slate-100 rounded-full focus-within:bg-white" // Petit bonus : le fond devient blanc pur au focus dans le header
       )}>
         <div className={cn("text-slate-400 flex items-center justify-center", isHero ? "pl-6" : "pl-3")}>
           {loading ? <Loader2 className="animate-spin" size={isHero ? 24 : 14} /> : <Search size={isHero ? 24 : 14} />}
@@ -209,22 +222,36 @@ export default function SearchBar({ placeholder, variant = "header", className }
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => setIsOpen(true)}
-          // C'est ici qu'on utilise le placeholder dynamique
           placeholder={placeholderText} 
           className={cn(
-            "w-full bg-transparent border-none text-slate-900 font-medium focus:ring-0 placeholder-slate-400",
-            isHero ? "text-lg px-4 py-3" : "text-sm px-3 py-1.5"
+            "w-full bg-transparent border-none text-slate-900 font-medium focus:ring-0 focus:outline-none placeholder-slate-400",
+            isHero ? "text-lg px-4 py-3 pr-12 sm:pr-8" : "text-sm px-3 py-1.5 pr-10"
           )}
         />
+
+        {/* NOUVELLE CROIX */}
+        {query.length > 0 && (
+          <button
+            onClick={handleClear}
+            className={cn(
+              "absolute text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-200/50",
+              isHero ? "right-4 sm:right-40" : "right-2"
+            )}
+          >
+            <X size={16} />
+          </button>
+        )}
         
         {isHero && <button className="bg-slate-900 text-white px-8 py-3 rounded-full font-bold uppercase tracking-wider text-sm hover:bg-blue-600 transition shadow-lg shrink-0 hidden sm:block">Chercher</button>}
       </div>
 
-      {/* DROPDOWN (Reste inchangé) */}
+      {/* DROPDOWN */}
       {((results.length > 0 && isOpen) || (query.length === 0 && history.length > 0 && isOpen) || (!loading && query.length >= 2 && results.length === 0 && isOpen)) && (
         <div className={cn(
-          "absolute left-0 w-full bg-white border border-slate-200 shadow-xl overflow-hidden z-50 mt-2 text-left",
-          isHero ? "top-full rounded-2xl" : "top-full rounded-xl"
+          "absolute bg-white border border-slate-200 shadow-xl overflow-hidden z-50 mt-2 text-left",
+          isHero
+            ? "left-0 w-full top-full rounded-2xl" 
+            : "right-0 w-[300px] sm:w-[380px] top-full rounded-xl" 
         )}>
           <div className="py-2">
             
@@ -292,24 +319,46 @@ function ResultItem({ res, onClick, isActive, isHistory = false }: { res: Search
   const isFamily = res.Type === 'family';
   return (
     <div onClick={onClick} className={cn("px-4 py-3 cursor-pointer flex items-center justify-between group/item transition-colors border-b border-slate-50 last:border-0", isActive ? "bg-blue-50" : (isFamily ? "bg-slate-50/50 hover:bg-blue-50" : "hover:bg-slate-50"))}>
-      <div className="flex items-center gap-3 overflow-hidden">
-          <div className={cn("w-8 h-8 rounded flex items-center justify-center transition shrink-0", isHistory ? "bg-slate-100 text-slate-400" : (isFamily ? "bg-slate-900 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-400 group-hover/item:text-blue-600 group-hover/item:border-blue-200"))}>
-              {isHistory ? <Clock size={16} /> : (isFamily ? <Library size={16} /> : <CarFront size={16} />)}
+      
+      {/* CONTENEUR GAUCHE : On ajoute 'w-full' pour qu'il pousse jusqu'au chevron */}
+      <div className="flex items-center gap-3 overflow-hidden w-full relative">
+          
+          <div className={cn("w-8 h-8 rounded flex items-center justify-center transition shrink-0 relative z-20", isHistory ? "bg-slate-100 text-slate-400" : (isFamily ? "bg-slate-900 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-400 group-hover/item:text-blue-600 group-hover/item:border-blue-200"))}>
+              {isHistory ? <Clock size={16} /> : (isFamily ? <Layers size={16} /> : <CarFront size={16} />)}
           </div>
-          <div className="truncate">
+          
+          {/* CONTENEUR TEXTE : On ajoute 'w-full' pour que le 'right-0' aille bien au bout */}
+          <div className="truncate w-full relative z-10">
               {isFamily ? (
                 <div className="flex flex-col">
-                    {/* CORRECTION ICI : Ajout des accolades {} */}
-                    {!isHistory && <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Famille</span>}
+                    {!isHistory && <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gamme</span>}
                     <span className={cn("font-black text-slate-900 text-sm uppercase truncate", isHistory && "font-medium text-slate-600")}>{res.Marque} {res.Famille}</span>
                 </div>
               ) : (
-                <div className="flex flex-col"><span className="text-xs font-bold text-slate-500 truncate">{res.Marque} {res.Famille}</span><span className={cn("font-bold text-slate-900 text-sm uppercase truncate", isHistory && "font-medium text-slate-600")}>{res.Modele}</span></div>
+                <div className="flex flex-col relative w-full">
+                    
+                    {/* LE FILIGRANE */}
+                    {res.MaxMY && !isHistory && (
+                        // MODIFICATION ICI : 'right-2' au lieu de 'right-0'
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-4xl font-black text-slate-100 -z-10 select-none pointer-events-none italic tracking-tighter">
+                            {res.MaxMY}
+                        </span>
+                    )}
+
+                    <span className="text-xs font-bold text-slate-500 truncate relative z-10">
+                        {res.Marque} {res.Famille}
+                    </span>
+                    <span className={cn("font-bold text-slate-900 text-sm uppercase truncate relative z-10", isHistory && "font-medium text-slate-600")}>
+                        {res.Modele}
+                    </span>
+                </div>
               )}
           </div>
       </div>
-      <div className="pl-2 shrink-0">
-        {isFamily && !isHistory ? <span className="text-[10px] font-bold bg-white border border-slate-200 px-2 py-1 rounded text-slate-600 group-hover/item:text-blue-600 group-hover/item:border-blue-200 transition whitespace-nowrap">Voir la gamme</span> : <ChevronRight size={14} className="text-slate-300 group-hover/item:text-blue-600 transition" />}
+
+      {/* CHEVRON : z-20 pour passer au dessus du filigrane si besoin */}
+      <div className="pl-4 shrink-0 relative z-20">
+        {isFamily && !isHistory ? <span className="text-[10px] font-bold bg-white border border-slate-200 px-2 py-1 rounded text-slate-600 group-hover/item:text-blue-600 group-hover/item:border-blue-200 transition whitespace-nowrap">Vue d'ensemble</span> : <ChevronRight size={14} className="text-slate-300 group-hover/item:text-blue-600 transition" />}
       </div>
     </div>
   );
