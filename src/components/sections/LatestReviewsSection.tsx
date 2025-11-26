@@ -55,9 +55,19 @@ export default function LatestReviewsSection({ initialData }: { initialData: Rev
         <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900">
           Derniers ajouts
         </h2>
-        <div className="text-xs font-bold text-slate-400 uppercase">
-          Mise à jour en temps réel
-        </div>
+        <div className="flex items-center gap-2 md:pl-3 md:border-l border-slate-300 md:ml-2 shrink-0">
+         
+         {/* LE POINT VERT (Toujours à gauche) */}
+         <span className="relative flex h-2 w-2 shrink-0"> {/* shrink-0 empêche le point de s'écraser */}
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+         </span>
+         
+         {/* LE TEXTE (Mise à jour) */}
+         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none">
+            Mise à jour en temps réel
+         </span>
+      </div>
       </div>
       
       <ReviewsTableCompact data={reviews} />

@@ -1,9 +1,10 @@
-import Link from "next/link"; // <--- IMPORT
+import Link from "next/link";
 import { Review } from "@/lib/types";
 import ScoreBadge from "../ui/ScoreBadge";
 import Powertrain from "../ui/Powertrain";
 
-export default function ReviewsTableCompact({ data }: { data: Review[] }) {
+// AJOUT DE LA PROP OPTIONNELLE 'hideBrand'
+export default function ReviewsTableCompact({ data, hideBrand = false }: { data: Review[], hideBrand?: boolean }) {
   
   const formatYearMonth = (dateStr: string) => {
     if (!dateStr) return "";
@@ -32,7 +33,6 @@ export default function ReviewsTableCompact({ data }: { data: Review[] }) {
                  </div>
               </td>
 
-              {/* LIEN VERS PAGE MY */}
               <td className="px-3 py-1 align-middle">
                 <Link 
                   href={`/${row.Marque}/${row.Famille}/${row.MY}`}
@@ -42,17 +42,18 @@ export default function ReviewsTableCompact({ data }: { data: Review[] }) {
                 </Link>
               </td>
 
-              {/* LIEN VERS PAGE MODÈLE */}
               <td className="px-3 py-1 align-middle">
                 <div className="flex flex-col justify-center">
                   <Link 
                     href={`/${row.Marque}/${row.Famille}/${row.MY}/${row.Modele}`}
                     className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition leading-none mb-1 hover:underline decoration-blue-600 decoration-2 underline-offset-2 w-fit"
                   >
-                    {row.Marque} {row.Modele}
+                    {/* CONDITION D'AFFICHAGE : Si hideBrand est true, on n'affiche que le modèle */}
+                    {hideBrand ? row.Modele : `${row.Marque} ${row.Modele}`}
                   </Link>
+                  
                   {row.Finition && (
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wide truncate max-w-[150px]">
+                    <span className="text-[11px] text-slate-500 font-medium tracking-tight truncate max-w-[150px]">
                       {row.Finition}
                     </span>
                   )}
@@ -61,7 +62,6 @@ export default function ReviewsTableCompact({ data }: { data: Review[] }) {
 
               <td className="px-3 py-1 align-middle">
                 <Link 
-                  // Construction du slug unique : Type_Puissance_Transmission
                   href={`/${row.Marque}/${row.Famille}/${row.MY}/${row.Modele}/${row.Type}_${row.Puissance}_${row.Transmission}`}
                   className="block w-fit hover:opacity-80 transition-opacity"
                 >

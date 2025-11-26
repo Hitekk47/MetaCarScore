@@ -105,21 +105,21 @@ export default async function Home() {
         </section>
 
         {/* === CARROUSEL === */}
-        <section className="max-w-7xl mx-auto px-4 py-12 border-b border-slate-200">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 flex items-center gap-3">
-              <span className="truncate">Derniers MetaCarScores</span> {/* truncate évite que le titre pousse tout */}
-              
-              {/* CORRECTION DU BADGE LIVE */}
-              <div className="flex items-center gap-2 pl-3 border-l border-slate-300 ml-2 shrink-0"> {/* shrink-0 empêche le badge de s'écraser */}
-                 <span className="relative flex h-2 w-2">
+    <section className="max-w-7xl mx-auto px-4 py-12 border-b border-slate-200">
+      <div className="flex items-center justify-between mb-8">
+        <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3">
+          
+          <span>Derniers MetaCarScores</span>
+              <div className="flex items-center gap-2 md:pl-3 md:border-l border-slate-300 md:ml-2 shrink-0">
+                <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                 </span>
-                 {/* AJOUT DE 'leading-none' pour coller les lignes et 'whitespace-nowrap' si tu préfères sur une ligne */}
-                 <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none">
-                    Flux<br className="md:hidden"/> temps réel {/* br visible uniquement sur mobile si besoin, ou juste un espace */}
-                 </span>
+                </span>
+                
+                {/* J'ai retiré le <br> pour garder sur une ligne propre en dessous du titre */}
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none whitespace-nowrap">
+                    Flux temps réel
+                </span>
               </div>
 
             </h2>
@@ -168,10 +168,10 @@ export default async function Home() {
             {/* LIEN DUELS */}
             <a href="/duels" className="group bg-slate-50 hover:bg-blue-600 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100 hover:shadow-xl hover:-translate-y-1">
               <div className="flex justify-between items-start mb-2">
-                <span className="font-bold text-lg">Comparateur</span>
+                <span className="font-bold text-lg">Mode Duel</span>
                 <Swords className="text-slate-300 group-hover:text-white" />
               </div>
-              <p className="text-xs text-slate-500 group-hover:text-blue-100">Duel de fiches techniques.</p>
+              <p className="text-xs text-slate-500 group-hover:text-blue-100">Affrontez deux modèles.</p>
             </a>
           </div>
         </section>

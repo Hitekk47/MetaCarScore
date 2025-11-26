@@ -8,7 +8,7 @@ import PodiumWidget from "@/components/dataviz/PodiumWidget";
 import ReviewsTableCompact from "@/components/tables/ReviewsTableCompact";
 import SmartBreadcrumb from "@/components/ui/SmartBreadcrumb";
 import { Review } from "@/lib/types";
-import { CalendarRange, Gauge, Search, SlidersHorizontal, X, ChevronRight } from "lucide-react"; // Ajout ChevronRight
+import { CalendarRange, Gauge, Search, SlidersHorizontal, X, ChevronRight, Swords } from "lucide-react"; // Ajout ChevronRight
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -229,7 +229,10 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                     </AnimatePresence>
                 </div>
 
-                <ReviewsTableCompact data={filteredReviews} />
+                <ReviewsTableCompact 
+                    data={filteredReviews} 
+                    hideBrand={true}
+                />
             </div>
 
             {/* DROITE */}
@@ -237,9 +240,14 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                 <motion.div layout><ScoreDistribution scores={scores} /></motion.div>
                 
                 <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg">
-                    <h3 className="font-bold text-lg mb-2">Comparer</h3>
-                    <p className="text-slate-400 text-sm mb-4">Lancez un duel technique.</p>
-                    <button className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold uppercase text-sm transition">Lancer le comparateur</button>
+                    <div className="flex items-center gap-2 mb-2">
+                        <Swords size={20} className="text-blue-400" /> {/* Petit ajout d'icône sympa */}
+                        <h3 className="font-bold text-lg">Mode Duel</h3>
+                    </div>
+                    <p className="text-slate-400 text-sm mb-4">Choisissez un adversaire pour ce modèle.</p>
+                            <button className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold uppercase text-sm transition shadow-lg hover:shadow-blue-500/25">
+                                Lancer le Duel
+                            </button>
                 </div>
 
                 {/* Le podium est caché si level == 'modele' OU 'powertrain' */}
