@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 const PLACEHOLDERS = [
   "Trouvez le score de n'importe quel véhicule...",
   "Ex : Porsche 911, Tesla Model Y, Peugeot 3008...",
-  "Recherchez une marque, une famille ou un modèle...",
+  "Recherchez une marque ou un modèle...",
 ];
 
 type SearchResult = {

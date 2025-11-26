@@ -2,10 +2,11 @@ import Header from "@/components/Header";
 import RecentScoresCarousel from "@/components/bento/RecentScoresCarousel";
 import { supabase } from "@/lib/supabase";
 import { Review } from "@/lib/types";
-import { Database, Layers, Swords, Activity } from "lucide-react"; // Ajout de Activity
+import { Database, Layers, Swords, Activity } from "lucide-react";
 import LatestReviewsSection from "@/components/sections/LatestReviewsSection";
 import SearchBar from "@/components/ui/SearchBar";
-import AnimatedCounter from "@/components/ui/AnimatedCounter"; // <-- Import du nouveau composant
+import AnimatedCounter from "@/components/ui/AnimatedCounter";
+import HeroWord from "@/components/ui/HeroWord";
 
 // --- OPTIMISATION 1 : CACHE (1h) ---
 export const revalidate = 3600; 
@@ -61,13 +62,17 @@ export default async function Home() {
   const latestAdditions = reviews.slice(0, 10);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20"> 
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
       <Header />
 
       <main>
         {/* === HERO === */}
-        <section className="bg-slate-900 text-white py-20 px-4 relative z-40 overflow-hidden">
-          {/* Blobs d'arrière-plan */}
+        {/* 1. RETRAIT DE 'overflow-hidden' SUR LA SECTION PRINCIPALE */}
+        {/* On garde z-40 pour qu'elle soit au dessus du reste de la page */}
+        <section className="bg-slate-900 text-white py-20 px-4 relative z-40">
+          
+          {/* 2. LE BACKGROUND GÈRE LE DÉBORDEMENT (Blob) */}
+          {/* C'est lui qui doit avoir overflow-hidden pour couper le halo lumineux */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]"></div>
           </div>
@@ -80,12 +85,20 @@ export default async function Home() {
               </span>
             </h1>
             
+            {/* 3. CONTAINER DE RECHERCHE : Z-INDEX MAXIMAL */}
             <div className="relative max-w-2xl mx-auto z-50">
               <div className="absolute inset-0 bg-blue-500 rounded-full blur opacity-20 animate-pulse pointer-events-none"></div>
-              <SearchBar variant="hero" placeholder="Trouvez le score de n'importe quel véhicule..." />
+              
+              {/* Le composant SearchBar a déjà son propre z-index pour le dropdown, 
+                  mais le parent z-50 ici assure qu'il gagne sur le texte "Toute la presse..." en dessous */}
+              <SearchBar 
+                variant="hero" 
+                placeholder="Trouvez le score de n'importe quel véhicule..." 
+              />
             </div>
             
-            <p className="text-slate-400 font-medium text-sm mt-4">
+            {/* Ce texte a un z-index implicite (auto), donc z-50 passera au dessus */}
+            <p className="text-slate-400 font-medium text-sm mt-4 relative z-10">
               Toute la presse auto synthétisée en un score unique.
             </p>
           </div>
