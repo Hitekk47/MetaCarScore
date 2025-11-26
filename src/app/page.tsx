@@ -1,15 +1,13 @@
 import Header from "@/components/Header";
-import ReviewsTableCompact from "@/components/tables/ReviewsTableCompact";
 import RecentScoresCarousel from "@/components/bento/RecentScoresCarousel";
 import { supabase } from "@/lib/supabase";
 import { Review } from "@/lib/types";
-import { Search, Database, Layers, Swords } from "lucide-react";
+import { Database, Layers, Swords, Activity } from "lucide-react"; // Ajout de Activity
 import LatestReviewsSection from "@/components/sections/LatestReviewsSection";
 import SearchBar from "@/components/ui/SearchBar";
+import AnimatedCounter from "@/components/ui/AnimatedCounter"; // <-- Import du nouveau composant
 
-// --- OPTIMISATION 1 : CACHE ---
-// La page est générée sur le serveur et mise en cache pour 1 heure (3600s).
-// Le prochain visiteur recevra la version HTML instantanément sans toucher à la BDD.
+// --- OPTIMISATION 1 : CACHE (1h) ---
 export const revalidate = 3600; 
 
 // Helper moyenne
@@ -17,50 +15,29 @@ const average = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
 
 export default async function Home() {
   
-  // --- OPTIMISATION 2 : REQUÊTES LÉGÈRES ---
+  // --- OPTIMISATION 2 : REQUÊTES ---
   const [recentReq, statsReq] = await Promise.all([
-    // 1. On récupère juste ce qu'il faut pour le carrousel (1500 suffisent largement)
-    supabase
-      .from('reviews')
-      .select('*')
-      .order('Test_date', { ascending: false })
-      .limit(1500),
-
-    // 2. APPEL RPC : On exécute la fonction SQL créée dans Supabase.
-    // Coût bande passante : ~50 octets (vs ~5 Mo avant !)
+    supabase.from('reviews').select('*').order('Test_date', { ascending: false }).limit(1500),
     supabase.rpc('get_homepage_stats')
   ]);
 
   const reviews = (recentReq.data || []) as Review[];
-  
-  // Récupération des stats depuis le RPC (avec valeurs par défaut au cas où)
   const stats = statsReq.data as { total_reviews: number, unique_models: number } | null;
   const totalEssais = stats?.total_reviews || 20000;
   const totalModeles = stats?.unique_models || 1200;
 
-
-  // --- LOGIQUE MÉTIER (Inchangée) ---
+  // --- LOGIQUE MÉTIER (Groupement) ---
   const modelGroups: Record<string, { 
-    Marque: string; 
-    Famille: string; 
-    Modele: string; 
-    MY: number; 
-    Scores: number[]; 
-    Powers: number[]; 
-    Dates: string[] 
+    Marque: string; Famille: string; Modele: string; MY: number; 
+    Scores: number[]; Powers: number[]; Dates: string[] 
   }> = {};
 
   reviews.forEach(r => {
     const key = `${r.Marque}|${r.MY}|${r.Modele}`;
     if (!modelGroups[key]) {
       modelGroups[key] = {
-        Marque: r.Marque,
-        Famille: r.Famille,
-        Modele: r.Modele,
-        MY: r.MY,
-        Scores: [],
-        Powers: [],
-        Dates: []
+        Marque: r.Marque, Famille: r.Famille, Modele: r.Modele, MY: r.MY,
+        Scores: [], Powers: [], Dates: []
       };
     }
     modelGroups[key].Scores.push(r.Score);
@@ -71,17 +48,10 @@ export default async function Home() {
   const metaScores = Object.values(modelGroups)
     .map(group => {
       const sortedDatesAsc = group.Dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-      
       return {
-        Marque: group.Marque,
-        Famille: group.Famille,
-        Modele: group.Modele,
-        MY: group.MY,
-        AvgScore: average(group.Scores),
-        ReviewCount: group.Scores.length,
-        FirstTestDate: sortedDatesAsc[0],
-        MinPower: Math.min(...group.Powers),
-        MaxPower: Math.max(...group.Powers)
+        Marque: group.Marque, Famille: group.Famille, Modele: group.Modele, MY: group.MY,
+        AvgScore: average(group.Scores), ReviewCount: group.Scores.length,
+        FirstTestDate: sortedDatesAsc[0], MinPower: Math.min(...group.Powers), MaxPower: Math.max(...group.Powers)
       };
     })
     .filter(item => item.ReviewCount >= 3)
@@ -91,15 +61,13 @@ export default async function Home() {
   const latestAdditions = reviews.slice(0, 10);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20"> 
       <Header />
 
       <main>
-{/* === HERO SEARCH === */}
-        {/* Note : On retire overflow-hidden d'ici pour laisser passer le menu */}
-        <section className="bg-slate-900 text-white py-20 px-4 relative z-40">
-          
-          {/* BACKGROUND CONTAINER : C'est lui qui gère le débordement des blobs */}
+        {/* === HERO === */}
+        <section className="bg-slate-900 text-white py-20 px-4 relative z-40 overflow-hidden">
+          {/* Blobs d'arrière-plan */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]"></div>
           </div>
@@ -112,14 +80,9 @@ export default async function Home() {
               </span>
             </h1>
             
-            {/* SEARCH BAR CONTAINER */}
             <div className="relative max-w-2xl mx-auto z-50">
               <div className="absolute inset-0 bg-blue-500 rounded-full blur opacity-20 animate-pulse pointer-events-none"></div>
-              {/* Le z-50 ici assure qu'il passe au dessus de tout */}
-              <SearchBar 
-                variant="hero" 
-                placeholder="Trouvez le score de n'importe quel véhicule..." 
-              />
+              <SearchBar variant="hero" placeholder="Trouvez le score de n'importe quel véhicule..." />
             </div>
             
             <p className="text-slate-400 font-medium text-sm mt-4">
@@ -128,46 +91,80 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* CARROUSEL */}
+        {/* === CARROUSEL === */}
         <section className="max-w-7xl mx-auto px-4 py-12 border-b border-slate-200">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900 flex items-center gap-3">
-              Derniers MetaCarScores
-              <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-[10px] rounded font-bold uppercase tracking-wide">Tendances</span>
+              <span className="truncate">Derniers MetaCarScores</span> {/* truncate évite que le titre pousse tout */}
+              
+              {/* CORRECTION DU BADGE LIVE */}
+              <div className="flex items-center gap-2 pl-3 border-l border-slate-300 ml-2 shrink-0"> {/* shrink-0 empêche le badge de s'écraser */}
+                 <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                 </span>
+                 {/* AJOUT DE 'leading-none' pour coller les lignes et 'whitespace-nowrap' si tu préfères sur une ligne */}
+                 <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none">
+                    Flux<br className="md:hidden"/> temps réel {/* br visible uniquement sur mobile si besoin, ou juste un espace */}
+                 </span>
+              </div>
+
             </h2>
           </div>
           <RecentScoresCarousel items={metaScores} />
         </section>
 
-        {/* STATS & NAV (Optimisé) */}
+        {/* === STATS & NAV === */}
         <section className="bg-white border-y border-slate-200 py-12">
           <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="flex flex-col justify-center border-l-4 border-slate-100 pl-6">
-              <div className="flex items-center gap-2 text-slate-400 mb-1"><Database size={16} /><span className="text-xs font-bold uppercase">Depuis 2019</span></div>
-              <div className="text-4xl font-black text-slate-900 tracking-tighter">{totalEssais.toLocaleString('fr-FR')}</div>
+            
+            {/* STAT 1: ESSAIS (ANIMÉ) */}
+            <div className="flex flex-col justify-center border-l-4 border-slate-100 pl-6 group hover:border-blue-500 transition-colors duration-500">
+              <div className="flex items-center gap-2 text-slate-400 mb-1 group-hover:text-blue-500 transition-colors">
+                <Database size={16} />
+                <span className="text-xs font-bold uppercase">Depuis 2019</span>
+              </div>
+              <div className="text-4xl font-black text-slate-900 tracking-tighter tabular-nums">
+                 {/* Utilisation du composant client */}
+                 <AnimatedCounter value={totalEssais} />
+              </div>
               <div className="text-sm font-medium text-slate-500">Essais référencés</div>
             </div>
-            <div className="flex flex-col justify-center border-l-4 border-slate-100 pl-6">
-              <div className="flex items-center gap-2 text-slate-400 mb-1"><Layers size={16} /><span className="text-xs font-bold uppercase">Catalogue</span></div>
-              <div className="text-4xl font-black text-slate-900 tracking-tighter">{totalModeles.toLocaleString('fr-FR')}</div>
+
+            {/* STAT 2: CATALOGUE (ANIMÉ) */}
+            <div className="flex flex-col justify-center border-l-4 border-slate-100 pl-6 group hover:border-emerald-500 transition-colors duration-500">
+              <div className="flex items-center gap-2 text-slate-400 mb-1 group-hover:text-emerald-500 transition-colors">
+                <Layers size={16} />
+                <span className="text-xs font-bold uppercase">Catalogue</span>
+              </div>
+              <div className="text-4xl font-black text-slate-900 tracking-tighter tabular-nums">
+                 <AnimatedCounter value={totalModeles} />
+              </div>
               <div className="text-sm font-medium text-slate-500">Modèles uniques</div>
             </div>
-            <a href="/tops" className="group bg-slate-50 hover:bg-slate-900 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100">
-              <div className="flex justify-between items-start mb-2"><span className="font-bold text-lg">Top Classements</span><Layers className="text-slate-300 group-hover:text-white" /></div>
+
+            {/* LIEN TOPS */}
+            <a href="/tops" className="group bg-slate-50 hover:bg-slate-900 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100 hover:shadow-xl hover:-translate-y-1">
+              <div className="flex justify-between items-start mb-2">
+                <span className="font-bold text-lg">Top Classements</span>
+                <Activity className="text-slate-300 group-hover:text-emerald-400 transition-colors" />
+              </div>
               <p className="text-xs text-slate-500 group-hover:text-slate-400">Les meilleurs par catégorie.</p>
             </a>
-            <a href="/duels" className="group bg-slate-50 hover:bg-blue-600 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100">
-              <div className="flex justify-between items-start mb-2"><span className="font-bold text-lg">Comparateur</span><Swords className="text-slate-300 group-hover:text-white" /></div>
+
+            {/* LIEN DUELS */}
+            <a href="/duels" className="group bg-slate-50 hover:bg-blue-600 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100 hover:shadow-xl hover:-translate-y-1">
+              <div className="flex justify-between items-start mb-2">
+                <span className="font-bold text-lg">Comparateur</span>
+                <Swords className="text-slate-300 group-hover:text-white" />
+              </div>
               <p className="text-xs text-slate-500 group-hover:text-blue-100">Duel de fiches techniques.</p>
             </a>
           </div>
         </section>
 
-        {/* TABLEAU */}
-{/* === SECTION DYNAMIQUE : TABLEAU DERNIERS AJOUTS === */}
-        {/* On passe les 10 premières données chargées par le serveur comme état initial */}
+        {/* === DERNIERS AJOUTS === */}
         <LatestReviewsSection initialData={latestAdditions} />
-
       </main>
     </div>
   );
