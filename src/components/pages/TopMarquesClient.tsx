@@ -44,13 +44,19 @@ export default function TopMarquesClient() {
   useEffect(() => {
     async function fetchRanking() {
       setLoading(true);
-      let dateStr: string | null = null;
+      
+      // LOGIQUE MODIFIÉE ICI :
+      let targetMY: number | null = null;
       const currentYear = new Date().getFullYear();
 
-      if (timeRange === '1y') dateStr = `${currentYear - 1}-01-01`;
-      else if (timeRange === '5y') dateStr = `${currentYear - 5}-01-01`;
+      if (timeRange === '1y') targetMY = currentYear - 1; // ex: 2024
+      else if (timeRange === '5y') targetMY = currentYear - 5; // ex: 2020
+      
+      // APPEL V2 : 'min_my' au lieu de 'min_date'
+      const { data: ranking } = await supabase.rpc('get_brand_ranking_v2', { 
+        min_my: targetMY 
+      });
 
-      const { data: ranking } = await supabase.rpc('get_brand_ranking', { min_date: dateStr });
       if (ranking) setData(ranking);
       setLoading(false);
     }
