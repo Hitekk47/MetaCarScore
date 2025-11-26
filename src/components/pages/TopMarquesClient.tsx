@@ -149,7 +149,7 @@ export default function TopMarquesClient() {
                                     )}
 
                                     <Link 
-                                        href={`/search?q=${item.brand}`} 
+                                        href={`/${item.brand}`}
                                         className="group py-3 px-3 md:px-6 flex flex-row items-center gap-3 md:gap-4 hover:bg-blue-50/30 transition-colors cursor-pointer"
                                     >
                                         
@@ -262,7 +262,7 @@ export default function TopMarquesClient() {
 function PodiumStep({ item, rank }: { item: RankingItem, rank: number }) {
     const isFirst = rank === 1;
     return (
-        <Link href={`/search?q=${item.brand}`} className={cn("flex flex-col items-center relative group transition-transform hover:scale-105", isFirst ? "w-1/3 z-10 -mt-8" : "w-1/4 z-0 opacity-90 hover:opacity-100")}>
+        <Link href={`/${item.brand}`} className={cn("flex flex-col items-center relative group transition-transform hover:scale-105", isFirst ? "w-1/3 z-10 -mt-8" : "w-1/4 z-0 opacity-90 hover:opacity-100")}>
             {isFirst && <Crown size={32} className="text-yellow-400 mb-2 drop-shadow-sm animate-bounce" />}
             <div className={cn("bg-white border rounded-xl shadow-lg flex flex-col items-center w-full relative overflow-visible", isFirst ? "p-4 border-yellow-400 ring-4 ring-yellow-100" : "p-3 border-slate-200")}>
                 <div className={cn("absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-white shadow-sm z-20", rank === 1 ? "bg-yellow-400" : rank === 2 ? "bg-slate-400" : "bg-orange-400")}>{rank}</div>

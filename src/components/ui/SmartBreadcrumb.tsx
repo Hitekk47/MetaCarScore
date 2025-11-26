@@ -11,12 +11,8 @@ type Props = {
 
 export default function SmartBreadcrumb({ marque, famille, my, modele, powertrain }: Props) {
   
-  // Helper : On extrait juste la puissance pour l'arborescence
   const formatPowertrain = (slug: string) => {
-    // Format attendu : Type_Puissance_Transmission (ex: Essence_525_7A)
     const parts = slug.split('_');
-    // La puissance est l'avant-dernier élément (parts.length - 2)
-    // car le type peut contenir des underscores, mais la structure finale est fixe
     if (parts.length >= 2) {
         const power = parts[parts.length - 2];
         return `${power} ch`;
@@ -27,19 +23,27 @@ export default function SmartBreadcrumb({ marque, famille, my, modele, powertrai
   return (
     <div className="flex items-center flex-wrap gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 mb-8">
       
+      {/* ACCUEIL */}
       <Link href="/" className="hover:text-white transition flex items-center gap-1">
         <Home size={12} /> Accueil
       </Link>
-      
-      {/* ... (MARQUE, FAMILLE, MY inchangés) ... */}
       
       {/* 1. MARQUE */}
       {marque && (
         <>
           <ChevronRight size={10} className="text-slate-600" />
           {famille ? (
-             <span className="hover:text-slate-300 transition cursor-default">{marque}</span>
-          ) : <span className="text-white">{marque}</span>}
+             // MODIFICATION ICI : C'est maintenant un LIEN vers la bibliothèque de la marque
+             <Link 
+                href={`/${marque}`} 
+                className="hover:text-white transition text-slate-500"
+             >
+                {marque}
+             </Link>
+          ) : (
+             // Si on est déjà sur la page Marque, c'est du texte blanc
+             <span className="text-white">{marque}</span>
+          )}
         </>
       )}
 
@@ -63,7 +67,7 @@ export default function SmartBreadcrumb({ marque, famille, my, modele, powertrai
         </>
       )}
 
-      {/* 4. MODÈLE (Devient un lien si Powertrain existe) */}
+      {/* 4. MODÈLE */}
       {modele && (
         <>
           <ChevronRight size={10} className="text-slate-600" />
@@ -73,7 +77,7 @@ export default function SmartBreadcrumb({ marque, famille, my, modele, powertrai
         </>
       )}
 
-      {/* 5. POWERTRAIN (Juste la puissance) */}
+      {/* 5. POWERTRAIN */}
       {powertrain && (
         <>
           <ChevronRight size={10} className="text-slate-600" />
