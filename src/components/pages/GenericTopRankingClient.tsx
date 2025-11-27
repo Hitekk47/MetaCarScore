@@ -6,7 +6,7 @@ import ScoreBadge from "@/components/ui/ScoreBadge";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Trophy, Loader2, Search, Crown, CalendarRange, Zap, Leaf, Fuel, Gauge, Cog } from "lucide-react";
+import { Trophy, Loader2, Search, Crown, Zap, Leaf, Fuel, Cog, Luggage } from "lucide-react";
 import Link from "next/link";
 
 type RankingItem = {
@@ -20,32 +20,42 @@ type RankingItem = {
 
 type TimeRange = '1y' | '5y' | 'all';
 
-// Props pour configurer la page
 type Props = {
   title: string;
   subtitle: string;
-  iconType: 'trophy' | 'zap' | 'leaf' | 'fuel' | 'diesel' | 'manual'; // Pour choisir l'icône
-  colorTheme: 'blue' | 'green' | 'red' | 'amber' | 'slate' | 'cyan'; // Pour la couleur du header
-  filterCategory?: string; // Pour le SQL (ex: 'Électrique')
-  filterTransmission?: string; // Pour le SQL (ex: 'M')
+  iconType: 'trophy' | 'zap' | 'leaf' | 'fuel' | 'diesel' | 'manual' | 'luggage'; 
+  colorTheme: 'blue' | 'green' | 'red' | 'amber' | 'slate' | 'cyan';
+  filterCategory?: string;
+  filterTransmission?: string;
+
+  customRpcName?: string;
 };
 
-export default function GenericTopRankingClient({ title, subtitle, iconType, colorTheme, filterCategory, filterTransmission }: Props) {
+export default function GenericTopRankingClient({ 
+  title, 
+  subtitle, 
+  iconType, 
+  colorTheme, 
+  filterCategory, 
+  filterTransmission,
+  customRpcName
+}: Props) {
+  
   const [timeRange, setTimeRange] = useState<TimeRange>('5y');
   const [data, setData] = useState<RankingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Mapping des icônes et couleurs
   const icons = {
     trophy: Trophy,
     zap: Zap,
     leaf: Leaf,
     fuel: Fuel,
     diesel: Fuel,
-    manual: Cog
+    manual: Cog,
+    luggage: Luggage
   };
-  const IconComponent = icons[iconType];
+  const IconComponent = icons[iconType] || Trophy;
 
   const themeClasses = {
     blue: "bg-blue-100 text-blue-600",
@@ -60,29 +70,39 @@ export default function GenericTopRankingClient({ title, subtitle, iconType, col
     async function fetchRanking() {
       setLoading(true);
       
-      // --- LOGIQUE MODIFIÉE V2 (MY) ---
       let targetMY: number | null = null;
       const currentYear = new Date().getFullYear();
 
-      // On filtre sur les Années Modèles (MY)
       if (timeRange === '1y') targetMY = currentYear - 1;
       else if (timeRange === '5y') targetMY = currentYear - 5;
-      // 'all' reste null
 
-      // --- APPEL RPC V2 ---
-      // On passe 'min_my' (int) au lieu de 'min_date' (string)
-      const { data: ranking } = await supabase.rpc('get_model_ranking_v2', { 
-        min_my: targetMY,
-        category_filter: filterCategory || null,
-        transmission_filter: filterTransmission || null,
+      // --- LOGIQUE DE BASBULEMENT RPC ---
+      let rpcName = 'get_model_ranking_v2'; // Défaut
+      let rpcParams: any = { 
+        min_my: targetMY, 
         limit_val: 100 
-      });
+      };
+
+      if (customRpcName) {
+        // CAS 1 : C'est une page spéciale (ex: Breaks)
+        // On utilise la fonction dédiée qui gère elle-même ses filtres (Touring, Avant, etc.)
+        rpcName = customRpcName;
+        // On ne passe PAS category_filter ni transmission_filter car get_break_ranking ne les attend pas
+      } else {
+        // CAS 2 : C'est une page standard
+        rpcParams.category_filter = filterCategory || null;
+        rpcParams.transmission_filter = filterTransmission || null;
+      }
+
+      const { data: ranking, error } = await supabase.rpc(rpcName, rpcParams);
       
+      if (error) console.error("Erreur RPC:", error);
       if (ranking) setData(ranking);
+      
       setLoading(false);
     }
     fetchRanking();
-  }, [timeRange, filterCategory, filterTransmission]);
+  }, [timeRange, filterCategory, filterTransmission, customRpcName]);
 
   const filteredData = useMemo(() => {
     return data.filter(item => 
@@ -92,6 +112,7 @@ export default function GenericTopRankingClient({ title, subtitle, iconType, col
 
   const podium = filteredData.slice(0, 3);
   const list = filteredData.slice(3);
+
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">

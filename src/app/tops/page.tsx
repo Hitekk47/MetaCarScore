@@ -64,6 +64,14 @@ export default function TopsDirectoryPage() {
       iconName: "cog",
       colorClass: "bg-slate-100 text-slate-600 border-slate-300"
     },
+{
+      id: "breaks",
+      title: "Breaks & SW",
+      subtitle: "Volume & Style",
+      href: "/tops/breaks",
+      iconName: "luggage",
+      colorClass: "bg-cyan-50 text-cyan-700 border-cyan-200 hover:border-cyan-300"
+    },
   ];
 
   return (

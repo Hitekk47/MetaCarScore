@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import Header from "@/components/Header";
 import { motion, AnimatePresence } from "framer-motion"; // Ajout AnimatePresence
 import { cn } from "@/lib/utils";
-import { Search, ChevronRight, X, Trophy, Zap, Leaf, Fuel, Cog, LayoutGrid, Layers, LucideIcon } from "lucide-react";
+import { Search, ChevronRight, X, Trophy, Zap, Leaf, Fuel, Cog, LayoutGrid, Layers, LucideIcon, Luggage } from "lucide-react";
 import Link from "next/link";
 
 // MAPPING ICONES
@@ -15,7 +15,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   fuel: Fuel,
   cog: Cog,
   grid: LayoutGrid,
-  layers: Layers
+  layers: Layers,
+  luggage: Luggage
 };
 
 export type DirectoryItem = {
