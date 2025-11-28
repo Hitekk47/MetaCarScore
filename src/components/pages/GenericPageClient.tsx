@@ -11,6 +11,7 @@ import { Review } from "@/lib/types";
 import { CalendarRange, Gauge, Search, SlidersHorizontal, X, ChevronRight, Swords } from "lucide-react"; // Ajout ChevronRight
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 type PageLevel = 'family' | 'my' | 'modele' | 'powertrain';
 
@@ -25,7 +26,7 @@ type Props = {
 };
 
 export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, level }: Props) {
-  
+
   // --- FILTRES ---
   const [query, setQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -92,8 +93,9 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
       </span>
     );
   };
-
-  
+  const duelSlug = (modele && my) 
+    ? `${marque}_${famille}_${my}_${modele}` 
+    : null;
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
       <Header />
@@ -237,25 +239,49 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
 
             {/* DROITE */}
             <div className="space-y-6">
-                <motion.div layout><ScoreDistribution scores={scores} /></motion.div>
                 
+                {/* 1. DISTRIBUTION DES SCORES */}
+                <motion.div layout>
+                    <ScoreDistribution scores={scores} />
+                </motion.div>
+                
+                {/* 2. WIDGET DUEL */}
                 <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg">
                     <div className="flex items-center gap-2 mb-2">
-                        <Swords size={20} className="text-blue-400" /> {/* Petit ajout d'icône sympa */}
+                        <Swords size={20} className="text-blue-400" />
                         <h3 className="font-bold text-lg">Mode Duel</h3>
                     </div>
-                    <p className="text-slate-400 text-sm mb-4">Choisissez un adversaire pour ce modèle.</p>
-                            <button className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold uppercase text-sm transition shadow-lg hover:shadow-blue-500/25">
-                                Lancer le Duel
-                            </button>
+                    <p className="text-slate-400 text-sm mb-4">
+                        {duelSlug 
+                            ? "Choisissez un adversaire pour ce modèle." 
+                            : "Comparez les fiches techniques face à face."}
+                    </p>
+                    
+                    {duelSlug ? (
+                        <Link 
+                            href={`/duels?left=${duelSlug}`} 
+                            className="block w-full text-center py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold uppercase text-sm text-white transition shadow-lg hover:shadow-blue-500/25"
+                        >
+                            Lancer le Duel
+                        </Link>
+                    ) : (
+                        <Link 
+                             href="/duels"
+                             className="block w-full text-center py-3 bg-slate-800 text-slate-400 rounded-lg font-bold uppercase text-sm hover:bg-slate-700 transition"
+                        >
+                            Aller au Comparateur
+                        </Link>
+                    )}
                 </div>
 
-                {/* Le podium est caché si level == 'modele' OU 'powertrain' */}
+                {/* 3. PODIUM (Affiché uniquement si on est au niveau Famille ou MY) */}
+                {/* Le podium n'a pas de sens pour un modèle unique, car il n'y a qu'un seul gagnant... lui-même */}
                 {level !== 'modele' && level !== 'powertrain' && (
                     <motion.div layout>
                         <PodiumWidget reviews={filteredReviews} />
                     </motion.div>
                 )}
+                
             </div>
         </div>
       </main>

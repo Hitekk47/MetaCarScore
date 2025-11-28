@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: 'Marques', href: '/marques' },
   { label: 'Classements', href: '/tops' },
   { label: 'Top 100', href: '/tops/modeles' },
-  { label: 'Duel', href: '/duels' },
+  { label: 'Duels', href: '/duels' },
 ];
 
 export default function Header() {
@@ -28,10 +28,8 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fermer le menu mobile au changement de page
   useEffect(() => { setIsMobileMenuOpen(false); }, [pathname]);
 
-  // Bloquer le scroll uniquement quand le menu mobile est ouvert
   useEffect(() => {
     if (isMobileMenuOpen) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = 'unset';
@@ -41,10 +39,6 @@ export default function Header() {
 
   return (
     <>
-      {/* 
-         1. RETOUR À STICKY : Le header reprend sa place physique.
-         2. FOND RÉTABLI : bg-white/90 toujours présent.
-      */}
       <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between relative">
           
@@ -63,8 +57,12 @@ export default function Header() {
               </Link>
           </div>
 
-          {/* NAV DESKTOP (Centrée) */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:flex items-center gap-8 z-30">
+          {/* 
+             NAVIGATION DESKTOP (Centre) 
+             CORRECTIF : Passage de 'md:flex' à 'lg:flex' 
+             Cela cache le menu sur tablette pour éviter le chevauchement.
+          */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:flex items-center gap-6 xl:gap-8 z-30">
             {NAV_ITEMS.map((item) => {
               const isActive = pathname.startsWith(item.href) && item.href !== '/';
               return (
@@ -88,15 +86,20 @@ export default function Header() {
               <div className={cn(
                 "transition-all duration-500 ease-in-out transform origin-right flex items-center pointer-events-auto",
                 showSearch 
-                    ? "opacity-100 scale-100 translate-x-0 w-[180px] sm:w-64"
-                    : "opacity-0 scale-95 translate-x-4 w-0 overflow-hidden"
+                    ? "opacity-100 scale-100 w-[180px] sm:w-64"
+                    : "opacity-0 scale-95 w-0 overflow-hidden"
               )}>
                   <SearchBar variant="header" placeholder="Chercher..." />
               </div>
 
+              {/* 
+                 BOUTON MENU MOBILE 
+                 CORRECTIF : Passage de 'md:hidden' à 'lg:hidden'
+                 Le burger apparait donc jusqu'aux écrans < 1024px.
+              */}
               <button 
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="md:hidden p-2 text-slate-900 hover:bg-slate-100 rounded-full transition-colors pointer-events-auto"
+                className="lg:hidden p-2 text-slate-900 hover:bg-slate-100 rounded-full transition-colors pointer-events-auto"
               >
                 <Menu size={24} />
               </button>
@@ -104,7 +107,7 @@ export default function Header() {
         </div>
       </header>
 
-      {/* OVERLAY MENU MOBILE (Reste en FIXED pour couvrir tout l'écran) */}
+      {/* OVERLAY MENU MOBILE */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div 

@@ -26,9 +26,11 @@ interface SearchBarProps {
   placeholder?: string;
   variant?: "hero" | "header";
   className?: string;
+  onSelect?: (res: SearchResult) => void;
+  modelOnly?: boolean; 
 }
 
-export default function SearchBar({ placeholder, variant = "header", className }: SearchBarProps) {
+export default function SearchBar({ placeholder, variant = "header", className, onSelect, modelOnly = false}: SearchBarProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -158,10 +160,17 @@ export default function SearchBar({ placeholder, variant = "header", className }
       setIsOpen(true);
 
       const { data, error } = await supabase
-        .rpc('search_cars_v10', { search_term: debouncedQuery });
+        .rpc('search_cars_v11', { search_term: debouncedQuery });
 
       if (data) {
-        setResults(data as SearchResult[]);
+        let finalResults = data as SearchResult[];
+
+        // --- FILTRAGE ICI ---
+        if (modelOnly) {
+            finalResults = finalResults.filter(r => r.Type !== 'family');
+        }
+
+        setResults(finalResults);
       } else {
         console.error(error);
         setResults([]);
@@ -171,22 +180,31 @@ export default function SearchBar({ placeholder, variant = "header", className }
     }
 
     fetchResults();
-  }, [debouncedQuery]);
+  }, [debouncedQuery, modelOnly]);
 
   const handleSelect = (res: SearchResult) => {
     addToHistory(res);
-    if (res.Type === 'family') {
-      router.push(`/${res.Marque}/${res.Famille}`);
+    if (onSelect) {
+      // Mode "Sélecteur" (pour le Duel)
+      onSelect(res);
+      setIsOpen(false);
+      setQuery(""); // On vide le champ visuel
     } else {
-      if (res.MaxMY && res.Modele) {
-        router.push(`/${res.Marque}/${res.Famille}/${res.MaxMY}/${res.Modele}`);
-      } else {
+      // Mode "Navigation" (Comportement classique)
+      if (res.Type === 'family') {
         router.push(`/${res.Marque}/${res.Famille}`);
+      } else {
+        if (res.MaxMY && res.Modele) {
+          router.push(`/${res.Marque}/${res.Famille}/${res.MaxMY}/${res.Modele}`);
+        } else {
+          router.push(`/${res.Marque}/${res.Famille}`);
+        }
       }
+      setIsOpen(false);
+      setQuery("");
     }
-    setIsOpen(false);
-    setQuery("");
   };
+
 
   const handleClear = () => {
     setQuery("");
