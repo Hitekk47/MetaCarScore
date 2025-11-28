@@ -63,6 +63,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
+      <meta name="google-site-verification" content="X3dRJsde6CqGdiEbn-Sk3T2saCbPuh6bS4MpN4FT5mc" />
       <Header />
 
       <main>
@@ -80,9 +81,7 @@ export default async function Home() {
           <div className="max-w-4xl mx-auto text-center relative z-10 space-y-8">
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4">
               Trouver le véhicule <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
-                parfait.
-              </span>
+              <HeroWord />
             </h1>
             
             {/* 3. CONTAINER DE RECHERCHE : Z-INDEX MAXIMAL */}
