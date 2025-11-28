@@ -76,24 +76,29 @@ function PowerBadge({ text }: { text: string | null }) {
 export default function DuelArena({ carA, carB }: Props) {
   
   // DETECTION DU STICKY MODE
-  const [isCompact, setIsCompact] = useState(false);
-  const triggerRef = useRef<HTMLDivElement>(null);
+const [isCompact, setIsCompact] = useState(false);
+const triggerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        // LOGIQUE SIMPLIFIÉE :
-        // Si le déclencheur touche le haut (top <= 65px) et n'est plus visible, on active le mode compact.
-        // 65px = 64px (Header Site) + 1px (buffer)
-        setIsCompact(entry.boundingClientRect.top <= 65);
-      },
-      // rootMargin: déplace la ligne de détection vers le bas de 64px (hauteur du header site)
-      { threshold: 1, rootMargin: "-64px 0px 0px 0px" } 
-    );
+useEffect(() => {
+  const el = triggerRef.current;
+  if (!el) return;
 
-    if (triggerRef.current) observer.observe(triggerRef.current);
-    return () => observer.disconnect();
-  }, []);
+  const observer = new IntersectionObserver(
+    ([entry]) => {
+        // Sentinelle visible => mode normal
+        // Sentinelle hors écran (vers le haut) => mode compact
+      setIsCompact(!entry.isIntersecting);
+    },
+    {
+      // Compense la hauteur du header site (64px)
+      rootMargin: "-64px 0px 0px 0px",
+      threshold: 0, // Déclenche dès que l'élément touche la limite
+    }
+  );
+
+  observer.observe(el);
+  return () => observer.disconnect();
+}, []);
 
   const countA = carA.reviews.length;
   const countB = carB.reviews.length;
@@ -138,9 +143,8 @@ export default function DuelArena({ carA, carB }: Props) {
 return (
     <div className="relative isolate">
         
-        {/* --- NOUVEAU DÉCLENCHEUR --- */}
-        {/* Un pixel invisible dans le flux normal, juste avant le sticky */}
-        <div ref={triggerRef} className="h-px w-full pointer-events-none opacity-0" />
+        {/* Sentinelle : pixel invisible juste AVANT le sticky */}
+        <div ref={triggerRef} className="h-px w-full" />
 
         <motion.div 
             initial={{ opacity: 0, y: 20 }}
