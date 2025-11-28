@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Gauge } from 'lucide-react';
 import ScoreBadge from '../ui/ScoreBadge';
 import { cn } from '@/lib/utils';
+import { toSlug } from "@/lib/slugify";
 
 type CarouselItem = {
   Marque: string;
@@ -91,7 +92,7 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
                 
                 {/* LIEN GLOBAL SUR LA CARTE VERS LA PAGE MODÈLE */}
                 <Link 
-                    href={`/${item.Marque}/${item.Famille}/${item.MY}/${item.Modele}`}
+                    href={`/${toSlug(item.Marque)}/${toSlug(item.Famille)}/${item.MY}/${toSlug(item.Modele)}`}
                     className="block bg-white border border-slate-200 rounded-xl p-6 h-full hover:shadow-xl hover:border-blue-300 transition-all cursor-pointer group/card relative flex flex-col justify-between min-h-[200px]"
                 >
                   

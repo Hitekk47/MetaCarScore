@@ -8,6 +8,7 @@ import SearchBar from "@/components/ui/SearchBar";
 import DuelArena from "./DuelArena";
 import { Swords, X, Loader2, CarFront } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toSlug } from "@/lib/slugify";
 
 // Définition du type Fighter localement
 type Fighter = {
@@ -87,7 +88,7 @@ export default function DuelPageClient() {
     const famille = parts[1];
     const my = parts[2];
     const modele = parts.slice(3).join("_");
-    return `/${marque}/${famille}/${my}/${modele}`;
+    return `/${toSlug(marque)}/${toSlug(famille)}/${my}/${toSlug(modele)}`;
   };
 
   // 4. GESTION DE LA SÉLECTION VIA SEARCHBAR

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRouter } from "next/navigation";
+import { toSlug } from "@/lib/slugify";
 
 // --- CONFIGURATION TYPEWRITER ---
 const PLACEHOLDERS = [
@@ -192,12 +193,12 @@ export default function SearchBar({ placeholder, variant = "header", className, 
     } else {
       // Mode "Navigation" (Comportement classique)
       if (res.Type === 'family') {
-        router.push(`/${res.Marque}/${res.Famille}`);
+        router.push(`/${toSlug(res.Marque)}/${toSlug(res.Famille)}`);
       } else {
         if (res.MaxMY && res.Modele) {
-          router.push(`/${res.Marque}/${res.Famille}/${res.MaxMY}/${res.Modele}`);
+          router.push(`/${toSlug(res.Marque)}/${toSlug(res.Famille)}/${res.MaxMY}/${toSlug(res.Modele)}`);
         } else {
-          router.push(`/${res.Marque}/${res.Famille}`);
+          router.push(`/${toSlug(res.Marque)}/${toSlug(res.Famille)}`);
         }
       }
       setIsOpen(false);

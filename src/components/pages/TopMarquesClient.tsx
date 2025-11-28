@@ -6,7 +6,7 @@ import ScoreBadge from "@/components/ui/ScoreBadge";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-// AJOUT DE 'ExternalLink' DANS LES IMPORTS
+import { toSlug } from "@/lib/slugify";
 import { Trophy, Loader2, Search, ArrowUp, ArrowDown, Crown, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
@@ -120,9 +120,9 @@ export default function TopMarquesClient() {
                             const showTierHeader = !prevTier || prevTier.label !== currentTier.label;
 
                             // URLs
-                            const brandUrl = `/${item.brand}`;
-                            const bestModelUrl = item.best_model ? `/${item.brand}/${item.best_famille}/${item.best_my}/${item.best_model}` : null;
-                            const worstModelUrl = item.worst_model ? `/${item.brand}/${item.worst_famille}/${item.worst_my}/${item.worst_model}` : null;
+                            const brandUrl = `/${toSlug(item.brand)}`;
+                            const bestModelUrl = item.best_model ? `/${toSlug(item.brand)}/${toSlug(item.best_famille)}/${item.best_my}/${toSlug(item.best_model)}` : null;
+                            const worstModelUrl = item.worst_model ? `/${toSlug(item.brand)}/${toSlug(item.worst_famille)}/${item.worst_my}/${toSlug(item.worst_model)}` : null;
 
                             return (
                                 <div key={item.brand}>
@@ -233,12 +233,12 @@ export default function TopMarquesClient() {
 function PodiumStep({ item, rank }: { item: RankingItem, rank: number }) {
     const isFirst = rank === 1;
     const modelUrl = item.best_model && item.best_famille && item.best_my 
-        ? `/${item.brand}/${item.best_famille}/${item.best_my}/${item.best_model}`
+        ? `/${toSlug(item.brand)}/${toSlug(item.best_famille)}/${item.best_my}/${toSlug(item.best_model)}`
         : null;
 
     return (
         <div className={cn("flex flex-col items-center relative group transition-transform hover:scale-105", isFirst ? "w-1/3 z-10 -mt-8" : "w-1/4 z-0 opacity-90 hover:opacity-100")}>
-            <Link href={`/${item.brand}`} className="absolute inset-0 z-10" aria-label={`Voir la marque ${item.brand}`} />
+            <Link href={`/${toSlug(item.brand)}`} className="absolute inset-0 z-10" aria-label={`Voir la marque ${item.brand}`} />
             {isFirst && <Crown size={32} className="text-yellow-400 mb-2 drop-shadow-sm animate-bounce" />}
             <div className={cn("bg-white border rounded-xl shadow-lg flex flex-col items-center w-full relative overflow-visible", isFirst ? "p-2 md:p-4 border-yellow-400 ring-2 md:ring-4 ring-yellow-100" : "p-2 md:p-3 border-slate-200")}>
                 <div className={cn("absolute -top-3 left-1/2 -translate-x-1/2 w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center font-black text-[10px] md:text-xs text-white shadow-sm z-20 pointer-events-none", rank === 1 ? "bg-yellow-400" : rank === 2 ? "bg-slate-400" : "bg-orange-400")}>{rank}</div>

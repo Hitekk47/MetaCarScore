@@ -1,5 +1,6 @@
 import GenericDirectoryClient, { DirectoryItem } from "@/components/pages/GenericDirectoryClient";
 import { supabase } from "@/lib/supabase";
+import { toSlug } from "@/lib/slugify";
 
 export const revalidate = 3600; // Cache 1h
 
@@ -21,7 +22,7 @@ export default async function MarquesPage() {
     
     // CORRECTION ICI : Lien direct vers la page [marque]
     // Cela ouvrira la liste des familles (Gamme)
-    href: `/${brand.brand}`, 
+    href: `/${toSlug(brand.brand)}`, 
     
     letter: brand.brand.charAt(0),
   })).sort((a: any, b: any) => a.title.localeCompare(b.title));

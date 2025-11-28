@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Trophy, Loader2, Search, Crown, Zap, Leaf, Fuel, Cog, Luggage } from "lucide-react";
 import Link from "next/link";
+import { toSlug } from "@/lib/slugify";
 
 type RankingItem = {
   Marque: string;
@@ -193,7 +194,7 @@ export default function GenericTopRankingClient({
                             return (
                                 <div key={`${item.Marque}-${item.Modele}-${item.MY}`}>
                                     <Link 
-                                        href={`/${item.Marque}/${item.Famille}/${item.MY}/${item.Modele}`} 
+                                        href={`/${toSlug(item.Marque)}/${toSlug(item.Famille)}/${item.MY}/${toSlug(item.Modele)}`} 
                                         className="group py-3 px-3 md:px-6 flex flex-row items-center gap-3 md:gap-4 hover:bg-blue-50/30 transition-colors cursor-pointer relative overflow-hidden"
                                     >
                                         {/* FILIGRANE MY : right-24 */}
@@ -234,7 +235,7 @@ export default function GenericTopRankingClient({
 function PodiumStep({ item, rank }: { item: RankingItem, rank: number }) {
     const isFirst = rank === 1;
     return (
-        <Link href={`/${item.Marque}/${item.Famille}/${item.MY}/${item.Modele}`} className={cn("flex flex-col items-center relative group transition-transform hover:scale-105", isFirst ? "w-1/3 z-10 -mt-8" : "w-1/4 z-0 opacity-90 hover:opacity-100")}>
+        <Link href={`/${toSlug(item.Marque)}/${toSlug(item.Famille)}/${item.MY}/${toSlug(item.Modele)}`} className={cn("flex flex-col items-center relative group transition-transform hover:scale-105", isFirst ? "w-1/3 z-10 -mt-8" : "w-1/4 z-0 opacity-90 hover:opacity-100")}>
             {isFirst && <Crown size={32} className="text-yellow-400 mb-2 drop-shadow-sm animate-bounce" />}
             <div className={cn("bg-white border rounded-xl shadow-lg flex flex-col items-center w-full relative overflow-visible", isFirst ? "p-4 border-yellow-400 ring-4 ring-yellow-100" : "p-3 border-slate-200")}>
                 <div className={cn("absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center font-black text-xs text-white shadow-sm z-20", rank === 1 ? "bg-yellow-400" : rank === 2 ? "bg-slate-400" : "bg-orange-400")}>{rank}</div>

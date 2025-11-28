@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Header from "@/components/Header";
 import ScoreBadge from "@/components/ui/ScoreBadge";
 import ScoreDistribution from "@/components/dataviz/ScoreDistribution";
@@ -35,9 +35,12 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
   const [filterTrans, setFilterTrans] = useState<string>("all");
   const [minPower, setMinPower] = useState<string>("");
   const [maxPower, setMaxPower] = useState<string>("");
+  const [displayLimit, setDisplayLimit] = useState(50);  
 
   const availableYears = useMemo(() => [...new Set(initialReviews.map(r => r.MY))].sort((a,b) => b-a), [initialReviews]);
   const availableTypes = useMemo(() => [...new Set(initialReviews.map(r => r.Type))].sort(), [initialReviews]);
+
+
 
   const filteredReviews = useMemo(() => {
     return initialReviews.filter(r => {
@@ -54,6 +57,10 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
       return true;
     }).sort((a, b) => new Date(b.Test_date).getTime() - new Date(a.Test_date).getTime());
   }, [initialReviews, query, filterMY, filterType, filterTrans, minPower, maxPower]);
+    useEffect(() => {
+    setDisplayLimit(50);
+  }, [query, filterMY, filterType, filterTrans, minPower, maxPower]);
+    const visibleReviews = filteredReviews.slice(0, displayLimit);
 
   // --- CALCULS STATS ---
   const scores = filteredReviews.map(r => r.Score);
@@ -232,10 +239,27 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                 </div>
 
                 <ReviewsTableCompact 
-                    data={filteredReviews} 
+                    data={visibleReviews} 
                     hideBrand={true}
                 />
-            </div>
+{filteredReviews.length > displayLimit && (
+    <div className="mt-8 flex flex-col items-center gap-2">
+        
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            {displayLimit} sur {filteredReviews.length} affichés
+        </span>
+
+        <button 
+            onClick={() => setDisplayLimit(prev => prev + 50)}
+            className="px-6 py-2 bg-white border border-slate-200 text-slate-600 font-bold uppercase text-xs rounded-full hover:bg-slate-50 hover:border-slate-300 transition shadow-sm"
+        >
+            Afficher {Math.min(50, filteredReviews.length - displayLimit)} de plus
+        </button>
+    </div>
+)}
+
+        </div>
+
 
             {/* DROITE */}
             <div className="space-y-6">

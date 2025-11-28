@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Review } from "@/lib/types";
 import ScoreBadge from "../ui/ScoreBadge";
 import Powertrain from "../ui/Powertrain";
+import { toSlug } from "@/lib/slugify";
 
 // AJOUT DE LA PROP OPTIONNELLE 'hideBrand'
 export default function ReviewsTableCompact({ data, hideBrand = false }: { data: Review[], hideBrand?: boolean }) {
@@ -35,7 +36,7 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
 
               <td className="px-3 py-1 align-middle">
                 <Link 
-                  href={`/${row.Marque}/${row.Famille}/${row.MY}`}
+                  href={`/${toSlug(row.Marque)}/${toSlug(row.Famille)}/${row.MY}`}
                   className="text-xs font-mono font-bold text-slate-500 hover:text-blue-600 hover:underline decoration-blue-600 decoration-2 underline-offset-2 transition-all"
                 >
                   {row.MY}
@@ -45,7 +46,7 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
               <td className="px-3 py-1 align-middle">
                 <div className="flex flex-col justify-center">
                   <Link 
-                    href={`/${row.Marque}/${row.Famille}/${row.MY}/${row.Modele}`}
+                    href={`/${toSlug(row.Marque)}/${toSlug(row.Famille)}/${row.MY}/${toSlug(row.Modele)}`}
                     className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition leading-none mb-1 hover:underline decoration-blue-600 decoration-2 underline-offset-2 w-fit"
                   >
                     {/* CONDITION D'AFFICHAGE : Si hideBrand est true, on n'affiche que le modèle */}
@@ -62,7 +63,7 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
 
               <td className="px-3 py-1 align-middle">
                 <Link 
-                  href={`/${row.Marque}/${row.Famille}/${row.MY}/${row.Modele}/${row.Type}_${row.Puissance}_${row.Transmission}`}
+                  href={`/${toSlug(row.Marque)}/${toSlug(row.Famille)}/${row.MY}/${toSlug(row.Modele)}/${toSlug(row.Type)}_${row.Puissance}_${row.Transmission}`}
                   className="block w-fit hover:opacity-80 transition-opacity"
                 >
                   <Powertrain 

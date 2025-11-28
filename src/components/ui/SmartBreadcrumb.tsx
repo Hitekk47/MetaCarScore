@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
+import { toSlug } from "@/lib/slugify";
 
 type Props = {
   marque: string;
@@ -35,7 +36,7 @@ export default function SmartBreadcrumb({ marque, famille, my, modele, powertrai
           {famille ? (
              // MODIFICATION ICI : C'est maintenant un LIEN vers la bibliothèque de la marque
              <Link 
-                href={`/${marque}`} 
+                href={`/${toSlug(marque)}`} 
                 className="hover:text-white transition text-slate-500"
              >
                 {marque}
@@ -52,7 +53,7 @@ export default function SmartBreadcrumb({ marque, famille, my, modele, powertrai
         <>
           <ChevronRight size={10} className="text-slate-600" />
           {my ? (
-            <Link href={`/${marque}/${famille}`} className="hover:text-white transition text-slate-500">{famille}</Link>
+            <Link href={`/${toSlug(marque)}/${toSlug(famille)}`} className="hover:text-white transition text-slate-500">{famille}</Link>
           ) : <span className="text-white">{famille}</span>}
         </>
       )}
@@ -62,7 +63,7 @@ export default function SmartBreadcrumb({ marque, famille, my, modele, powertrai
         <>
           <ChevronRight size={10} className="text-slate-600" />
           {modele ? (
-            <Link href={`/${marque}/${famille}/${my}`} className="hover:text-white transition text-slate-500">MY {my}</Link>
+            <Link href={`/${toSlug(marque)}/${toSlug(famille)}/${my}`} className="hover:text-white transition text-slate-500">MY {my}</Link>
           ) : <span className="text-white">MY {my}</span>}
         </>
       )}
@@ -72,7 +73,7 @@ export default function SmartBreadcrumb({ marque, famille, my, modele, powertrai
         <>
           <ChevronRight size={10} className="text-slate-600" />
           {powertrain ? (
-            <Link href={`/${marque}/${famille}/${my}/${modele}`} className="hover:text-white transition text-slate-500">{modele}</Link>
+            <Link href={`/${toSlug(marque)}/${toSlug(famille)}/${my}/${toSlug(modele)}`} className="hover:text-white transition text-slate-500">{modele}</Link>
           ) : <span className="text-white">{modele}</span>}
         </>
       )}
