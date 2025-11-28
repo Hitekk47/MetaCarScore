@@ -12,7 +12,7 @@ const NAV_ITEMS = [
   { label: 'Marques', href: '/marques' },
   { label: 'Classements', href: '/tops' },
   { label: 'Top 100', href: '/tops/modeles' },
-  { label: 'Duels', href: '/duels' },
+  { label: 'Duel', href: '/duels' },
 ];
 
 export default function Header() {

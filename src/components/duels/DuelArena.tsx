@@ -20,7 +20,7 @@ type AggregatedSource = {
   rawScores: number[];
 };
 
-// --- HELPERS (Inchangés) ---
+// --- HELPERS ---
 function aggregateReviews(reviews: Review[]): Record<string, AggregatedSource> {
   const map: Record<string, AggregatedSource> = {};
   reviews.forEach((r) => {
@@ -53,7 +53,7 @@ function MiniScoreBar({ scores }: { scores: number[] }) {
     const negative = scores.filter(s => s < 50).length;
 
     return (
-        <div className="flex h-1.5 w-24 md:w-32 rounded-full overflow-hidden mt-3 bg-slate-100 transition-all duration-300 origin-top">
+        <div className="flex h-1.5 w-16 md:w-24 rounded-full overflow-hidden bg-white/50 border border-slate-200 transition-all duration-300">
             <div style={{ width: `${(positive / total) * 100}%` }} className="bg-emerald-500"></div>
             <div style={{ width: `${(mixed / total) * 100}%` }} className="bg-yellow-400"></div>
             <div style={{ width: `${(negative / total) * 100}%` }} className="bg-red-500"></div>
@@ -64,8 +64,8 @@ function MiniScoreBar({ scores }: { scores: number[] }) {
 function PowerBadge({ text }: { text: string | null }) {
     if (!text) return null;
     return (
-        <div className="flex items-center gap-1.5 mt-2 px-2 py-1 bg-slate-100 rounded text-[10px] font-bold text-slate-600 transition-all duration-300 origin-top">
-            <Gauge size={12} className="text-slate-400" />
+        <div className="flex items-center gap-1 mt-1 text-[9px] font-bold text-slate-500 whitespace-nowrap">
+            <Gauge size={10} className="text-slate-400" />
             {text}
         </div>
     );
@@ -76,29 +76,26 @@ function PowerBadge({ text }: { text: string | null }) {
 export default function DuelArena({ carA, carB }: Props) {
   
   // DETECTION DU STICKY MODE
-const [isCompact, setIsCompact] = useState(false);
-const triggerRef = useRef<HTMLDivElement | null>(null);
+  const [isCompact, setIsCompact] = useState(false);
+  const triggerRef = useRef<HTMLDivElement | null>(null);
 
-useEffect(() => {
-  const el = triggerRef.current;
-  if (!el) return;
+  useEffect(() => {
+    const el = triggerRef.current;
+    if (!el) return;
 
-  const observer = new IntersectionObserver(
-    ([entry]) => {
-        // Sentinelle visible => mode normal
-        // Sentinelle hors écran (vers le haut) => mode compact
-      setIsCompact(!entry.isIntersecting);
-    },
-    {
-      // Compense la hauteur du header site (64px)
-      rootMargin: "-64px 0px 0px 0px",
-      threshold: 0, // Déclenche dès que l'élément touche la limite
-    }
-  );
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsCompact(!entry.isIntersecting);
+      },
+      {
+        rootMargin: "-66px 0px 0px 0px", // 64px header + 2px
+        threshold: 0,
+      }
+    );
 
-  observer.observe(el);
-  return () => observer.disconnect();
-}, []);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const countA = carA.reviews.length;
   const countB = carB.reviews.length;
@@ -140,11 +137,11 @@ useEffect(() => {
     return { matches: matchesList, onlyA: onlyAList, onlyB: onlyBList, scoreA: finalScoreA, scoreB: finalScoreB, winsA: wA, winsB: wB, scoresArrayA: allScoresA, scoresArrayB: allScoresB };
   }, [carA.reviews, carB.reviews]);
 
-return (
+  return (
     <div className="relative isolate">
         
-        {/* Sentinelle : pixel invisible juste AVANT le sticky */}
-        <div ref={triggerRef} className="h-px w-full" />
+        {/* Sentinelle */}
+        <div ref={triggerRef} className="h-px w-full absolute -top-1 pointer-events-none opacity-0" />
 
         <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -153,21 +150,18 @@ return (
             className="w-full bg-white rounded-xl shadow-sm border border-slate-200"
         >
         
-        {/* STICKY HEADER */}
+        {/* === STICKY HEADER (BLANC) === */}
         <div className={cn(
-            "sticky top-16 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm grid grid-cols-3 px-2 md:px-6 rounded-t-xl transition-all duration-500 ease-in-out overflow-hidden",
-            // MODE COMPACT : Padding réduit
+            "sticky top-16 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm grid grid-cols-3 px-2 md:px-6 rounded-t-xl transition-[padding,height] duration-500 ease-in-out overflow-hidden will-change-[padding,height]",
             isCompact ? "py-2 items-center" : "py-6"
         )}>
             
-            {/* --- CAR A (GAUCHE) --- */}
+            {/* CAR A */}
             <div className={cn("flex flex-col items-center justify-start text-center relative z-10 transition-all", !isValidA && "opacity-80")}>
-                
-                {/* TITRE A */}
-                <div className={cn("w-full flex items-end justify-center transition-all duration-300", isCompact ? "h-auto mb-1" : "h-10 md:h-12 mb-3")}>
+                <div className={cn("w-full flex items-end justify-center transition-all duration-500", isCompact ? "h-6 mb-1" : "h-10 md:h-12 mb-3")}>
                     <Link href={carA.url} className="block group">
                         <h2 className={cn(
-                            "font-bold text-slate-500 uppercase tracking-wider w-full leading-tight group-hover:text-blue-600 transition-colors",
+                            "font-bold text-slate-500 uppercase tracking-wider w-full leading-tight group-hover:text-blue-600 transition-all duration-300",
                             isCompact ? "text-[9px] line-clamp-1" : "text-[10px] md:text-xs line-clamp-2"
                         )}>
                             <span className="text-slate-400 mr-1 font-mono">{carA.my}</span>
@@ -176,22 +170,29 @@ return (
                     </Link>
                 </div>
                 
-                {/* BADGE A : XL en mode normal, SM en mode compact */}
-                <ScoreBadge score={isValidA ? scoreA : 0} size={isCompact ? "md" : "xl"} reviewCount={countA} />
+                <div className="transition-transform duration-300 origin-center">
+                    <ScoreBadge score={isValidA ? scoreA : 0} size={isCompact ? "md" : "xl"} reviewCount={countA} />
+                </div>
                 
-                {/* EXTRAS : Masqués en mode compact */}
-                <div className={cn("flex flex-col items-center transition-all duration-300", isCompact ? "h-0 opacity-0 overflow-hidden" : "h-auto opacity-100")}>
-                    {isValidA && <MiniScoreBar scores={scoresArrayA} />}
-                    <PowerBadge text={getPowerRange(carA.reviews)} />
+                {/* LES EXTRAS DISPARAISSENT EN MODE COMPACT */}
+                <div className={cn(
+                    "flex flex-col items-center transition-all duration-500 ease-in-out overflow-hidden", 
+                    isCompact ? "max-h-0 opacity-0 mt-0" : "max-h-24 opacity-100 mt-2"
+                )}>
+                    {isValidA && (
+                        <>
+                            <div className="mt-3"><MiniScoreBar scores={scoresArrayA} /></div>
+                            <div className="mt-1 px-2 py-1 bg-slate-100 rounded text-[10px] font-bold text-slate-600 flex items-center gap-1.5"><Gauge size={12} className="text-slate-400" />{getPowerRange(carA.reviews)}</div>
+                        </>
+                    )}
                 </div>
             </div>
 
-            {/* --- VS (CENTRE) --- */}
+            {/* VS CENTER */}
             <div className="flex flex-col items-center justify-center relative z-10 transition-all">
-                <span className={cn("font-black text-slate-200 italic pr-1 select-none transition-all", isCompact ? "text-xl" : "text-2xl md:text-4xl")}>VS</span>
-                
+                <span className={cn("font-black text-slate-200 italic pr-1 select-none transition-all duration-300", isCompact ? "text-xl" : "text-2xl md:text-4xl")}>VS</span>
                 {matches.length > 0 && (
-                    <div className={cn("font-bold font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shadow-sm transition-all", isCompact ? "mt-1 text-[8px]" : "mt-2 text-[9px]")}>
+                    <div className={cn("font-bold font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shadow-sm transition-all duration-300", isCompact ? "mt-1 text-[8px]" : "mt-2 text-[9px]")}>
                         <span className={winsA > winsB ? "text-emerald-600" : ""}>{winsA}</span>
                         <span className="mx-1">-</span>
                         <span className={winsB > winsA ? "text-emerald-600" : ""}>{winsB}</span>
@@ -199,14 +200,12 @@ return (
                 )}
             </div>
 
-            {/* --- CAR B (DROITE) --- */}
+            {/* CAR B */}
             <div className={cn("flex flex-col items-center justify-start text-center relative z-10 transition-all", !isValidB && "opacity-80")}>
-                
-                {/* TITRE B */}
-                <div className={cn("w-full flex items-end justify-center transition-all duration-300", isCompact ? "h-auto mb-1" : "h-10 md:h-12 mb-3")}>
+                <div className={cn("w-full flex items-end justify-center transition-all duration-500", isCompact ? "h-6 mb-1" : "h-10 md:h-12 mb-3")}>
                     <Link href={carB.url} className="block group">
                         <h2 className={cn(
-                            "font-bold text-slate-500 uppercase tracking-wider w-full leading-tight group-hover:text-blue-600 transition-colors",
+                            "font-bold text-slate-500 uppercase tracking-wider w-full leading-tight group-hover:text-blue-600 transition-all duration-300",
                             isCompact ? "text-[9px] line-clamp-1" : "text-[10px] md:text-xs line-clamp-2"
                         )}>
                             <span className="text-slate-400 mr-1 font-mono">{carB.my}</span>
@@ -214,27 +213,64 @@ return (
                         </h2>
                     </Link>
                 </div>
-                
-                {/* BADGE B */}
-                <ScoreBadge score={isValidB ? scoreB : 0} size={isCompact ? "md" : "xl"} reviewCount={countB} />
-                
-                {/* EXTRAS */}
-                <div className={cn("flex flex-col items-center transition-all duration-300", isCompact ? "h-0 opacity-0 overflow-hidden" : "h-auto opacity-100")}>
-                    {isValidB && <MiniScoreBar scores={scoresArrayB} />}
-                    <PowerBadge text={getPowerRange(carB.reviews)} />
+                <div className="transition-transform duration-300 origin-center">
+                    <ScoreBadge score={isValidB ? scoreB : 0} size={isCompact ? "md" : "xl"} reviewCount={countB} />
+                </div>
+                <div className={cn(
+                    "flex flex-col items-center transition-all duration-500 ease-in-out overflow-hidden", 
+                    isCompact ? "max-h-0 opacity-0 mt-0" : "max-h-24 opacity-100 mt-2"
+                )}>
+                    {isValidB && (
+                        <>
+                            <div className="mt-3"><MiniScoreBar scores={scoresArrayB} /></div>
+                            <div className="mt-1 px-2 py-1 bg-slate-100 rounded text-[10px] font-bold text-slate-600 flex items-center gap-1.5"><Gauge size={12} className="text-slate-400" />{getPowerRange(carB.reviews)}</div>
+                        </>
+                    )}
                 </div>
             </div>
-
         </div>
 
-        {/* --- LISTE DES ESSAIS --- */}
-        <div className="divide-y divide-slate-100">
-            <div className="bg-slate-50 py-2 text-center border-b border-slate-100">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
-                    <Trophy size={12} /> Face-à-Face ({matches.length})
-                </span>
-            </div>
+        {/* === SECTION HEADER (GRIS) : DEVIENT INTELLIGENT === */}
+        <div className={cn(
+            "bg-slate-50 border-b border-slate-100 transition-all duration-500 overflow-hidden",
+            // J'utilise ton py-24, mais j'ajoute 'items-end' et 'pb-4' pour bien coller en bas
+            isCompact ? "h-48 items-end pb-2" : "h-10 items-center" 
+        )}>
+            {/* CORRECTION ICI : h-full + items-end */}
+            <div className="grid grid-cols-3 px-2 md:px-6 h-full items-end">
+                
+                {/* COLONNE GAUCHE */}
+                <div className={cn("flex flex-col items-center justify-end pb-1 transition-all duration-500", isCompact ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none")}>
+                    {isValidA && isCompact && (
+                        <>
+                            <PowerBadge text={getPowerRange(carA.reviews)} />
+                            <MiniScoreBar scores={scoresArrayA} />
+                        </>
+                    )}
+                </div>
 
+                {/* COLONNE CENTRE */}
+                <div className="flex flex-col items-center justify-center h-full pb-1">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
+                        <Trophy size={12} /> Face-à-Face ({matches.length})
+                    </span>
+                </div>
+
+                {/* COLONNE DROITE */}
+                <div className={cn("flex flex-col items-center justify-end pb-1 transition-all duration-500", isCompact ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none")}>
+                    {isValidB && isCompact && (
+                        <>
+                            <PowerBadge text={getPowerRange(carB.reviews)} />
+                            <MiniScoreBar scores={scoresArrayB} />
+                        </>
+                    )}
+                </div>
+
+            </div>
+        </div>
+
+        {/* === LISTE DES ESSAIS === */}
+        <div className="divide-y divide-slate-100">
             {matches.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 text-sm italic">Aucune source commune.</div>
             ) : (

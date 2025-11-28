@@ -213,7 +213,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
     setIsOpen(false); // On ferme le menu
     inputRef.current?.focus(); // On remet le focus dans le champ pour retaper direct
   };  
-
+  const visibleHistory = history.filter(h => !modelOnly || h.Type !== 'family');
   // --- RENDU ---
 
   return (
@@ -293,13 +293,14 @@ export default function SearchBar({ placeholder, variant = "header", className, 
             )}
 
             {/* HISTORIQUE */}
-            {query.length === 0 && history.length > 0 && isOpen && (
+            {query.length === 0 && visibleHistory.length > 0 && isOpen && (
               <>
                  <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50 mb-1 flex items-center gap-2">
                   <History size={12} />
                   <span>Dernières recherches</span>
                 </div>
-                {history.map((res, idx) => (
+                {/* On map sur visibleHistory */}
+                {visibleHistory.map((res, idx) => (
                   <ResultItem 
                     key={`hist-${idx}`} 
                     res={res} 
@@ -336,29 +337,45 @@ export default function SearchBar({ placeholder, variant = "header", className, 
 // SOUS COMPOSANT RESULT ITEM (Inchangé)
 function ResultItem({ res, onClick, isActive, isHistory = false }: { res: SearchResult, onClick: () => void, isActive: boolean, isHistory?: boolean }) {
   const isFamily = res.Type === 'family';
+  
   return (
     <div onClick={onClick} className={cn("px-4 py-3 cursor-pointer flex items-center justify-between group/item transition-colors border-b border-slate-50 last:border-0", isActive ? "bg-blue-50" : (isFamily ? "bg-slate-50/50 hover:bg-blue-50" : "hover:bg-slate-50"))}>
       
-      {/* CONTENEUR GAUCHE : On ajoute 'w-full' pour qu'il pousse jusqu'au chevron */}
+      {/* CONTENEUR GAUCHE */}
       <div className="flex items-center gap-3 overflow-hidden w-full relative">
           
-          <div className={cn("w-8 h-8 rounded flex items-center justify-center transition shrink-0 relative z-20", isHistory ? "bg-slate-100 text-slate-400" : (isFamily ? "bg-slate-900 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-400 group-hover/item:text-blue-600 group-hover/item:border-blue-200"))}>
-              {isHistory ? <Clock size={16} /> : (isFamily ? <Layers size={16} /> : <CarFront size={16} />)}
+          {/* ICONE : Modifiée pour intégrer le badge historique */}
+          <div className={cn(
+              "w-8 h-8 rounded flex items-center justify-center transition shrink-0 relative z-20",
+              // On garde le style sémantique (Noir pour Gamme, Blanc pour Modèle) même en historique
+              isFamily ? "bg-slate-900 text-white shadow-sm" : "bg-white border border-slate-200 text-slate-400 group-hover/item:text-blue-600 group-hover/item:border-blue-200"
+          )}>
+              {/* L'icône principale est toujours sémantique */}
+              {isFamily ? <Layers size={16} /> : <CarFront size={16} />}
+
+              {/* Badge Horloge superposé si historique */}
+              {isHistory && (
+                  <div className="absolute -bottom-1 -right-1 bg-slate-100 rounded-full p-[2px] border-[1.5px] border-white shadow-sm text-slate-400 flex items-center justify-center">
+                      <Clock size={8} strokeWidth={3} />
+                  </div>
+              )}
           </div>
           
-          {/* CONTENEUR TEXTE : On ajoute 'w-full' pour que le 'right-0' aille bien au bout */}
+          {/* CONTENEUR TEXTE */}
           <div className="truncate w-full relative z-10">
               {isFamily ? (
                 <div className="flex flex-col">
-                    {!isHistory && <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gamme</span>}
-                    <span className={cn("font-black text-slate-900 text-sm uppercase truncate", isHistory && "font-medium text-slate-600")}>{res.Marque} {res.Famille}</span>
+                    {/* J'ai retiré !isHistory pour afficher "GAMME" même dans l'historique */}
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gamme</span>
+                    <span className={cn("font-black text-slate-900 text-sm uppercase truncate", isHistory && "font-medium text-slate-600")}>
+                        {res.Marque} {res.Famille}
+                    </span>
                 </div>
               ) : (
                 <div className="flex flex-col relative w-full">
                     
-                    {/* LE FILIGRANE */}
+                    {/* LE FILIGRANE (Inchangé) */}
                     {res.MaxMY && !isHistory && (
-                        // MODIFICATION ICI : 'right-2' au lieu de 'right-0'
                         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-4xl font-black text-slate-100 -z-10 select-none pointer-events-none italic tracking-tighter">
                             {res.MaxMY}
                         </span>
@@ -375,7 +392,7 @@ function ResultItem({ res, onClick, isActive, isHistory = false }: { res: Search
           </div>
       </div>
 
-      {/* CHEVRON : z-20 pour passer au dessus du filigrane si besoin */}
+      {/* CHEVRON */}
       <div className="pl-4 shrink-0 relative z-20">
         {isFamily && !isHistory ? <span className="text-[10px] font-bold bg-white border border-slate-200 px-2 py-1 rounded text-slate-600 group-hover/item:text-blue-600 group-hover/item:border-blue-200 transition whitespace-nowrap">Vue d'ensemble</span> : <ChevronRight size={14} className="text-slate-300 group-hover/item:text-blue-600 transition" />}
       </div>

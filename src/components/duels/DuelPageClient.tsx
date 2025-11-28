@@ -212,7 +212,7 @@ function FighterSlot({ fighter, side, onSelect, onRemove }: { fighter: Fighter |
     }
 
     return (
-        <div className="flex flex-col h-full min-h-[160px]">
+        <div className={cn("flex flex-col h-full min-h-[160px]",!isRight ? "relative z-20" : "relative z-10")}>
             <div className="flex-1 border border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center p-4 md:p-6 hover:border-blue-400 hover:bg-slate-50/50 transition-all group">
                 <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-slate-300 mb-3 group-hover:text-blue-500 transition-colors font-black text-sm md:text-base border border-slate-100">
                     {isRight ? "2" : "1"}

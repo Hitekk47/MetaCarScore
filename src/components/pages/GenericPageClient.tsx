@@ -293,7 +293,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                              href="/duels"
                              className="block w-full text-center py-3 bg-slate-800 text-slate-400 rounded-lg font-bold uppercase text-sm hover:bg-slate-700 transition"
                         >
-                            Aller au Comparateur
+                            Mode Duel
                         </Link>
                     )}
                 </div>
