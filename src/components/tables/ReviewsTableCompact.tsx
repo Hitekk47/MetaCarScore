@@ -21,7 +21,7 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
             <th className="py-2 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-16">MY</th>
             <th className="py-2 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Modèle / Finition</th>
             <th className="py-2 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Groupe Motopropulseur</th>
-            <th className="py-2 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:table-cell">Source</th>
+            <th className="py-2 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Source</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -74,7 +74,7 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
                 </Link>
               </td>
 
-              <td className="px-3 py-1 hidden md:table-cell align-middle">
+              <td className="px-3 py-1 align-middle">
                 <div className="flex flex-col items-start justify-center">
                   <span className="text-[10px] font-bold text-slate-700 uppercase">{row.Testeur}</span>
                   <span className="text-[10px] text-slate-400 font-mono">
