@@ -16,50 +16,28 @@ const average = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
 
 export default async function Home() {
   
-  // --- OPTIMISATION 2 : REQUÊTES ---
-  const [recentReq, statsReq] = await Promise.all([
-    supabase.from('reviews').select('*').order('Test_date', { ascending: false }).limit(1500),
-    supabase.rpc('get_homepage_stats')
+  // 1. APPELS PARALLÈLES
+  const [trendingReq, statsReq, latestReq] = await Promise.all([
+    // A. LE CARROUSEL (Via la nouvelle fonction SQL)
+    supabase.rpc('get_trending_models', { limit_val: 15 }),
+
+    // B. LES STATS GLOBALES
+    supabase.rpc('get_homepage_stats'),
+
+    // C. LES DERNIERS AJOUTS (Tableau du bas)
+    supabase.from('reviews').select('*').order('Test_date', { ascending: false }).order('id', { ascending: false }).limit(10)
   ]);
 
-  const reviews = (recentReq.data || []) as Review[];
+  // Plus besoin de toute la logique de regroupement JS !
+  // La BDD nous renvoie directement le format parfait pour le carrousel.
+  // Note: On doit caster car TypeScript ne connait pas le retour RPC par défaut
+  const metaScores = (trendingReq.data || []) as any[]; 
+
   const stats = statsReq.data as { total_reviews: number, unique_models: number } | null;
   const totalEssais = stats?.total_reviews || 20000;
   const totalModeles = stats?.unique_models || 1200;
 
-  // --- LOGIQUE MÉTIER (Groupement) ---
-  const modelGroups: Record<string, { 
-    Marque: string; Famille: string; Modele: string; MY: number; 
-    Scores: number[]; Powers: number[]; Dates: string[] 
-  }> = {};
-
-  reviews.forEach(r => {
-    const key = `${r.Marque}|${r.MY}|${r.Modele}`;
-    if (!modelGroups[key]) {
-      modelGroups[key] = {
-        Marque: r.Marque, Famille: r.Famille, Modele: r.Modele, MY: r.MY,
-        Scores: [], Powers: [], Dates: []
-      };
-    }
-    modelGroups[key].Scores.push(r.Score);
-    modelGroups[key].Powers.push(r.Puissance);
-    modelGroups[key].Dates.push(r.Test_date);
-  });
-  
-  const metaScores = Object.values(modelGroups)
-    .map(group => {
-      const sortedDatesAsc = group.Dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
-      return {
-        Marque: group.Marque, Famille: group.Famille, Modele: group.Modele, MY: group.MY,
-        AvgScore: average(group.Scores), ReviewCount: group.Scores.length,
-        FirstTestDate: sortedDatesAsc[0], MinPower: Math.min(...group.Powers), MaxPower: Math.max(...group.Powers)
-      };
-    })
-    .filter(item => item.ReviewCount >= 3)
-    .sort((a, b) => new Date(b.FirstTestDate).getTime() - new Date(a.FirstTestDate).getTime())
-    .slice(0, 15);
-
-  const latestAdditions = reviews.slice(0, 10);
+  const latestAdditions = (latestReq.data || []) as Review[];
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">

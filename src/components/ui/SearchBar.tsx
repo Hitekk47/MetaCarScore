@@ -148,7 +148,10 @@ export default function SearchBar({ placeholder, variant = "header", className, 
     async function fetchResults() {
       if (debouncedQuery.length === 0) {
         setResults([]);
-        if (history.length > 0) setIsOpen(true); 
+        if (history.length > 0 && document.activeElement === inputRef.current) {
+           setIsOpen(true); 
+        }
+        // --------------------
         return;
       }
       
@@ -185,6 +188,8 @@ export default function SearchBar({ placeholder, variant = "header", className, 
 
   const handleSelect = (res: SearchResult) => {
     addToHistory(res);
+    inputRef.current?.blur();
+    setIsOpen(false);
     if (onSelect) {
       // Mode "Sélecteur" (pour le Duel)
       onSelect(res);
@@ -202,6 +207,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
         }
       }
       setIsOpen(false);
+      inputRef.current?.blur();
       setQuery("");
     }
   };

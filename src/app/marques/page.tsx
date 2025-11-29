@@ -10,9 +10,11 @@ export const metadata = {
 };
 
 export default async function MarquesPage() {
-  // On utilise le RPC existant qui renvoie les marques avec assez d'essais
-  // On met min_date à null pour tout avoir
-  const { data } = await supabase.rpc('get_brand_ranking', { min_date: null });
+
+  const { data } = await supabase.rpc('get_brand_ranking_v3', { 
+    min_my: null,
+    min_count: 1
+  });
 
   // Transformation des données pour le composant générique
   const items: DirectoryItem[] = (data || []).map((brand: any) => ({
@@ -20,8 +22,6 @@ export default async function MarquesPage() {
     title: brand.brand,
     subtitle: `${brand.review_count} Essai${brand.review_count > 1 ? 's' : ''}`,
     
-    // CORRECTION ICI : Lien direct vers la page [marque]
-    // Cela ouvrira la liste des familles (Gamme)
     href: `/${toSlug(brand.brand)}`, 
     
     letter: brand.brand.charAt(0),
