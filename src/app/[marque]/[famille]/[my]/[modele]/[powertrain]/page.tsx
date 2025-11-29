@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { Review } from "@/lib/types";
 import GenericPageClient from "@/components/pages/GenericPageClient";
+import { Metadata } from 'next';
 
 export const revalidate = 3600;
 
@@ -15,28 +16,28 @@ type PageProps = {
   }>;
 };
 
+// 1. MÉTADONNÉES
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { marque, famille, my, modele, powertrain } = await params;
+  return {
+    alternates: {
+      canonical: `https://metacarscore.vercel.app/${marque}/${famille}/${my}/${modele}/${powertrain}`,
+    },
+  };
+}
+
 export default async function PowertrainPage({ params }: PageProps) {
-  // 1. Récupération des slugs (URL)
+  // 2. Décodage Slugs (Marque/Famille/Modele)
   const { marque: sMarque, famille: sFamille, my, modele: sModele, powertrain: sPowertrain } = await params;
 
-  // ---------------------------------------------------------
-  // A. DÉCODAGE EN CASCADE (WATERFALL) - MARQUE / FAMILLE / MODÈLE
-  // ---------------------------------------------------------
-  
-  // 1. Vraie Marque
   const { data: dMarque } = await supabase.rpc('find_brand_by_slug', { slug_input: sMarque });
   const realMarque = dMarque?.[0]?.Marque;
-  if (!realMarque) return <div>Marque introuvable</div>; // ou notFound()
+  if (!realMarque) return notFound();
 
-  // 2. Vraie Famille
-  const { data: dFamille } = await supabase.rpc('find_family_by_slug', { 
-    real_brand_name: realMarque, 
-    family_slug: sFamille 
-  });
+  const { data: dFamille } = await supabase.rpc('find_family_by_slug', { real_brand_name: realMarque, family_slug: sFamille });
   const realFamille = dFamille?.[0]?.Famille;
-  if (!realFamille) return <div>Famille introuvable</div>;
+  if (!realFamille) return notFound();
 
-  // 3. Vrai Modèle
   const { data: dModele } = await supabase.rpc('find_model_by_slug', {
     real_brand_name: realMarque,
     real_family_name: realFamille,
@@ -44,36 +45,20 @@ export default async function PowertrainPage({ params }: PageProps) {
     model_slug: sModele
   });
   const realModele = dModele?.[0]?.Modele;
-  if (!realModele) return <div>Modèle introuvable</div>;
+  if (!realModele) return notFound();
 
-  // ---------------------------------------------------------
-  // B. DÉCODAGE DU SLUG POWERTRAIN
-  // ---------------------------------------------------------
-  // Slug attendu : "type-slug_puissance_transmission"
-  // Exemple : "hybride-essence_225_8a" -> Type="hybride-essence", Power="225", Trans="8a"
-
+  // 3. Décodage Powertrain
   const parts = sPowertrain.split('_');
-  
-  // Sécurité : il faut au moins 3 segments (Type + Puissance + Transmission)
   if (parts.length < 3) return notFound();
+  const slugTrans = parts.pop()!;
+  const powerStr = parts.pop()!;
+  const slugType = parts.join('_');
 
-  const slugTrans = parts.pop()!;   // ex: "8a"
-  const powerStr = parts.pop()!;    // ex: "225"
-  const slugType = parts.join('_'); // ex: "hybride-essence" (recolle si underscores dans le type, mais rare avec slugify)
+  const { data: dType } = await supabase.rpc('find_type_by_slug', { type_slug: slugType });
+  const realType = dType?.[0]?.Type;
+  if (!realType) return notFound(); // Message erreur remplacé par notFound pour le SEO
 
-  // ---------------------------------------------------------
-  // C. VALIDATION DU TYPE MOTEUR VIA RPC
-  // ---------------------------------------------------------
-  const { data: dType } = await supabase.rpc('find_type_by_slug', { 
-    type_slug: slugType 
-  });
-  const realType = dType?.[0]?.Type; // ex: "Hybride essence" (Nom officiel BDD)
-
-  if (!realType) return <div>Type moteur introuvable</div>;
-
-  // ---------------------------------------------------------
-  // D. REQUÊTE FINALE
-  // ---------------------------------------------------------
+  // 4. Chargement Data
   const { data: rawData, error } = await supabase
     .from('reviews')
     .select('*')
@@ -81,27 +66,56 @@ export default async function PowertrainPage({ params }: PageProps) {
     .eq('Famille', realFamille)
     .eq('MY', my)
     .eq('Modele', realModele)
-    // Filtres Powertrain
-    .eq('Type', realType)             // Nom strict (ex: "Hybride essence")
+    .eq('Type', realType)
     .eq('Puissance', parseInt(powerStr, 10))
-    .ilike('Transmission', slugTrans) // "8a" matchera "8A" ou "8a"
+    .ilike('Transmission', slugTrans)
     .order('Test_date', { ascending: false });
 
-  if (error || !rawData || rawData.length === 0) {
-    notFound();
-  }
+  if (error || !rawData || rawData.length === 0) notFound();
 
-  // ---------------------------------------------------------
-  // E. RENDU
-  // ---------------------------------------------------------
+  const reviews = rawData as Review[];
+
+  // 5. Calcul Score & JSON-LD
+  const totalScore = reviews.reduce((acc, r) => acc + r.Score, 0);
+  const avgScore = Math.round(totalScore / reviews.length);
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Car',
+    name: `${realMarque} ${realModele} ${realType} ${powerStr}ch (${my})`,
+    brand: { '@type': 'Brand', name: realMarque },
+    model: realModele,
+    productionDate: my,
+    vehicleEngine: {
+        '@type': 'EngineSpecification',
+        name: `${powerStr} ch ${realType}`
+    },
+    vehicleTransmission: slugTrans.toUpperCase(), // ex: "7A"
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: avgScore,
+      bestRating: "100",
+      worstRating: "0",
+      ratingCount: reviews.length,
+    }
+  };
+
+  // 6. Rendu
   return (
-    <GenericPageClient 
-      initialReviews={rawData as Review[]} 
-      marque={realMarque}
-      famille={realFamille}
-      my={my}
-      modele={realModele}
-      level="powertrain"
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <GenericPageClient 
+        initialReviews={reviews} 
+        marque={realMarque}
+        famille={realFamille}
+        my={my}
+        modele={realModele}
+        powertrain={sPowertrain} // On passe le slug original
+        level="powertrain"
+      />
+    </>
   );
 }
