@@ -18,7 +18,7 @@ export default async function MarquesPage() {
   const items: DirectoryItem[] = (data || []).map((brand: any) => ({
     id: brand.brand,
     title: brand.brand,
-    subtitle: `${brand.review_count} Essais`,
+    subtitle: `${brand.review_count} Essai${brand.review_count > 1 ? 's' : ''}`,
     
     // CORRECTION ICI : Lien direct vers la page [marque]
     // Cela ouvrira la liste des familles (Gamme)

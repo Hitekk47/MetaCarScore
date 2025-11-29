@@ -63,7 +63,7 @@ export default async function BrandPage({ params }: PageProps) {
   const items: DirectoryItem[] = data.map((item: any) => ({
     id: item.famille,
     title: item.famille,
-    subtitle: `${item.review_count} Essais`,
+    subtitle: `${item.review_count} Essai${item.review_count > 1 ? 's' : ''}`,
     
     // IMPORTANT : On slugifie les deux parties de l'URL sortante
     href: `/${toSlug(realMarque)}/${toSlug(item.famille)}`,

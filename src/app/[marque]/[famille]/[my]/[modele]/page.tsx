@@ -77,7 +77,7 @@ export default async function ModelePage({ params }: PageProps) {
     },
     review: reviews.slice(0, 5).map(r => ({
         '@type': 'Review',
-        author: { '@type': 'Person', name: r.Testeur },
+        author: { '@type': 'Organization', name: r.Testeur },
         datePublished: r.Test_date,
         reviewRating: { '@type': 'Rating', ratingValue: r.Score, bestRating: "100", worstRating: "0" },
     }))

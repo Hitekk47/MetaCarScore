@@ -153,7 +153,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                             {/* BLOC ESSAIS */}
                             <div className="flex items-center gap-2">
                                 <motion.div key={filteredReviews.length} initial={{ scale: 1.2 }} animate={{ scale: 1 }} className={cn("px-2 py-0.5 rounded text-xs font-bold uppercase border transition-colors duration-300", isFiltered ? "bg-slate-900 text-orange-500 border-orange-500" : "bg-slate-800 text-slate-400 border-slate-700")}>
-                                    {filteredReviews.length} Essais
+                                    {filteredReviews.length} Essai{filteredReviews.length > 1 ? 's' : ''}
                                 </motion.div>
                             </div>
                         </motion.div>
