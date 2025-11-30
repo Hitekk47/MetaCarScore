@@ -1,5 +1,5 @@
 import Header from "@/components/Header";
-import { Scale, ShieldCheck, Calculator, Calendar, Split, Repeat, Info, LucideIcon } from "lucide-react";
+import { Scale, ShieldCheck, Calculator, Calendar, Split, Repeat, Info, LucideIcon, History  } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const metadata = {
@@ -80,7 +80,19 @@ export default function AboutPage() {
                 title="Modèle ou Finition ?"
                 content="Nous suivons la hiérarchie constructeur. Si la carrosserie change, c'est un modèle. Sinon, c'est une finition. Ex: 'John Cooper Works' est une finition selon Mini, pas un modèle à part."
             />
-
+            <div className="md:col-span-2 lg:col-span-1 bg-slate-50 border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col justify-center">
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 bg-slate-200 text-slate-600 rounded-lg flex items-center justify-center shrink-0">
+                        <History size={18} />
+                    </div>
+                    <h3 className="text-sm font-bold uppercase tracking-tight text-slate-900">
+                        Périmètre Temporel
+                    </h3>
+                </div>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                    La collecte des données MetaCarScore a débuté en <strong>Juillet 2019</strong>. Les véhicules dont la carrière s'est arrêtée avant cette date sont absents ou incomplets, faute d'essais contemporains numérisés et compatibles avec nos critères.
+                </p>
+            </div>
             {/* 7. DOUBLONS (Pourquoi plusieurs essais ?) */}
             <div className="md:col-span-2 lg:col-span-3 bg-white border border-slate-200 p-8 rounded-2xl shadow-sm">
                 <div className="flex items-start gap-4">
@@ -117,7 +129,6 @@ export default function AboutPage() {
                     </div>
                 </div>
             </div>
-
         </div>
       </main>
     </div>
