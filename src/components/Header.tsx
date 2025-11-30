@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, HelpCircle } from 'lucide-react';
 import SearchBar from "./ui/SearchBar";
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -57,11 +57,7 @@ export default function Header() {
               </Link>
           </div>
 
-          {/* 
-             NAVIGATION DESKTOP (Centre) 
-             CORRECTIF : Passage de 'md:flex' à 'lg:flex' 
-             Cela cache le menu sur tablette pour éviter le chevauchement.
-          */}
+          {/* NAVIGATION DESKTOP (Centre) */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:flex items-center gap-6 xl:gap-8 z-30">
             {NAV_ITEMS.map((item) => {
               const isActive = pathname.startsWith(item.href) && item.href !== '/';
@@ -91,12 +87,15 @@ export default function Header() {
               )}>
                   <SearchBar variant="header" placeholder="Chercher..." />
               </div>
+              <Link 
+                  href="/about"
+                  className="hidden lg:flex w-9 h-9 items-center justify-center rounded-full border border-slate-200 text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all pointer-events-auto ml-2"
+                  title="Méthodologie"
+              >
+                  <HelpCircle size={18} />
+              </Link>
 
-              {/* 
-                 BOUTON MENU MOBILE 
-                 CORRECTIF : Passage de 'md:hidden' à 'lg:hidden'
-                 Le burger apparait donc jusqu'aux écrans < 1024px.
-              */}
+              {/* BOUTON MENU MOBILE */}
               <button 
                 onClick={() => setIsMobileMenuOpen(true)}
                 className="lg:hidden p-2 text-slate-900 hover:bg-slate-100 rounded-full transition-colors pointer-events-auto"
@@ -131,8 +130,16 @@ export default function Header() {
                   <p className="text-xs font-bold text-slate-400 uppercase mb-4">Recherche rapide</p>
                   <SearchBar variant="header" placeholder="Une marque, un modèle..." />
                </div>
+                  <Link 
+                        href="/about" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 text-sm font-bold uppercase tracking-wide text-slate-400 border-t border-slate-100 pt-6 mt-2"
+                  >
+                        <HelpCircle size={18} />
+                        <span>Notre Méthodologie</span>
+                  </Link>
             </div>
-            <div className="p-6 bg-slate-50 text-center text-xs text-slate-400">© 2025 MetaCarScore. No Images. Pure Data.</div>
+            <div className="p-6 bg-slate-50 text-center text-xs text-slate-400">© {new Date().getFullYear()} MetaCarScore. No Images. Pure Data.</div>
           </motion.div>
         )}
       </AnimatePresence>

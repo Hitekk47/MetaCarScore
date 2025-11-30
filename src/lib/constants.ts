@@ -47,5 +47,11 @@ export const TOPS_MENU = [
     href: "/tops/hybride",
     priority: 0.9
   },
+  {
+    id: "convertible",
+    title: "Top Découvrables",
+    href: "/tops/decouvrables",
+    priority: 0.9
+  },
 
 ];

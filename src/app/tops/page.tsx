@@ -64,7 +64,7 @@ export default function TopsDirectoryPage() {
       iconName: "cog",
       colorClass: "bg-slate-100 text-slate-600 border-slate-300"
     },
-{
+    {
       id: "breaks",
       title: "Breaks & SW",
       subtitle: "Volume & Style",
@@ -72,6 +72,14 @@ export default function TopsDirectoryPage() {
       iconName: "luggage",
       colorClass: "bg-cyan-50 text-cyan-700 border-cyan-200 hover:border-cyan-300"
     },
+  {
+    id: "convertible",
+    title: "Découvrables",
+    subtitle: "Cabriolets & Roadsters",
+    href: "/tops/decouvrables",
+    iconName: "sun", // Soleil
+    colorClass: "bg-orange-50 text-orange-600 border-orange-200"
+  },
   ];
 
   return (

@@ -6,7 +6,7 @@ import ScoreBadge from "@/components/ui/ScoreBadge";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Trophy, Loader2, Search, Crown, Zap, Leaf, Fuel, Cog, Luggage } from "lucide-react";
+import { Trophy, Loader2, Search, Crown, Zap, Leaf, Fuel, Cog, Luggage, Sun } from "lucide-react";
 import Link from "next/link";
 import { toSlug } from "@/lib/slugify";
 
@@ -24,8 +24,8 @@ type TimeRange = '1y' | '5y' | 'all';
 type Props = {
   title: string;
   subtitle: string;
-  iconType: 'trophy' | 'zap' | 'leaf' | 'fuel' | 'diesel' | 'manual' | 'luggage'; 
-  colorTheme: 'blue' | 'green' | 'red' | 'amber' | 'slate' | 'cyan';
+  iconType: 'trophy' | 'zap' | 'leaf' | 'fuel' | 'diesel' | 'manual' | 'luggage' | 'sun'; 
+  colorTheme: 'blue' | 'green' | 'red' | 'amber' | 'slate' | 'cyan'| 'orange';
   filterCategory?: string;
   filterTransmission?: string;
 
@@ -54,7 +54,8 @@ export default function GenericTopRankingClient({
     fuel: Fuel,
     diesel: Fuel,
     manual: Cog,
-    luggage: Luggage
+    luggage: Luggage,
+    sun: Sun
   };
   const IconComponent = icons[iconType] || Trophy;
 
@@ -64,7 +65,8 @@ export default function GenericTopRankingClient({
     green: "bg-lime-100 text-lime-700",
     red: "bg-red-100 text-red-600",
     amber: "bg-amber-100 text-amber-600",
-    slate: "bg-slate-200 text-slate-700"
+    slate: "bg-slate-200 text-slate-700",
+    orange: "bg-orange-100 text-orange-600",
   };
 
   useEffect(() => {
