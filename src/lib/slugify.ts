@@ -3,6 +3,7 @@ export function toSlug(text: string | null | undefined): string {
   return text
     .toString()
     .toLowerCase()
+    .replace(/\+/g, ' plus')
     .normalize('NFD') // Décompose les accents (é -> e + ')
     .replace(/[\u0300-\u036f]/g, '') // Supprime les accents
     .replace(/\s+/g, '-') // Remplace les espaces par des tirets
