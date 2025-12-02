@@ -4,6 +4,7 @@ export function toSlug(text: string | null | undefined): string {
     .toString()
     .toLowerCase()
     .replace(/\+/g, ' plus')
+    .replace(/&/g, 'and')
     .replace(/°/g, '')
     .replace(/\./g, '-')
     .normalize('NFD') // Décompose les accents (é -> e + ')
