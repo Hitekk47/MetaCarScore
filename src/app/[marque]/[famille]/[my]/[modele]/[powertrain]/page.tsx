@@ -114,6 +114,7 @@ export default async function PowertrainPage({ params }: PageProps) {
         my={my}
         modele={realModele}
         powertrain={sPowertrain} // On passe le slug original
+        powertrainName={realType}
         level="powertrain"
       />
     </>

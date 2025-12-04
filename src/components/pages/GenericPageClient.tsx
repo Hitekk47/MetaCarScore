@@ -22,10 +22,11 @@ type Props = {
   my?: string;
   modele?: string;
   powertrain?: string;
+  powertrainName?: string;
   level: PageLevel;
 };
 
-export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, level }: Props) {
+export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level }: Props) {
 
   // --- FILTRES ---
   const [query, setQuery] = useState("");
@@ -91,12 +92,11 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
     // Décodage du slug : Essence_525_7A
     const parts = powertrain.split('_');
     const trans = parts.pop(); // 7A
-    const power = parts.pop(); // 525 (On l'ignore ici)
-    const type = parts.join(' '); // Essence (ou Hybride essence)
+    const typeLabel = powertrainName || parts.join(' '); 
     
     return (
       <span className="block text-xl md:text-2xl font-medium text-slate-400 mt-1 tracking-wide">
-        {type} <span className="text-slate-600 mx-2">•</span> {trans}
+        {typeLabel} <span className="text-slate-600 mx-2">•</span> {trans}
       </span>
     );
   };
