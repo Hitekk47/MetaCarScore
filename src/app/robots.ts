@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = 'https://metacarscore.vercel.app'; // Remplace par ton domaine réel
+  const baseUrl = 'https://metacarscore.com'; // Remplace par ton domaine réel
 
   return {
     rules: {

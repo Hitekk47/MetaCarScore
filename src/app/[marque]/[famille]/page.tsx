@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { marque, famille } = await params;
   return {
     alternates: {
-      canonical: `https://metacarscore.vercel.app/${marque}/${famille}`,
+      canonical: `/${marque}/${famille}`,
     },
   };
 }

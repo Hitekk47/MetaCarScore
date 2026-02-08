@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { toSlug } from '@/lib/slugify';
 import { TOPS_MENU } from '@/lib/constants';
 
-const BASE_URL = 'https://metacarscore.vercel.app';
+const BASE_URL = 'https://metacarscore.com';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   

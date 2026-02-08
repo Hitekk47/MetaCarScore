@@ -9,8 +9,12 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "700", "900"], // On charge les graisses nécessaires
   variable: "--font-dm-sans",
 });
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
+  ? new URL(process.env.NEXT_PUBLIC_SITE_URL) 
+  : new URL('http://localhost:3000');
 
 export const metadata: Metadata = {
+  metadataBase: baseUrl,
   title: "MetaCarScore - L'agrégateur de référence",
   description: "Toutes les critiques automobiles agrégées en un seul score.",
 };
