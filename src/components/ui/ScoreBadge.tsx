@@ -5,11 +5,13 @@ import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useEffect } from "react";
 import { Filter, Lock } from "lucide-react";
 
+// --- SOUS-COMPOSANT D'ANIMATION ---
 function AnimatedNumber({ value }: { value: number }) {
-  const count = useMotionValue(value);
+  const count = useMotionValue(0); // On part de 0 ou de la valeur précédente idéalement
   const rounded = useTransform(count, (latest) => Math.round(latest));
 
   useEffect(() => {
+    // Animation fluide type "compteur"
     const controls = animate(count, value, { duration: 1, ease: "circOut" });
     return controls.stop;
   }, [value, count]);
@@ -29,6 +31,10 @@ export default function ScoreBadge({
   reviewCount?: number
 }) {
   const isPending = reviewCount !== undefined && reviewCount < 3;
+  
+  // LOGIQUE D'ACTIVATION : On anime seulement les grands badges (Hero / Modales)
+  // Les badges 'sm' et 'md' (Tableaux) sont statiques pour la perf et la lisibilité
+  const shouldAnimate = size === 'lg' || size === 'xl';
 
   const colors = isPending 
     ? { bg: "bg-slate-200", text: "text-slate-400" } 
@@ -62,7 +68,7 @@ export default function ScoreBadge({
           backgroundColor: colors.bg.replace('bg-', ''),
           scale: isFiltered ? 0.95 : 1 
         }} 
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.3 }}
       >
         {isPending ? (
           <>
@@ -71,7 +77,11 @@ export default function ScoreBadge({
           </>
         ) : (
           <span className={textSize}>
-            <AnimatedNumber value={score} />
+            {shouldAnimate ? (
+               <AnimatedNumber value={score} />
+            ) : (
+               score // Rendu direct sans JS overhead pour les tableaux
+            )}
           </span>
         )}
 
@@ -97,18 +107,14 @@ export default function ScoreBadge({
         </motion.div>
       )}
 
-      {/* TOOLTIP "MIN 3 ESSAIS" */}
+      {/* TOOLTIP "MIN 3 ESSAIS" (Uniquement pour le Hero XL) */}
       {isPending && size === 'xl' && (
          <motion.div 
-         // CORRECTION 1 : On passe de 'mt-4' à 'mt-2' (ou 1.5) pour remonter la bulle
-         // La pointe de la flèche va maintenant toucher le rectangle du dessus
          initial={{ opacity: 0, y: -5, x: "-50%" }}
          animate={{ opacity: 1, y: 0, x: "-50%" }}
          className="absolute top-full mt-2 left-1/2 w-max text-[10px] font-bold text-slate-400 bg-slate-800 px-3 py-1.5 rounded border border-slate-700 shadow-xl z-20"
        >
          Min. 3 essais requis
-         
-         {/* CORRECTION 2 : Ajustement fin de la position de la flèche (-top-1.5) pour une fusion parfaite */}
          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-slate-800 border-t border-l border-slate-700 transform rotate-45"></div>
        </motion.div>
       )}

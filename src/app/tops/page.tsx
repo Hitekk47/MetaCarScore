@@ -27,7 +27,7 @@ export default function TopsDirectoryPage() {
     {
       id: "elec",
       title: "Top Électriques",
-      subtitle: "Zéro émission",
+      subtitle: "BEV",
       href: "/tops/electrique",
       iconName: "zap", // <-- STRING
       colorClass: "bg-cyan-50 text-cyan-600 border-cyan-200"
@@ -58,7 +58,7 @@ export default function TopsDirectoryPage() {
     },
     {
       id: "manual",
-      title: "Boîte Méca",
+      title: "Top Boîte Méca",
       subtitle: "Conduite pure",
       href: "/tops/manuelle",
       iconName: "cog",
@@ -66,7 +66,7 @@ export default function TopsDirectoryPage() {
     },
     {
       id: "breaks",
-      title: "Breaks & SW",
+      title: "Top Breaks & SW",
       subtitle: "Volume & Style",
       href: "/tops/breaks",
       iconName: "luggage",
@@ -74,7 +74,7 @@ export default function TopsDirectoryPage() {
     },
   {
     id: "convertible",
-    title: "Découvrables",
+    title: "Top Découvrables",
     subtitle: "Cabriolets & Roadsters",
     href: "/tops/decouvrables",
     iconName: "sun", // Soleil

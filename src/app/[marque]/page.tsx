@@ -75,7 +75,7 @@ export default async function BrandPage({ params }: PageProps) {
   return (
     <GenericDirectoryClient 
       title={realMarque} // On affiche le beau nom ("Land Rover")
-      subtitle={`Découvrez les ${data.length} gammes de véhicules ${realMarque} analysées par nos experts.`}
+      subtitle={`Découvrez les ${data.length} gammes de véhicules ${realMarque} analysées par des experts.`}
       items={items}
       placeholderSearch={`Filtrer la gamme ${realMarque}...`}
     />
