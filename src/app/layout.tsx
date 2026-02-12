@@ -26,6 +26,16 @@ export const metadata: Metadata = {
     title: "MetaCarScore",
     statusBarStyle: "default",
   },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon.png', type: 'image/png' },
+      { url: '/favicon.ico' },
+    ],
+    apple: [
+      { url: '/apple-icon.png' }, // Pour iOS
+    ],
+  },  
   };
   
 
