@@ -90,7 +90,7 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
             <button 
                 onClick={() => setActiveTab('score')}
                 className={cn("p-1.5 rounded-md transition-all", activeTab === 'score' ? "bg-white text-yellow-600 shadow-sm" : "text-slate-400 hover:text-slate-600")}
-                title="Meilleures Notes"
+                title="Meilleures scores"
             >
                 <Trophy size={14} />
             </button>
@@ -104,7 +104,7 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
             <button 
                 onClick={() => setActiveTab('smart')}
                 className={cn("p-1.5 rounded-md transition-all", activeTab === 'smart' ? "bg-white text-blue-600 shadow-sm" : "text-slate-400 hover:text-slate-600")}
-                title="Choix Raisonnable"
+                title="Choix raisonnable"
             >
                 <Brain size={14} />
             </button>

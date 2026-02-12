@@ -16,15 +16,37 @@ type PageProps = {
   }>;
 };
 
-// 1. MÉTADONNÉES
+// 1. Generate Metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { marque, famille, my, modele, powertrain } = await params;
+  const { marque, famille, my, modele, powertrain } = await params;  
+  const { data } = await supabase
+    .from('reviews')
+    .select('Marque, Modele')
+    .eq('MY', parseInt(my))
+    .ilike('Marque', marque) 
+    .ilike('Modele', modele.replace(/-/g, ' '))
+    .limit(1)
+    .single();
+
+  // Fallback si la DB ne répond pas vite ou pas de match exact
+  const displayMarque = data?.Marque || marque.toUpperCase();
+  const displayModele = data?.Modele || modele;
+const displayPowertrain = powertrain.replace(/[-_]/g, ' ').split(' ').map((w, i, a) => i === a.length - 2 ? w + " ch" : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  const title = `${displayMarque} ${displayModele} (${my}) en ${powertrain}: Avis, Score & Essais`;
+
   return {
-    alternates: {
-      canonical: `/${marque}/${famille}/${my}/${modele}/${powertrain}`,
+    // TITRE PROPRE POUR L'UTILISATEUR (ONGLET)
+    title: `${displayMarque} ${displayModele} (${my}) - ${displayPowertrain}`,
+    
+    // SEO : BLOCAGE TOTAL
+    robots: {
+      index: false, 
+      follow: true, 
     },
   };
 }
+
 
 export default async function PowertrainPage({ params }: PageProps) {
   // 2. Décodage Slugs (Marque/Famille/Modele)

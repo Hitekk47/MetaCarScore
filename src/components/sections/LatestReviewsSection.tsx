@@ -58,22 +58,26 @@ export default function LatestReviewsSection({ initialData }: { initialData: Rev
   };
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-12">
-      {/* ... Header (inchangé) ... */}
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900">
-          Derniers ajouts
-        </h2>
-        <div className="flex items-center gap-2 md:pl-3 md:border-l border-slate-300 md:ml-2 shrink-0">
-         <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-         </span>
-         <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 leading-none">
-            Mise à jour en temps réel
-         </span>
-        </div>
-      </div>
+<section className="max-w-7xl mx-auto px-4 py-16">
+  {/* HEADER DE SECTION */}
+  <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+    <div>
+      <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900 leading-none">
+        Derniers Essais Presse <span className="text-blue-600">Automobile</span>
+      </h2>
+    </div>
+
+    {/* BADGE LIVE */}
+    <div className="flex items-center gap-3 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100 self-start md:self-auto">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      </span>
+      <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 whitespace-nowrap">
+        Mis à jour en temps réel
+      </span>
+    </div>
+  </div>
       
       {/* TABLEAU */}
       {/* Important : On passe hideBrand={false} explicitement (par défaut) car ici on veut voir la marque */}

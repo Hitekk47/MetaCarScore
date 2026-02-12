@@ -18,7 +18,7 @@ export default function TopsDirectoryPage() {
     },
     {
       id: "general",
-      title: "Top 100 Général",
+      title: "Top 100 Global",
       subtitle: "Toutes catégories",
       href: "/tops/modeles",
       iconName: "trophy", // <-- STRING

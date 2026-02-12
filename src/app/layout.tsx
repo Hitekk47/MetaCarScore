@@ -15,8 +15,11 @@ const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
 
 export const metadata: Metadata = {
   metadataBase: baseUrl,
-  title: "MetaCarScore - L'agrégateur de référence",
-  description: "Toutes les critiques automobiles agrégées en un seul score.",
+  title: {
+    template: '%s | MetaCarScore', 
+    default: "MetaCarScore : L'Agrégateur de Critiques Automobiles (Notes & Avis)", 
+  },
+  description: "Un seul score pour chaque voiture. MetaCarScore agrège les notes de toute la presse automobile mondiale (20 000+ essais) pour vous donner le verdict final sur chaque modèle.",
 };
 
 export default function RootLayout({

@@ -105,7 +105,7 @@ export default async function Home() {
         </section>
 
         {/* === STATS & NAV === */}
-        <section className="bg-white border-y border-slate-200 py-12">
+        <section className="bg-white border-b border-slate-200 py-12">
           <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
             
             {/* STAT 1: ESSAIS (ANIMÉ) */}
@@ -139,7 +139,7 @@ export default async function Home() {
                 <span className="font-bold text-lg">Top Classements</span>
                 <Activity className="text-slate-300 group-hover:text-emerald-400 transition-colors" />
               </div>
-              <p className="text-xs text-slate-500 group-hover:text-slate-400">Les meilleurs par catégorie.</p>
+              <p className="text-xs text-slate-500 group-hover:text-slate-400">Les meilleurs par thématique.</p>
             </a>
 
             {/* LIEN DUELS */}

@@ -10,13 +10,35 @@ type PageProps = {
   params: Promise<{ marque: string; famille: string; my: string }>;
 };
 
-// 1. MÉTADONNÉES
+// 1. Generate Metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { marque, famille, my } = await params;
+  const { marque, famille, my } = await params;  
+  const { data } = await supabase
+    .from('reviews')
+    .select('Marque, Famille')
+    .eq('MY', parseInt(my))
+    .ilike('Marque', marque) 
+    .ilike('Famille', famille.replace(/-/g, ' ')) 
+    .limit(1)
+    .single();
+
+  // Fallback si la DB ne répond pas vite ou pas de match exact
+  const displayMarque = data?.Marque || marque.toUpperCase();
+  const displayModele = data?.Famille || famille;
+
+  const title = `${displayMarque} ${displayModele} (${my}) : Avis, Score & Essais`;
+  const description = `Découvrez la gamme ${displayMarque} ${displayModele} de ${my}. Consultez le comparatif des versions et l'agrégation de tous les essais presse sur MetaCarScore.`;
+
   return {
+    title,
+    description,
     alternates: {
       canonical: `/${marque}/${famille}/${my}`,
     },
+    openGraph: {
+      title,
+      description,
+    }
   };
 }
 

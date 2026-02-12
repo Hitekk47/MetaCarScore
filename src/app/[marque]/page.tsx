@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import GenericDirectoryClient, { DirectoryItem } from "@/components/pages/GenericDirectoryClient";
 import { supabase } from "@/lib/supabase";
-import { toSlug } from "@/lib/slugify"; // Import indispensable pour les liens sortants
+import { toSlug } from "@/lib/slugify";
+import { Metadata } from 'next';
 
 export const revalidate = 3600;
 
@@ -9,19 +10,33 @@ type PageProps = {
   params: Promise<{ marque: string }>;
 };
 
-// --- METADATA DYNAMIQUE (Avec décodage) ---
-export async function generateMetadata({ params }: PageProps) {
+// 1. Generate Metadata
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { marque } = await params;
-  
-  // 1. Décodage du slug pour le titre
-  const { data } = await supabase.rpc('find_brand_by_slug', { slug_input: marque });
-  const realMarque = data?.[0]?.Marque;
 
-  if (!realMarque) return { title: 'Marque introuvable | MetaCarScore' };
+  const { data } = await supabase
+    .from('reviews')
+    .select('Marque')
+    .ilike('Marque', marque)
+    .limit(1)
+    .single();
+
+  // Fallback si la DB ne répond pas vite ou pas de match exact    
+  const displayMarque = data?.Marque || marque.toUpperCase();
+
+  const title = `Tous les modèles ${displayMarque} : Avis, Score & Essais`;
+  const description = `Découvrez la gamme ${displayMarque}. Consultez tous les modèles et l'agrégation de tous les essais presse sur MetaCarScore.`;
 
   return {
-    title: `Tous les modèles ${realMarque} | MetaCarScore`,
-    description: `Découvrez la gamme ${realMarque} : essais, fiches techniques et scores.`,
+    title,
+    description,
+    alternates: {
+      canonical: `/${marque}`,
+    },
+    openGraph: {
+      title,
+      description,
+    }
   };
 }
 

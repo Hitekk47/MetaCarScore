@@ -5,8 +5,8 @@ import { toSlug } from "@/lib/slugify";
 export const revalidate = 3600; // Cache 1h
 
 export const metadata = {
-  title: "Toutes les Marques | MetaCarScore",
-  description: "Explorez notre catalogue de marques automobiles.",
+  title: "Marques Automobiles : Avis, Scores & Essais",
+  description: "Accédez à l'index complet de tous les constructeurs automobiles. Consultez les scores de agrégés de la presse et les avis experts pour chaque marque sur MetaCarScore.",
 };
 
 export default async function MarquesPage() {
