@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/opengraph-image.png',
+        url: '/share-card.png',
         width: 1200,
         height: 630,
         alt: 'MetaCarScore - Agrégateur de Critiques Automobiles',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "MetaCarScore : L'Agrégateur de Critiques Automobiles",
     description: "Un seul score pour chaque voiture. MetaCarScore agrège les notes de toute la presse automobile mondiale.",
-    images: ['/opengraph-image.png'], 
+    images: ['/share-card.png'], 
   },  
   description: "Un seul score pour chaque voiture. MetaCarScore agrège les notes de toute la presse automobile mondiale (20 000+ essais) pour vous donner le verdict final sur chaque modèle.",
   manifest: '/manifest.json',
