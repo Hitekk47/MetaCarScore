@@ -19,6 +19,28 @@ export const metadata: Metadata = {
     template: '%s | MetaCarScore', 
     default: "MetaCarScore : L'Agrégateur de Critiques Automobiles (Notes & Avis)",
   },
+  openGraph: {
+    title: "MetaCarScore : L'Agrégateur de Critiques Automobiles",
+    description: "Un seul score pour chaque voiture. MetaCarScore agrège les notes de toute la presse automobile mondiale.",
+    url: baseUrl,
+    siteName: 'MetaCarScore',
+    locale: 'fr_FR',
+    type: 'website',
+    images: [
+      {
+        url: '/opengraph-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'MetaCarScore - Agrégateur de Critiques Automobiles',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "MetaCarScore : L'Agrégateur de Critiques Automobiles",
+    description: "Un seul score pour chaque voiture. MetaCarScore agrège les notes de toute la presse automobile mondiale.",
+    images: ['/opengraph-image.png'], 
+  },  
   description: "Un seul score pour chaque voiture. MetaCarScore agrège les notes de toute la presse automobile mondiale (20 000+ essais) pour vous donner le verdict final sur chaque modèle.",
   manifest: '/manifest.json',
   appleWebApp: {
@@ -37,7 +59,6 @@ export const metadata: Metadata = {
     ],
   },  
   };
-  
 
 export default function RootLayout({
   children,
