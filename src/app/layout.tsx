@@ -17,10 +17,16 @@ export const metadata: Metadata = {
   metadataBase: baseUrl,
   title: {
     template: '%s | MetaCarScore', 
-    default: "MetaCarScore : L'Agrégateur de Critiques Automobiles (Notes & Avis)", 
+    default: "MetaCarScore : L'Agrégateur de Critiques Automobiles (Notes & Avis)",
   },
   description: "Un seul score pour chaque voiture. MetaCarScore agrège les notes de toute la presse automobile mondiale (20 000+ essais) pour vous donner le verdict final sur chaque modèle.",
-};
+  appleWebApp: {
+    capable: true,
+    title: "MetaCarScore",
+    statusBarStyle: "default",
+  },
+  };
+  
 
 export default function RootLayout({
   children,
@@ -29,7 +35,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      {/* AJOUT DE L'ATTRIBUT ICI 👇 */}
       <body 
         className={cn(
           "min-h-screen bg-[#f8fafc] font-sans antialiased",
