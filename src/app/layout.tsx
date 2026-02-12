@@ -20,6 +20,7 @@ export const metadata: Metadata = {
     default: "MetaCarScore : L'Agrégateur de Critiques Automobiles (Notes & Avis)",
   },
   description: "Un seul score pour chaque voiture. MetaCarScore agrège les notes de toute la presse automobile mondiale (20 000+ essais) pour vous donner le verdict final sur chaque modèle.",
+  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     title: "MetaCarScore",
