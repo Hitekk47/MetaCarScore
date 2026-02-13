@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google"; // On reprend la font du POC
+import { DM_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils"; // Utilitaire pour fusionner les classes proprement
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 // Configuration de la police
 const dmSans = DM_Sans({ 
   subsets: ["latin"],
-  weight: ["400", "500", "700", "900"], // On charge les graisses nécessaires
+  weight: ["400", "500", "700", "900"],
   variable: "--font-dm-sans",
 });
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
@@ -75,6 +77,8 @@ export default function RootLayout({
         suppressHydrationWarning={true}
       >
         {children}
+        <Analytics />
+        <SpeedInsights />        
       </body>
     </html>
   );
