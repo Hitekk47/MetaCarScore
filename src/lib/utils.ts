@@ -49,3 +49,10 @@ export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => 
     previous[group].push(currentItem);
     return previous;
   }, {} as Record<K, T[]>);
+
+/**
+ * Stringifies an object and escapes the '<' character to prevent XSS in <script> tags.
+ */
+export function serializeJsonLd(data: any) {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
