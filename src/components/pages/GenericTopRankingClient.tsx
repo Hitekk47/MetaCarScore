@@ -6,7 +6,7 @@ import ScoreBadge from "@/components/ui/ScoreBadge";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Trophy, Loader2, Search, Crown, Zap, Leaf, Fuel, Cog, Luggage, Sun, ArrowDown, Info } from "lucide-react";
+import { Trophy, Loader2, Search, Crown, Zap, Leaf, Fuel, Cog, Luggage, Sun, Info } from "lucide-react";
 import Link from "next/link";
 import { toSlug } from "@/lib/slugify";
 
@@ -23,6 +23,15 @@ type RankingItem = {
 };
 
 type TimeRange = '1y' | '5y' | 'all';
+
+type RpcParams = {
+  min_my: number | null;
+  limit_val: number;
+  category_filter?: string | null;
+  transmission_filter?: string | null;
+  macro_category_filter?: string | null;
+  segment_filter?: string | null;
+};
 
 // --- CONFIGURATION NOMENCLATURE ---
 type SegmentDef = { code: string; label: string };
@@ -133,8 +142,8 @@ export default function GenericTopRankingClient({
       if (timeRange === '1y') targetMY = currentYear - 1;
       else if (timeRange === '5y') targetMY = currentYear - 5;
 
-      let rpcName = customRpcName || 'get_model_ranking_v3';
-      let rpcParams: any = { min_my: targetMY, limit_val: 100 };
+      const rpcName = customRpcName || 'get_model_ranking_v3';
+      const rpcParams: RpcParams = { min_my: targetMY, limit_val: 100 };
 
       if (!customRpcName) {
         rpcParams.category_filter = filterCategory || null; 
@@ -143,7 +152,7 @@ export default function GenericTopRankingClient({
         rpcParams.segment_filter = activeSegment || null;
       }
 
-      const { data: ranking, error } = await supabase.rpc(rpcName, rpcParams);
+      const { data: ranking } = await supabase.rpc(rpcName, rpcParams);
       if (ranking) setData(ranking);
       setLoading(false);
     }
