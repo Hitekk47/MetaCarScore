@@ -1,7 +1,18 @@
-import type { NextConfig } from "next";
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: true,
 
-const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    serverActions: {
+      // Autorise toutes les origines (nécessaire pour Codespaces/Gitpod/Vercel Preview)
+      allowedOrigins: [
+        'localhost:3000', 
+        '*.app.github.dev', 
+        '*.vercel.app',
+        'metacarscore.com'
+      ],
+    },
+  },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

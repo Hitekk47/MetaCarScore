@@ -2,53 +2,58 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { Review } from "@/lib/types";
 import SearchBar from "@/components/ui/SearchBar";
 import DuelArena from "./DuelArena";
 import { Swords, X, Loader2, CarFront } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toSlug } from "@/lib/slugify";
+// ⚡ IMPORT DE NOTRE NOUVELLE SERVER ACTION
+import { fetchFighterReviews } from "@/actions/duels";
 
-// Définition du type Fighter localement
 type Fighter = {
-  id: string; // Format: "Marque_Famille_MY_Modele"
+  id: string; 
   name: string;
   reviews: Review[];
   loading: boolean;
+};
+
+// Typage strict pour remplacer le 'any' de Jules
+type SearchResult = {
+  Marque: string;
+  Famille: string;
+  MaxMY: number;
+  Modele: string;
+  Type: string;
 };
 
 export default function DuelPageClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // États des combattants (null = vide)
   const [leftFighter, setLeftFighter] = useState<Fighter | null>(null);
   const [rightFighter, setRightFighter] = useState<Fighter | null>(null);
 
-  // 1. LECTURE DE L'URL AU CHARGEMENT
+  // 1. ÉCOUTE DE L'URL (Corrigé : séparé pour éviter les renders en boucle)
+  const leftParam = searchParams.get("left");
+  const rightParam = searchParams.get("right");
+
   useEffect(() => {
-    const p1 = searchParams.get("left");
-    const p2 = searchParams.get("right");
+    if (leftParam) loadFighter(leftParam, "left");
+  }, [leftParam]);
 
-    if (p1) loadFighter(p1, "left");
-    if (p2) loadFighter(p2, "right");
-  }, []);
+  useEffect(() => {
+    if (rightParam) loadFighter(rightParam, "right");
+  }, [rightParam]);
 
-  // 2. FONCTION POUR CHARGER UN VÉHICULE
+  // 2. FONCTION POUR CHARGER UN VÉHICULE (Modernisée)
   const loadFighter = async (slug: string, side: "left" | "right") => {
-    // Découpage du slug
-    // Attention: le slug doit être bien formé "Marque_Famille_MY_Modele"
     const parts = slug.split("_");
-    if (parts.length < 4) return; // Sécurité
+    if (parts.length < 4) return; 
 
     const marque = parts[0];
-    const famille = parts[1];
-    const myStr = parts[2];
-    const modele = parts.slice(3).join("_"); // Si le modèle contient des underscores
-    const my = parseInt(myStr);
+    const modele = parts.slice(3).join("_"); 
 
-    // Placeholder pendant le chargement
     const loadingState: Fighter = {
         id: slug,
         name: `${marque} ${modele}`,
@@ -56,19 +61,10 @@ export default function DuelPageClient() {
         loading: true
     };
 
-    if (side === "left") setLeftFighter(loadingState);
-    else setRightFighter(loadingState);
+    side === "left" ? setLeftFighter(loadingState) : setRightFighter(loadingState);
 
-    // Requête Supabase
-    const { data } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('Marque', marque)
-        .eq('Famille', famille)
-        .eq('MY', my)
-        .eq('Modele', modele);
-
-    const reviews = (data as Review[]) || [];
+    // ⚡ APPEL SÉCURISÉ AU SERVEUR (Plus de Supabase ici !)
+    const reviews = await fetchFighterReviews(slug);
     
     const finalState: Fighter = {
         id: slug,
@@ -77,11 +73,9 @@ export default function DuelPageClient() {
         loading: false
     };
 
-    if (side === "left") setLeftFighter(finalState);
-    else setRightFighter(finalState);
+    side === "left" ? setLeftFighter(finalState) : setRightFighter(finalState);
   };
 
-  // 3. FONCTION HELPER POUR GÉNÉRER L'URL (Celle qui posait problème)
   const getCarUrl = (fighter: Fighter) => {
     const parts = fighter.id.split("_");
     const marque = parts[0];
@@ -91,8 +85,7 @@ export default function DuelPageClient() {
     return `/${toSlug(marque)}/${toSlug(famille)}/${my}/${toSlug(modele)}`;
   };
 
-  // 4. GESTION DE LA SÉLECTION VIA SEARCHBAR
-  const handleSelect = (res: any, side: "left" | "right") => {
+  const handleSelect = (res: SearchResult, side: "left" | "right") => {
     if (res.Type === 'family' || !res.Modele || !res.MaxMY) {
         alert("Veuillez sélectionner un modèle spécifique (avec année) pour le duel.");
         return;
@@ -103,15 +96,10 @@ export default function DuelPageClient() {
     const params = new URLSearchParams(searchParams.toString());
     params.set(side, slug);
     router.replace(`/duels?${params.toString()}`, { scroll: false });
-
-    loadFighter(slug, side);
   };
 
-  // 5. SUPPRESSION D'UN COMBATTANT
   const removeFighter = (side: "left" | "right") => {
-    if (side === "left") setLeftFighter(null);
-    else setRightFighter(null);
-
+    side === "left" ? setLeftFighter(null) : setRightFighter(null);
     const params = new URLSearchParams(searchParams.toString());
     params.delete(side);
     router.replace(`/duels?${params.toString()}`, { scroll: false });
@@ -120,7 +108,6 @@ export default function DuelPageClient() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
       
-      {/* HEADER */}
       <div className="text-center mb-8 md:mb-12">
         <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-blue-100 rounded-full mb-4 text-blue-600">
             <Swords size={24} className="md:w-8 md:h-8" />
@@ -129,23 +116,21 @@ export default function DuelPageClient() {
         <p className="text-slate-500 text-sm md:text-base">Comparez les verdicts de la presse internationale.</p>
       </div>
 
-      {/* SELECTEURS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8 mb-8 md:mb-12">
         <FighterSlot 
             fighter={leftFighter} 
             side="left" 
-            onSelect={(res) => handleSelect(res, "left")} 
+            onSelect={(res) => handleSelect(res as SearchResult, "left")} 
             onRemove={() => removeFighter("left")} 
         />
         <FighterSlot 
             fighter={rightFighter} 
             side="right" 
-            onSelect={(res) => handleSelect(res, "right")} 
+            onSelect={(res) => handleSelect(res as SearchResult, "right")} 
             onRemove={() => removeFighter("right")} 
         />
       </div>
 
-      {/* ARÈNE (Affichée seulement si les 2 sont prêts) */}
       {leftFighter && !leftFighter.loading && rightFighter && !rightFighter.loading ? (
         <div className="animate-in fade-in slide-in-from-bottom-10 duration-700">
             <DuelArena 
@@ -164,7 +149,6 @@ export default function DuelPageClient() {
             />
         </div>
       ) : (
-         /* EMPTY STATE */
          (!leftFighter && !rightFighter) && (
             <div className="text-center py-10 md:py-20 opacity-50 select-none">
                 <p className="text-xs md:text-sm font-bold uppercase tracking-widest text-slate-300">Sélectionnez deux véhicules</p>
