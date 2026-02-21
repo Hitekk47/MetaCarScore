@@ -28,39 +28,60 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: item.priority || 0.9,
   }));
 
-  // 3. Récupération des données (Optimisée pour Sitemap)
-
-  const { data: rows } = await supabase
-    .from('reviews')
-    .select('Marque, Famille, MY, Modele')
-    .not('Famille', 'is', null)
-    .not('Modele', 'is', null);
-
-  // --- DÉDOUBLONNAGE INTELLIGENT ---
+  // 3. Récupération des données (Optimisée pour Sitemap avec Pagination)
 
   const brands = new Set<string>();
   const families = new Set<string>();
   const mys = new Set<string>();
   const models = new Set<string>();
 
-  rows?.forEach((row) => {
-    const m = toSlug(row.Marque);
-    const f = toSlug(row.Famille);
-    const y = row.MY;
-    const mo = toSlug(row.Modele);
+  const PAGE_SIZE = 1000;
+  let from = 0;
+  let hasMore = true;
 
-    // Niveau 1 : Marque
-    brands.add(`${BASE_URL}/${m}`);
+  while (hasMore) {
+    const { data: rows, error } = await supabase
+      .from('reviews')
+      .select('Marque, Famille, MY, Modele')
+      .not('Famille', 'is', null)
+      .not('Modele', 'is', null)
+      .range(from, from + PAGE_SIZE - 1);
 
-    // Niveau 2 : Famille
-    families.add(`${BASE_URL}/${m}/${f}`);
+    if (error) {
+      console.error('Error fetching sitemap data:', error);
+      break;
+    }
 
-    // Niveau 3 : Année (MY)
-    mys.add(`${BASE_URL}/${m}/${f}/${y}`);
+    if (!rows || rows.length === 0) {
+      hasMore = false;
+      break;
+    }
 
-    // Niveau 4 : Modèle
-    models.add(`${BASE_URL}/${m}/${f}/${y}/${mo}`);
-  });
+    rows.forEach((row) => {
+      const m = toSlug(row.Marque);
+      const f = toSlug(row.Famille);
+      const y = row.MY;
+      const mo = toSlug(row.Modele);
+
+      // Niveau 1 : Marque
+      brands.add(`${BASE_URL}/${m}`);
+
+      // Niveau 2 : Famille
+      families.add(`${BASE_URL}/${m}/${f}`);
+
+      // Niveau 3 : Année (MY)
+      mys.add(`${BASE_URL}/${m}/${f}/${y}`);
+
+      // Niveau 4 : Modèle
+      models.add(`${BASE_URL}/${m}/${f}/${y}/${mo}`);
+    });
+
+    if (rows.length < PAGE_SIZE) {
+      hasMore = false;
+    } else {
+      from += PAGE_SIZE;
+    }
+  }
 
   // --- CONSTRUCTION DES ROUTES ---
   
