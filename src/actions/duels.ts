@@ -44,3 +44,33 @@ export async function fetchFighterReviews(slug: string): Promise<Review[]> {
     return [];
   }
 }
+
+export async function fetchBatchFighterReviews(slugs: string[]): Promise<Record<string, Review[]>> {
+  console.log("⚡ Batch Server Action Triggered for:", slugs);
+
+  if (!slugs || slugs.length === 0) return {};
+
+  try {
+    // We use Promise.all to fetch reviews for all slugs in parallel.
+    // While this results in multiple DB queries, it consolidates Client-Server communication
+    // into a single request, which is the primary performance bottleneck to solve.
+    // This also ensures we reuse the exact safely implemented query logic of fetchFighterReviews
+    // without risking SQL injection or syntax errors with manual OR string construction.
+    const results = await Promise.all(
+      slugs.map(async (slug) => {
+        const reviews = await fetchFighterReviews(slug);
+        return { slug, reviews };
+      })
+    );
+
+    const groupedReviews: Record<string, Review[]> = {};
+    results.forEach(({ slug, reviews }) => {
+      groupedReviews[slug] = reviews;
+    });
+
+    return groupedReviews;
+  } catch (err) {
+    console.error("❌ Crash Batch Server Action:", err);
+    return {};
+  }
+}

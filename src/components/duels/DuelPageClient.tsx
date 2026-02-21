@@ -9,7 +9,7 @@ import { Swords, X, Loader2, CarFront } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toSlug } from "@/lib/slugify";
 // ⚡ IMPORT DE NOTRE NOUVELLE SERVER ACTION
-import { fetchFighterReviews } from "@/actions/duels";
+import { fetchBatchFighterReviews } from "@/actions/duels";
 
 type Fighter = {
   id: string; 
@@ -34,47 +34,78 @@ export default function DuelPageClient() {
   const [leftFighter, setLeftFighter] = useState<Fighter | null>(null);
   const [rightFighter, setRightFighter] = useState<Fighter | null>(null);
 
-  // 1. ÉCOUTE DE L'URL (Corrigé : séparé pour éviter les renders en boucle)
+  // 1. ÉCOUTE DE L'URL ET CHARGEMENT GROUPÉ
   const leftParam = searchParams.get("left");
   const rightParam = searchParams.get("right");
 
   useEffect(() => {
-    if (leftParam) loadFighter(leftParam, "left");
-  }, [leftParam]);
+    // Fonction interne pour charger les véhicules en batch
+    const loadFighters = async (rawItems: { slug: string; side: "left" | "right" }[]) => {
+        const items = rawItems.filter(({ slug }) => slug.split("_").length >= 4);
+        if (items.length === 0) return;
 
-  useEffect(() => {
-    if (rightParam) loadFighter(rightParam, "right");
-  }, [rightParam]);
+        // Set loading state for all items
+        items.forEach(({ slug, side }) => {
+            const parts = slug.split("_");
+            const marque = parts[0];
+            const modele = parts.slice(3).join("_");
 
-  // 2. FONCTION POUR CHARGER UN VÉHICULE (Modernisée)
-  const loadFighter = async (slug: string, side: "left" | "right") => {
-    const parts = slug.split("_");
-    if (parts.length < 4) return; 
+            const loadingState: Fighter = {
+                id: slug,
+                name: `${marque} ${modele}`,
+                reviews: [],
+                loading: true
+            };
 
-    const marque = parts[0];
-    const modele = parts.slice(3).join("_"); 
+            if (side === "left") {
+                setLeftFighter(loadingState);
+            } else {
+                setRightFighter(loadingState);
+            }
+        });
 
-    const loadingState: Fighter = {
-        id: slug,
-        name: `${marque} ${modele}`,
-        reviews: [],
-        loading: true
+        // Fetch in a single batch request
+        const slugs = items.map(i => i.slug);
+        const results = await fetchBatchFighterReviews(slugs);
+
+        // Update state with results
+        items.forEach(({ slug, side }) => {
+            const reviews = results[slug] || [];
+            const parts = slug.split("_");
+            const marque = parts[0];
+            const modele = parts.slice(3).join("_");
+
+            const finalState: Fighter = {
+                id: slug,
+                name: `${marque} ${modele}`,
+                reviews: reviews,
+                loading: false
+            };
+
+            if (side === "left") {
+                setLeftFighter(finalState);
+            } else {
+                setRightFighter(finalState);
+            }
+        });
     };
 
-    side === "left" ? setLeftFighter(loadingState) : setRightFighter(loadingState);
+    const slugsToLoad: { slug: string; side: "left" | "right" }[] = [];
 
-    // ⚡ APPEL SÉCURISÉ AU SERVEUR (Plus de Supabase ici !)
-    const reviews = await fetchFighterReviews(slug);
-    
-    const finalState: Fighter = {
-        id: slug,
-        name: `${marque} ${modele}`,
-        reviews: reviews,
-        loading: false
-    };
+    // Check if left fighter needs loading
+    if (leftParam && (!leftFighter || leftFighter.id !== leftParam)) {
+      slugsToLoad.push({ slug: leftParam, side: "left" });
+    }
 
-    side === "left" ? setLeftFighter(finalState) : setRightFighter(finalState);
-  };
+    // Check if right fighter needs loading
+    if (rightParam && (!rightFighter || rightFighter.id !== rightParam)) {
+      slugsToLoad.push({ slug: rightParam, side: "right" });
+    }
+
+    if (slugsToLoad.length > 0) {
+      loadFighters(slugsToLoad);
+    }
+  }, [leftParam, rightParam, leftFighter, rightFighter]);
 
   const getCarUrl = (fighter: Fighter) => {
     const parts = fighter.id.split("_");
@@ -99,7 +130,11 @@ export default function DuelPageClient() {
   };
 
   const removeFighter = (side: "left" | "right") => {
-    side === "left" ? setLeftFighter(null) : setRightFighter(null);
+    if (side === "left") {
+        setLeftFighter(null);
+    } else {
+        setRightFighter(null);
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.delete(side);
     router.replace(`/duels?${params.toString()}`, { scroll: false });
@@ -161,7 +196,7 @@ export default function DuelPageClient() {
 }
 
 // SOUS-COMPOSANT : SLOT DE SÉLECTION
-function FighterSlot({ fighter, side, onSelect, onRemove }: { fighter: Fighter | null, side: "left" | "right", onSelect: (res: any) => void, onRemove: () => void }) {
+function FighterSlot({ fighter, side, onSelect, onRemove }: { fighter: Fighter | null, side: "left" | "right", onSelect: (res: SearchResult) => void, onRemove: () => void }) {
     const isRight = side === "right";
     const my = fighter ? fighter.id.split('_')[2] : null;
 
