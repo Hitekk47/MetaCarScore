@@ -7,6 +7,7 @@ import ScoreBadge from "../ui/ScoreBadge";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { toSlug } from "@/lib/slugify";
 
 type TabType = 'score' | 'power' | 'smart';
 
@@ -73,9 +74,8 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
   if (rawModelsData.length === 0) return null;
 
   // Pour construire les liens, on a besoin de la Marque et Famille (communes à tous les reviews ici)
-  const baseMarque = reviews[0]?.Marque;
-  const baseFamille = reviews[0]?.Famille;
-
+  const slugMarque = toSlug(reviews[0]?.Marque || "");
+  const slugFamille = toSlug(reviews[0]?.Famille || "");
   return (
     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
       
@@ -127,7 +127,7 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
                   >
                     {/* LIEN DE NAVIGATION */}
                     <Link 
-                        href={`/${baseMarque}/${baseFamille}/${model.my}/${model.name}`}
+                        href={`/${slugMarque}/${slugFamille}/${model.my}/${toSlug(model.name)}`}
                         className="flex items-center justify-between group cursor-pointer p-1 -mx-1 rounded hover:bg-slate-50 transition-colors"
                     >
                         <div className="flex items-center gap-3 overflow-hidden">
