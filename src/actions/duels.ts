@@ -40,7 +40,8 @@ export async function fetchFighterReviews(slug: string): Promise<Review[]> {
 
     return (data as Review[]) || [];
   } catch (err) {
-    console.error("❌ Crash Server Action:", err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error("❌ Crash Server Action:", errorMessage);
     return [];
   }
 }
