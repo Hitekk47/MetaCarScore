@@ -47,7 +47,8 @@ export default function DuelPageClient() {
         setLeftFighter(prev => {
           if (prev?.id === leftParam && !prev.loading) return prev;
           const parts = leftParam.split("_");
-          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join("_")}` : leftParam;
+          // Fallback name logic if needed before load
+          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join(" ")}` : leftParam;
           return { id: leftParam, name, reviews: [], loading: true };
         });
       } else {
@@ -58,7 +59,7 @@ export default function DuelPageClient() {
         setRightFighter(prev => {
           if (prev?.id === rightParam && !prev.loading) return prev;
           const parts = rightParam.split("_");
-          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join("_")}` : rightParam;
+          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join(" ")}` : rightParam;
           return { id: rightParam, name, reviews: [], loading: true };
         });
       } else {
@@ -69,26 +70,50 @@ export default function DuelPageClient() {
       try {
         const results = await fetchBatchFighterReviews(slugsToFetch);
 
-        if (leftParam && results[leftParam]) {
-          const parts = leftParam.split("_");
-          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join("_")}` : leftParam;
-          setLeftFighter({
-            id: leftParam,
-            name,
-            reviews: results[leftParam],
-            loading: false
-          });
+        if (leftParam) {
+           const reviews = results[leftParam] || [];
+           let name = leftParam;
+           if (reviews.length > 0) {
+              const r = reviews[0];
+              name = `${r.Marque} ${r.Modele}`;
+           } else {
+              // Fallback formatting if valid slug but no reviews or invalid
+              const parts = leftParam.split("_");
+              if (parts.length >= 4) {
+                  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+                  // Basic formatting: porsche -> Porsche, 911-st -> 911 St (not perfect but fallback)
+                  name = `${capitalize(parts[0])} ${parts.slice(3).map(p => capitalize(p.replace(/-/g, ' '))).join(' ')}`;
+              }
+           }
+
+           setLeftFighter({
+             id: leftParam,
+             name,
+             reviews,
+             loading: false
+           });
         }
 
-        if (rightParam && results[rightParam]) {
-          const parts = rightParam.split("_");
-          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join("_")}` : rightParam;
-          setRightFighter({
-            id: rightParam,
-            name,
-            reviews: results[rightParam],
-            loading: false
-          });
+        if (rightParam) {
+           const reviews = results[rightParam] || [];
+           let name = rightParam;
+           if (reviews.length > 0) {
+              const r = reviews[0];
+              name = `${r.Marque} ${r.Modele}`;
+           } else {
+               const parts = rightParam.split("_");
+               if (parts.length >= 4) {
+                   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+                   name = `${capitalize(parts[0])} ${parts.slice(3).map(p => capitalize(p.replace(/-/g, ' '))).join(' ')}`;
+               }
+           }
+
+           setRightFighter({
+             id: rightParam,
+             name,
+             reviews,
+             loading: false
+           });
         }
       } catch (err) {
         console.error("Erreur chargement batch duels:", err);
@@ -103,7 +128,8 @@ export default function DuelPageClient() {
     const marque = parts[0];
     const famille = parts[1];
     const my = parts[2];
-    const modele = parts.slice(3).join("_");
+    const modele = parts.slice(3).join("_"); // Should be a slug already if constructed via handleSelect
+    // Ensure all parts are slugs
     return `/${toSlug(marque)}/${toSlug(famille)}/${my}/${toSlug(modele)}`;
   };
 
@@ -113,7 +139,8 @@ export default function DuelPageClient() {
         return;
     }
 
-    const slug = `${res.Marque}_${res.Famille}_${res.MaxMY}_${res.Modele}`;
+    // Construct Clean Slug using toSlug on all string components
+    const slug = `${toSlug(res.Marque)}_${toSlug(res.Famille)}_${res.MaxMY}_${toSlug(res.Modele)}`;
     
     const params = new URLSearchParams(searchParams.toString());
     params.set(side, slug);
