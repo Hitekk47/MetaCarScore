@@ -7,8 +7,18 @@ import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRouter } from "next/navigation";
 import { toSlug } from "@/lib/slugify";
+import { SEARCH_PLACEHOLDERS } from "@/lib/constants";
+import ResultItem from "./ResultItem";
 
 // --- CONFIGURATION TYPEWRITER ---
+
+export type SearchResult = {
+  Marque: string;
+  Famille: string;
+  Modele: string | null;
+  Type: 'family' | 'model';
+  MaxMY: number | null;
+};
 
 interface SearchBarProps {
   placeholder?: string;
