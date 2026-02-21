@@ -49,51 +49,63 @@ export default function ScoreBadge({
 
   const textSize = size === 'xl' ? 'text-6xl md:text-7xl' : '';
 
+  const badgeContent = isPending ? (
+    <>
+      <Lock size={size === 'xl' ? 48 : 24} className="opacity-20 mb-1" />
+      <span className={size === 'xl' ? "text-4xl opacity-50" : "text-sm"}>--</span>
+    </>
+  ) : (
+    <span className={textSize}>
+      {shouldAnimate ? (
+         <AnimatedNumber value={score} />
+      ) : (
+         score // Rendu direct sans JS overhead pour les tableaux
+      )}
+    </span>
+  );
+
+  const metaLabel = size === 'xl' && (
+      <span className="text-[10px] md:text-xs uppercase font-bold opacity-50 tracking-wider mt-1 md:mt-2 text-center px-2">
+          {isPending
+            ? "Données insuffisantes"
+            : (isFiltered ? "Score Filtré" : "MetaCarScore")
+          }
+      </span>
+  );
+
+  const containerClassName = `
+    w-full h-full
+    ${colors.bg}
+    ${colors.text}
+    rounded flex flex-col items-center justify-center
+    font-black shadow-sm leading-none select-none overflow-visible
+    relative z-10
+    ${isFiltered && !isPending ? 'ring-4 ring-offset-2 ring-offset-slate-900 ring-orange-500' : ''}
+  `;
+
   return (
     <div className={`relative ${sizeClasses[size]} shrink-0`}> 
       
-      <motion.div 
-        layout
-        className={`
-          w-full h-full
-          ${colors.bg} 
-          ${colors.text} 
-          rounded flex flex-col items-center justify-center 
-          font-black shadow-sm leading-none select-none overflow-visible
-          relative z-10
-          ${isFiltered && !isPending ? 'ring-4 ring-offset-2 ring-offset-slate-900 ring-orange-500' : ''}
-        `}
-        initial={false}
-        animate={{ 
-          backgroundColor: colors.bg.replace('bg-', ''),
-          scale: isFiltered ? 0.95 : 1 
-        }} 
-        transition={{ duration: 0.3 }}
-      >
-        {isPending ? (
-          <>
-            <Lock size={size === 'xl' ? 48 : 24} className="opacity-20 mb-1" />
-            <span className={size === 'xl' ? "text-4xl opacity-50" : "text-sm"}>--</span>
-          </>
-        ) : (
-          <span className={textSize}>
-            {shouldAnimate ? (
-               <AnimatedNumber value={score} />
-            ) : (
-               score // Rendu direct sans JS overhead pour les tableaux
-            )}
-          </span>
-        )}
-
-        {size === 'xl' && (
-          <span className="text-[10px] md:text-xs uppercase font-bold opacity-50 tracking-wider mt-1 md:mt-2 text-center px-2">
-              {isPending 
-                ? "Données insuffisantes" 
-                : (isFiltered ? "Score Filtré" : "MetaCarScore")
-              }
-          </span>
-        )}
-      </motion.div>
+      {shouldAnimate ? (
+        <motion.div
+          layout
+          className={containerClassName}
+          initial={false}
+          animate={{
+            backgroundColor: colors.bg.replace('bg-', ''),
+            scale: isFiltered ? 0.95 : 1
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          {badgeContent}
+          {metaLabel}
+        </motion.div>
+      ) : (
+        <div className={containerClassName}>
+          {badgeContent}
+          {metaLabel}
+        </div>
+      )}
 
       {/* BADGE "FILTRÉ" */}
       {isFiltered && !isPending && (
