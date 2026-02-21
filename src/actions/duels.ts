@@ -8,6 +8,26 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// --- Validation Helpers ---
+
+function isValidSlugPart(part: string): boolean {
+  // Allow alphanumeric, hyphens, and spaces.
+  // Strictly disallow quotes, slashes, and other special chars to prevent injection/XSS.
+  // Underscores are NOT allowed in marque/famille because they are separators in the composite slug.
+  return /^[a-zA-Z0-9\- ]+$/.test(part);
+}
+
+function isValidModelPart(part: string): boolean {
+  // Models can contain underscores if they were joined back from parts,
+  // or spaces if passed raw.
+  // Strictly disallow quotes.
+  return /^[a-zA-Z0-9\-_ ]+$/.test(part);
+}
+
+function isValidYear(year: number): boolean {
+  return !isNaN(year) && year >= 1900 && year <= 2100;
+}
+
 // --- Legacy Function (Still exported for compatibility if needed, but we'll try to move away from it) ---
 export async function fetchFighterReviews(slug: string): Promise<Review[]> {
   console.log("⚡ Server Action Triggered for:", slug); // Log serveur (visible dans le terminal, pas le navigateur)
@@ -25,6 +45,12 @@ export async function fetchFighterReviews(slug: string): Promise<Review[]> {
     const famille = parts[1];
     const my = parseInt(parts[2]);
     const modele = parts.slice(3).join("_");
+
+    // 🔒 Security Validation
+    if (!isValidSlugPart(marque) || !isValidSlugPart(famille) || !isValidYear(my) || !isValidModelPart(modele)) {
+      console.error("❌ Slug rejected by security validation:", slug);
+      return [];
+    }
 
     // Requête
     const { data, error } = await supabase
@@ -66,7 +92,11 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
     const my = parseInt(parts[2]);
     const modele = parts.slice(3).join("_");
 
-    if (isNaN(my)) return null;
+    // 🔒 Security Validation
+    if (!isValidSlugPart(marque) || !isValidSlugPart(famille) || !isValidYear(my) || !isValidModelPart(modele)) {
+      console.warn("⚠️ Invalid slug component detected, skipping:", slug);
+      return null;
+    }
 
     // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers)
     return `and(Marque.eq."${marque}",Famille.eq."${famille}",MY.eq.${my},Modele.eq."${modele}")`;
