@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { Review, AggregatedSource } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -55,4 +56,27 @@ export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => 
  */
 export function serializeJsonLd(data: any) {
   return JSON.stringify(data).replace(/</g, '\\u003c');
+}
+
+export function aggregateReviews(reviews: Review[]): Record<string, AggregatedSource> {
+  const map: Record<string, AggregatedSource> = {};
+  reviews.forEach((r) => {
+    const source = r.Testeur.trim();
+    if (!map[source]) map[source] = { sourceName: source, avgScore: 0, count: 0, rawScores: [] };
+    map[source].rawScores.push(r.Score);
+    map[source].count += 1;
+  });
+  Object.values(map).forEach((item) => {
+    const total = item.rawScores.reduce((a, b) => a + b, 0);
+    item.avgScore = Math.round(total / item.count);
+  });
+  return map;
+}
+
+export function getPowerRange(reviews: Review[]) {
+    const powers = reviews.map(r => r.Puissance).filter(p => p > 0);
+    if (powers.length === 0) return null;
+    const min = Math.min(...powers);
+    const max = Math.max(...powers);
+    return min === max ? `${min} ch` : `${min} - ${max} ch`;
 }
