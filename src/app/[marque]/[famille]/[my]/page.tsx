@@ -47,13 +47,18 @@ export default async function MYPage({ params }: PageProps) {
   // 2. Décodage Slugs
   const { marque: sMarque, famille: sFamille, my } = await params;
 
-  const { data: dMarque } = await supabase.rpc('find_brand_by_slug', { slug_input: sMarque });
-  const realMarque = dMarque?.[0]?.Marque;
-  if (!realMarque) return notFound();
+  const { data: contextData } = await supabase.rpc('get_full_context_by_slugs', { 
+    p_marque_slug: sMarque, 
+    p_famille_slug: sFamille 
+  });
+  const context = contextData?.[0];
 
-  const { data: dFamille } = await supabase.rpc('find_family_by_slug', { real_brand_name: realMarque, family_slug: sFamille });
-  const realFamille = dFamille?.[0]?.Famille;
-  if (!realFamille) return notFound();
+  if (!context?.real_marque) return notFound();
+  const realMarque = context.real_marque;
+
+  if (!context?.real_famille) return notFound();
+  const realFamille = context.real_famille;
+
 
   // 3. Chargement Data
   const { data: rawData, error } = await supabase

@@ -50,36 +50,39 @@ const displayPowertrain = powertrain.replace(/[-_]/g, ' ').split(' ').map((w, i,
 
 
 export default async function PowertrainPage({ params }: PageProps) {
-  // 2. Décodage Slugs (Marque/Famille/Modele)
+  // 2. Décodage Slugs (Marque/Famille/Modele/Powertrain)
   const { marque: sMarque, famille: sFamille, my, modele: sModele, powertrain: sPowertrain } = await params;
 
-  const { data: dMarque } = await supabase.rpc('find_brand_by_slug', { slug_input: sMarque });
-  const realMarque = dMarque?.[0]?.Marque;
-  if (!realMarque) return notFound();
-
-  const { data: dFamille } = await supabase.rpc('find_family_by_slug', { real_brand_name: realMarque, family_slug: sFamille });
-  const realFamille = dFamille?.[0]?.Famille;
-  if (!realFamille) return notFound();
-
-  const { data: dModele } = await supabase.rpc('find_model_by_slug', {
-    real_brand_name: realMarque,
-    real_family_name: realFamille,
-    target_my: parseInt(my, 10),
-    model_slug: sModele
-  });
-  const realModele = dModele?.[0]?.Modele;
-  if (!realModele) return notFound();
-
-  // 3. Décodage Powertrain
+  // 1. Décodage synchrone du powertrain (Côté serveur Next.js, immédiat)
   const parts = sPowertrain.split('_');
   if (parts.length < 3) return notFound();
   const slugTrans = parts.pop()!;
   const powerStr = parts.pop()!;
   const slugType = parts.join('_');
 
-  const { data: dType } = await supabase.rpc('find_type_by_slug', { type_slug: slugType });
-  const realType = dType?.[0]?.Type;
-  if (!realType) return notFound(); // Message erreur remplacé par notFound pour le SEO
+  // 2. Appel RPC unique regroupant TOUT le contexte
+  const { data: contextData } = await supabase.rpc('get_full_context_by_slugs', {
+    p_marque_slug: sMarque,
+    p_famille_slug: sFamille,
+    p_my: parseInt(my, 10),
+    p_modele_slug: sModele,
+    p_powertrain_slug: slugType
+  });
+  
+  const context = contextData?.[0];
+
+  // 3. Vérifications
+  if (!context?.real_marque) return notFound();
+  const realMarque = context.real_marque;
+
+  if (!context?.real_famille) return notFound();
+  const realFamille = context.real_famille;
+
+  if (!context?.real_modele) return notFound();
+  const realModele = context.real_modele;
+
+  if (!context?.real_powertrain) return notFound();
+  const realType = context.real_powertrain;
 
   // 4. Chargement Data
   const { data: rawData, error } = await supabase

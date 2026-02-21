@@ -47,17 +47,31 @@ export default async function ModelePage({ params }: PageProps) {
   // 2. Décodage des Slugs
   const { marque: sMarque, famille: sFamille, my, modele: sModele } = await params;
 
-  const { data: dMarque } = await supabase.rpc('find_brand_by_slug', { slug_input: sMarque });
-  const realMarque = dMarque?.[0]?.Marque;
-  if (!realMarque) return <div>Marque introuvable</div>; 
+  const { data: contextData, error: contextError } = await supabase.rpc('get_full_context_by_slugs', {
+    p_marque_slug: sMarque,
+    p_famille_slug: sFamille,
+    p_my: parseInt(my),
+    p_modele_slug: sModele
+  });
 
-  const { data: dFamille } = await supabase.rpc('find_family_by_slug', { real_brand_name: realMarque, family_slug: sFamille });
-  const realFamille = dFamille?.[0]?.Famille;
-  if (!realFamille) return <div>Famille introuvable</div>;
+  // Récupération de la première ligne de résultat
+  const context = contextData?.[0];
 
-  const { data: dModele } = await supabase.rpc('find_model_by_slug', { real_brand_name: realMarque, real_family_name: realFamille, target_my: parseInt(my), model_slug: sModele });
-  const realModele = dModele?.[0]?.Modele;
-  if (!realModele) return <div>Modèle introuvable</div>;
+  if (contextError || !context) {
+    // Gestion d'erreur générique si l'appel RPC échoue
+    console.error("Erreur contexte", contextError);
+    return <div>Erreur de chargement du contexte</div>;
+  }
+
+  // Vérifications progressives comme dans votre code original
+  if (!context.real_marque) return <div>Marque introuvable</div>;
+  const realMarque = context.real_marque;
+
+  if (!context.real_famille) return <div>Famille introuvable</div>;
+  const realFamille = context.real_famille;
+
+  if (!context.real_modele) return <div>Modèle introuvable</div>;
+  const realModele = context.real_modele;
 
   // 3. Récupération des données
   const { data: rawData, error } = await supabase
