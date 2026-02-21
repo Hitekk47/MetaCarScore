@@ -21,3 +21,43 @@ export type Review = {
   Test_date: string; // Format YYYY/MM
   Score: number;
 };
+
+export type AggregatedSource = {
+  sourceName: string;
+  avgScore: number;
+  count: number;
+  rawScores: number[];
+};
+
+export type SearchResult = {
+  Marque: string;
+  Famille: string;
+  Modele: string | null;
+  Type: 'family' | 'model';
+  MaxMY: number | null;
+};
+
+export type ModelRankingItem = {
+  Marque: string;
+  Famille: string;
+  MY: number;
+  Modele: string;
+  avg_score: number;
+  review_count: number;
+  segment_size?: string;
+  macro_category?: string;
+};
+
+export type BrandRankingItem = {
+  brand: string;
+  avg_score: number;
+  review_count: number;
+  best_model: string | null;
+  best_score: number | null;
+  best_famille: string | null;
+  best_my: number | null;
+  worst_model: string | null;
+  worst_score: number | null;
+  worst_famille: string | null;
+  worst_my: number | null;
+};
