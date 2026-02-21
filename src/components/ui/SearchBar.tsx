@@ -12,14 +12,6 @@ import ResultItem from "./ResultItem";
 
 // --- CONFIGURATION TYPEWRITER ---
 
-export type SearchResult = {
-  Marque: string;
-  Famille: string;
-  Modele: string | null;
-  Type: 'family' | 'model';
-  MaxMY: number | null;
-};
-
 interface SearchBarProps {
   placeholder?: string;
   variant?: "hero" | "header";
