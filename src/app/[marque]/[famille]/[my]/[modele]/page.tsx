@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { Review } from "@/lib/types"; 
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from "next";
+import { serializeJsonLd } from "@/lib/utils";
 
 export const revalidate = 3600;
 
@@ -110,7 +111,7 @@ export default async function ModelePage({ params }: PageProps) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
 
       <GenericPageClient 
