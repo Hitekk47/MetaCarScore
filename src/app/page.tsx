@@ -7,6 +7,7 @@ import LatestReviewsSection from "@/components/sections/LatestReviewsSection";
 import SearchBar from "@/components/ui/SearchBar";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import HeroWord from "@/components/ui/HeroWord";
+import { SEARCH_PLACEHOLDERS } from "@/lib/constants";
 
 // --- OPTIMISATION 1 : CACHE (1h) ---
 export const revalidate = 3600; 
@@ -70,7 +71,7 @@ export default async function Home() {
                   mais le parent z-50 ici assure qu'il gagne sur le texte "Toute la presse..." en dessous */}
               <SearchBar 
                 variant="hero" 
-                placeholder="Trouvez le score de n'importe quel véhicule..." 
+                placeholder={SEARCH_PLACEHOLDERS[0]}
               />
             </div>
             
