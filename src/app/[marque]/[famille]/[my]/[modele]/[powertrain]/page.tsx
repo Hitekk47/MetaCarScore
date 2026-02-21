@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { Review } from "@/lib/types";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
+import { getFullContext, getReviews } from "@/lib/queries";
 
 export const revalidate = 3600;
 
@@ -20,19 +19,37 @@ type PageProps = {
 // 1. Generate Metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { marque, famille, my, modele, powertrain } = await params;  
-  const { data } = await supabase
-    .from('reviews')
-    .select('Marque, Modele')
-    .eq('MY', parseInt(my))
-    .ilike('Marque', marque) 
-    .ilike('Modele', modele.replace(/-/g, ' '))
-    .limit(1)
-    .single();
 
-  // Fallback si la DB ne répond pas vite ou pas de match exact
-  const displayMarque = data?.Marque || marque.toUpperCase();
-  const displayModele = data?.Modele || modele;
-const displayPowertrain = powertrain.replace(/[-_]/g, ' ').split(' ').map((w, i, a) => i === a.length - 2 ? w + " ch" : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  // Optimisation: On parse le powertrain pour passer le slugType au contexte
+  // Cela permet d'avoir le même appel (et donc cache hit) que dans le composant Page
+  const parts = powertrain.split('_');
+  let slugType: string | undefined;
+
+  if (parts.length >= 3) {
+      const p = [...parts];
+      p.pop(); // trans
+      p.pop(); // power
+      slugType = p.join('_');
+  }
+
+  // Utilisation du cache partagé avec les mêmes arguments que la page
+  const context = await getFullContext({
+    p_marque_slug: marque,
+    p_famille_slug: famille,
+    p_my: parseInt(my, 10),
+    p_modele_slug: modele,
+    p_powertrain_slug: slugType
+  });
+
+  if (!context?.real_marque || !context?.real_modele) {
+    notFound();
+  }
+
+  const displayMarque = context.real_marque;
+  const displayModele = context.real_modele;
+
+  // Logique de formattage du powertrain pour le titre
+  const displayPowertrain = powertrain.replace(/[-_]/g, ' ').split(' ').map((w, i, a) => i === a.length - 2 ? w + " ch" : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
   const title = `${displayMarque} ${displayModele} (${my}) en ${powertrain}: Avis, Score & Essais`;
 
@@ -60,8 +77,8 @@ export default async function PowertrainPage({ params }: PageProps) {
   const powerStr = parts.pop()!;
   const slugType = parts.join('_');
 
-  // 2. Appel RPC unique regroupant TOUT le contexte
-  const { data: contextData } = await supabase.rpc('get_full_context_by_slugs', {
+  // 2. Appel RPC unique via cache
+  const context = await getFullContext({
     p_marque_slug: sMarque,
     p_famille_slug: sFamille,
     p_my: parseInt(my, 10),
@@ -69,37 +86,28 @@ export default async function PowertrainPage({ params }: PageProps) {
     p_powertrain_slug: slugType
   });
   
-  const context = contextData?.[0];
+  // 3. Vérifications strictes
+  if (!context?.real_marque || !context?.real_famille || !context?.real_modele || !context?.real_powertrain) {
+    return notFound();
+  }
 
-  // 3. Vérifications
-  if (!context?.real_marque) return notFound();
   const realMarque = context.real_marque;
-
-  if (!context?.real_famille) return notFound();
   const realFamille = context.real_famille;
-
-  if (!context?.real_modele) return notFound();
   const realModele = context.real_modele;
-
-  if (!context?.real_powertrain) return notFound();
   const realType = context.real_powertrain;
 
-  // 4. Chargement Data
-  const { data: rawData, error } = await supabase
-    .from('reviews')
-    .select('*')
-    .eq('Marque', realMarque)
-    .eq('Famille', realFamille)
-    .eq('MY', my)
-    .eq('Modele', realModele)
-    .eq('Type', realType)
-    .eq('Puissance', parseInt(powerStr, 10))
-    .ilike('Transmission', slugTrans)
-    .order('Test_date', { ascending: false });
+  // 4. Chargement Data via cache
+  const reviews = await getReviews({
+    marque: realMarque,
+    famille: realFamille,
+    my: parseInt(my),
+    modele: realModele,
+    type: realType,
+    puissance: parseInt(powerStr, 10),
+    transmission: slugTrans
+  });
 
-  if (error || !rawData || rawData.length === 0) notFound();
-
-  const reviews = rawData as Review[];
+  if (!reviews || reviews.length === 0) notFound();
 
   // 5. Calcul Score & JSON-LD
   const totalScore = reviews.reduce((acc, r) => acc + r.Score, 0);

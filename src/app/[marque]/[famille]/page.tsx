@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { Review } from "@/lib/types";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
+import { getFullContext, getReviews } from "@/lib/queries";
 
 export const revalidate = 3600;
 
@@ -14,17 +13,19 @@ type PageProps = {
 // 1. Generate Metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { marque, famille } = await params;
-  const { data } = await supabase
-    .from('reviews')
-    .select('Marque, Famille')
-    .ilike('Marque', marque)
-    .ilike('Famille', famille.replace(/-/g, ' '))
-    .limit(1)
-    .single();
 
-  // Fallback si la DB ne répond pas vite ou pas de match exact
-  const displayMarque = data?.Marque || marque.toUpperCase();
-  const displayFamille = data?.Famille || famille;
+  // Utilisation du cache partagé
+  const context = await getFullContext({
+    p_marque_slug: marque,
+    p_famille_slug: famille
+  });
+
+  if (!context?.real_marque || !context?.real_famille) {
+    notFound();
+  }
+
+  const displayMarque = context.real_marque;
+  const displayFamille = context.real_famille;
 
   const title = `${displayMarque} ${displayFamille} : Avis, Score & Essais`;
   const description = `Découvrez l'historique de la gamme ${displayMarque} ${displayFamille}. Consultez l'historique des générations, le comparatif des versions et l'agrégation de tous les essais presse sur MetaCarScore.`;
@@ -46,11 +47,11 @@ export default async function FamilyPage({ params }: PageProps) {
   // 2. Décodage Slugs
   const { marque: sMarque, famille: sFamille } = await params;
 
-  const { data: contextData } = await supabase.rpc('get_full_context_by_slugs', { 
+  // Utilisation du cache partagé
+  const context = await getFullContext({
     p_marque_slug: sMarque, 
     p_famille_slug: sFamille 
   });
-  const context = contextData?.[0];
 
   if (!context?.real_marque) return notFound();
   const realMarque = context.real_marque;
@@ -58,17 +59,13 @@ export default async function FamilyPage({ params }: PageProps) {
   if (!context?.real_famille) return notFound();
   const realFamille = context.real_famille;
 
-  // 3. Chargement Data
-  const { data: rawData, error } = await supabase
-    .from('reviews')
-    .select('*')
-    .eq('Marque', realMarque)
-    .eq('Famille', realFamille)
-    .order('Test_date', { ascending: false });
+  // 3. Chargement Data (avec cache)
+  const reviews = await getReviews({
+    marque: realMarque,
+    famille: realFamille
+  });
 
-  if (error || !rawData || rawData.length === 0) notFound();
-
-  const reviews = rawData as Review[];
+  if (!reviews || reviews.length === 0) notFound();
 
   // 4. Calcul Score & JSON-LD
   const totalScore = reviews.reduce((acc, r) => acc + r.Score, 0);
