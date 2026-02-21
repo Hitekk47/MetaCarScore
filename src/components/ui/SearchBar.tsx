@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRouter } from "next/navigation";
 import { toSlug } from "@/lib/slugify";
+import { SearchResult } from "@/lib/types";
+import ResultItem from "./ResultItem";
+import { SEARCH_PLACEHOLDERS } from "@/lib/constants";
 
 // --- CONFIGURATION TYPEWRITER ---
 
