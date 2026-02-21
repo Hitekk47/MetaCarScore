@@ -2,29 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Review } from "@/lib/types";
+import { Review, SearchResult } from "@/lib/types";
 import SearchBar from "@/components/ui/SearchBar";
 import DuelArena from "./DuelArena";
 import { Swords, X, Loader2, CarFront } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toSlug } from "@/lib/slugify";
-// ⚡ IMPORT DE NOTRE NOUVELLE SERVER ACTION
-import { fetchFighterReviews } from "@/actions/duels";
+// ⚡ IMPORT DE NOTRE NOUVELLE SERVER ACTION OPTIMISÉE
+import { fetchBatchFighterReviews } from "@/actions/duels";
 
 type Fighter = {
   id: string; 
   name: string;
   reviews: Review[];
   loading: boolean;
-};
-
-// Typage strict pour remplacer le 'any' de Jules
-type SearchResult = {
-  Marque: string;
-  Famille: string;
-  MaxMY: number;
-  Modele: string;
-  Type: string;
 };
 
 export default function DuelPageClient() {
@@ -34,47 +25,78 @@ export default function DuelPageClient() {
   const [leftFighter, setLeftFighter] = useState<Fighter | null>(null);
   const [rightFighter, setRightFighter] = useState<Fighter | null>(null);
 
-  // 1. ÉCOUTE DE L'URL (Corrigé : séparé pour éviter les renders en boucle)
+  // 1. ÉCOUTE DE L'URL (Unifié pour optimisation batch)
   const leftParam = searchParams.get("left");
   const rightParam = searchParams.get("right");
 
   useEffect(() => {
-    if (leftParam) loadFighter(leftParam, "left");
-  }, [leftParam]);
+    const loadFighters = async () => {
+      const slugsToFetch: string[] = [];
+      if (leftParam) slugsToFetch.push(leftParam);
+      if (rightParam) slugsToFetch.push(rightParam);
 
-  useEffect(() => {
-    if (rightParam) loadFighter(rightParam, "right");
-  }, [rightParam]);
+      if (slugsToFetch.length === 0) {
+        setLeftFighter(null);
+        setRightFighter(null);
+        return;
+      }
 
-  // 2. FONCTION POUR CHARGER UN VÉHICULE (Modernisée)
-  const loadFighter = async (slug: string, side: "left" | "right") => {
-    const parts = slug.split("_");
-    if (parts.length < 4) return; 
+      // Initialisation de l'état de chargement
+      if (leftParam) {
+        // Éviter de reset si c'est déjà chargé
+        setLeftFighter(prev => {
+          if (prev?.id === leftParam && !prev.loading) return prev;
+          const parts = leftParam.split("_");
+          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join("_")}` : leftParam;
+          return { id: leftParam, name, reviews: [], loading: true };
+        });
+      } else {
+        setLeftFighter(null);
+      }
 
-    const marque = parts[0];
-    const modele = parts.slice(3).join("_"); 
+      if (rightParam) {
+        setRightFighter(prev => {
+          if (prev?.id === rightParam && !prev.loading) return prev;
+          const parts = rightParam.split("_");
+          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join("_")}` : rightParam;
+          return { id: rightParam, name, reviews: [], loading: true };
+        });
+      } else {
+        setRightFighter(null);
+      }
 
-    const loadingState: Fighter = {
-        id: slug,
-        name: `${marque} ${modele}`,
-        reviews: [],
-        loading: true
+      // ⚡ APPEL BATCH OPTIMISÉ (1 seule requête pour les deux)
+      try {
+        const results = await fetchBatchFighterReviews(slugsToFetch);
+
+        if (leftParam && results[leftParam]) {
+          const parts = leftParam.split("_");
+          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join("_")}` : leftParam;
+          setLeftFighter({
+            id: leftParam,
+            name,
+            reviews: results[leftParam],
+            loading: false
+          });
+        }
+
+        if (rightParam && results[rightParam]) {
+          const parts = rightParam.split("_");
+          const name = parts.length >= 4 ? `${parts[0]} ${parts.slice(3).join("_")}` : rightParam;
+          setRightFighter({
+            id: rightParam,
+            name,
+            reviews: results[rightParam],
+            loading: false
+          });
+        }
+      } catch (err) {
+        console.error("Erreur chargement batch duels:", err);
+      }
     };
 
-    side === "left" ? setLeftFighter(loadingState) : setRightFighter(loadingState);
-
-    // ⚡ APPEL SÉCURISÉ AU SERVEUR (Plus de Supabase ici !)
-    const reviews = await fetchFighterReviews(slug);
-    
-    const finalState: Fighter = {
-        id: slug,
-        name: `${marque} ${modele}`,
-        reviews: reviews,
-        loading: false
-    };
-
-    side === "left" ? setLeftFighter(finalState) : setRightFighter(finalState);
-  };
+    loadFighters();
+  }, [leftParam, rightParam]);
 
   const getCarUrl = (fighter: Fighter) => {
     const parts = fighter.id.split("_");
@@ -99,7 +121,12 @@ export default function DuelPageClient() {
   };
 
   const removeFighter = (side: "left" | "right") => {
-    side === "left" ? setLeftFighter(null) : setRightFighter(null);
+    // Optimistic UI update
+    if (side === "left") {
+      setLeftFighter(null);
+    } else {
+      setRightFighter(null);
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.delete(side);
     router.replace(`/duels?${params.toString()}`, { scroll: false });
@@ -161,7 +188,7 @@ export default function DuelPageClient() {
 }
 
 // SOUS-COMPOSANT : SLOT DE SÉLECTION
-function FighterSlot({ fighter, side, onSelect, onRemove }: { fighter: Fighter | null, side: "left" | "right", onSelect: (res: any) => void, onRemove: () => void }) {
+function FighterSlot({ fighter, side, onSelect, onRemove }: { fighter: Fighter | null, side: "left" | "right", onSelect: (res: SearchResult) => void, onRemove: () => void }) {
     const isRight = side === "right";
     const my = fighter ? fighter.id.split('_')[2] : null;
 
