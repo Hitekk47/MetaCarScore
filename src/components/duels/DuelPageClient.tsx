@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Review } from "@/lib/types";
+import { Review, SearchResult } from "@/lib/types";
 import SearchBar from "@/components/ui/SearchBar";
 import DuelArena from "./DuelArena";
 import { Swords, X, Loader2, CarFront } from "lucide-react";
@@ -16,15 +16,6 @@ type Fighter = {
   name: string;
   reviews: Review[];
   loading: boolean;
-};
-
-// Typage strict pour remplacer le 'any' de Jules
-type SearchResult = {
-  Marque: string;
-  Famille: string;
-  MaxMY: number;
-  Modele: string;
-  Type: string;
 };
 
 export default function DuelPageClient() {
