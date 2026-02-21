@@ -18,12 +18,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const context = await getFullContext({
     p_marque_slug: marque,
     p_famille_slug: famille,
-    // Note: p_my n'est pas strictement nécessaire pour retrouver marque/famille,
-    // mais si on veut valider que l'année existe pour cette famille, on pourrait l'ajouter.
-    // Cependant, get_full_context_by_slugs ne valide pas l'existence de reviews pour une année donnée
-    // si on ne lui demande pas explicitement (le RPC semble juste résoudre les slugs).
-    // Vérifions si le RPC prend p_my. Oui il le prend.
-    p_my: parseInt(my)
   });
 
   if (!context?.real_marque || !context?.real_famille) {
