@@ -19,17 +19,17 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
     const groups: Record<string, { totalScore: number; maxPower: number; count: number; name: string; my: number }> = {};
 
     reviews.forEach(r => {
-      const name = r.Modele;
-      // Initialisation
-      if (!groups[name]) groups[name] = { totalScore: 0, maxPower: 0, count: 0, name, my: r.MY };
+      const uniqueKey = `${r.Modele}_${r.MY}`;
       
-      groups[name].totalScore += r.Score;
-      groups[name].count += 1;
+      if (!groups[uniqueKey]) {
+        groups[uniqueKey] = { totalScore: 0, maxPower: 0, count: 0, name: r.Modele, my: r.MY };
+      }
       
-      // On capture le MY de la version la plus puissante/récente rencontrée pour construire le lien
-      if (r.Puissance > groups[name].maxPower) {
-        groups[name].maxPower = r.Puissance;
-        groups[name].my = r.MY; 
+      groups[uniqueKey].totalScore += r.Score;
+      groups[uniqueKey].count += 1;
+      
+      if (r.Puissance > groups[uniqueKey].maxPower) {
+        groups[uniqueKey].maxPower = r.Puissance;
       }
     });
 
@@ -120,7 +120,7 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
 
               return (
                   <motion.div 
-                    key={`${activeTab}-${model.name}`}
+                    key={`${activeTab}-${model.name}-${model.my}`}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
@@ -151,10 +151,13 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
                                     
                                     {/* CAS PUISSANCE */}
                                     {activeTab === 'power' && (
-                                      <span className="text-slate-600 font-bold">{model.power} ch</span>
+                                      <>
+                                        <span className="bg-slate-100 px-1 rounded text-slate-500 font-bold">MY {model.my}</span>
+                                        <span className="text-slate-600 font-bold">{model.power} ch</span>
+                                      </>
                                     )}
 
-                                    {/* CAS NOTES (Avec MY) */}
+                                    {/* CAS NOTES */}
                                     {activeTab === 'score' && (
                                       <>
                                           <span className="bg-slate-100 px-1 rounded text-slate-500 font-bold">MY {model.my}</span>
@@ -162,7 +165,7 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
                                       </>
                                     )}
 
-                                    {/* CAS SMART (Avec MY) */}
+                                    {/* CAS SMART */}
                                     {activeTab === 'smart' && (
                                       <>
                                           <span className="bg-slate-100 px-1 rounded text-slate-500 font-bold">MY {model.my}</span>
