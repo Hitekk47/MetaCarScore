@@ -1,7 +1,13 @@
+const slugCache = new Map<string, string>();
+
 export function toSlug(text: string | null | undefined): string {
   if (!text) return '';
-  return text
-    .toString()
+
+  const originalText = text.toString();
+  const cached = slugCache.get(originalText);
+  if (cached !== undefined) return cached;
+
+  const slug = originalText
     .toLowerCase()
     .replace(/\+/g, ' plus')
     .replace(/&/g, 'and')
@@ -14,4 +20,7 @@ export function toSlug(text: string | null | undefined): string {
     .replace(/\-\-+/g, '-') // Remplace les tirets multiples par un seul
     .replace(/^-+/, '') // Coupe les tirets au début
     .replace(/-+$/, ''); // Coupe les tirets à la fin
+
+  slugCache.set(originalText, slug);
+  return slug;
 }
