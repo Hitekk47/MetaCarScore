@@ -1,75 +1,20 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { Review } from "@/lib/types";
+import { Review, AggregatedSource } from "@/lib/types";
 import ScoreBadge from "@/components/ui/ScoreBadge";
-import { cn } from "@/lib/utils";
+import { cn, aggregateReviews, getPowerRange } from "@/lib/utils";
 import { Trophy, Minus, Gauge } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import DuelScore from "./DuelScore";
+import MiniScoreBar from "./MiniScoreBar";
+import PowerBadge from "./PowerBadge";
 
 type Props = {
   carA: { name: string; reviews: Review[]; my: number; url: string };
   carB: { name: string; reviews: Review[]; my: number; url: string };
 };
-
-type AggregatedSource = {
-  sourceName: string;
-  avgScore: number;
-  count: number;
-  rawScores: number[];
-};
-
-// --- HELPERS ---
-function aggregateReviews(reviews: Review[]): Record<string, AggregatedSource> {
-  const map: Record<string, AggregatedSource> = {};
-  reviews.forEach((r) => {
-    const source = r.Testeur.trim();
-    if (!map[source]) map[source] = { sourceName: source, avgScore: 0, count: 0, rawScores: [] };
-    map[source].rawScores.push(r.Score);
-    map[source].count += 1;
-  });
-  Object.values(map).forEach((item) => {
-    const total = item.rawScores.reduce((a, b) => a + b, 0);
-    item.avgScore = Math.round(total / item.count);
-  });
-  return map;
-}
-
-function getPowerRange(reviews: Review[]) {
-    const powers = reviews.map(r => r.Puissance).filter(p => p > 0);
-    if (powers.length === 0) return null;
-    const min = Math.min(...powers);
-    const max = Math.max(...powers);
-    return min === max ? `${min} ch` : `${min} - ${max} ch`;
-}
-
-// --- SOUS-COMPOSANTS UI ---
-function MiniScoreBar({ scores }: { scores: number[] }) {
-    if (!scores || scores.length === 0) return null;
-    const total = scores.length;
-    const positive = scores.filter(s => s >= 75).length;
-    const mixed = scores.filter(s => s >= 50 && s < 75).length;
-    const negative = scores.filter(s => s < 50).length;
-
-    return (
-        <div className="flex h-1.5 w-16 md:w-24 rounded-full overflow-hidden bg-white/50 border border-slate-200 transition-all duration-300">
-            <div style={{ width: `${(positive / total) * 100}%` }} className="bg-emerald-500"></div>
-            <div style={{ width: `${(mixed / total) * 100}%` }} className="bg-yellow-400"></div>
-            <div style={{ width: `${(negative / total) * 100}%` }} className="bg-red-500"></div>
-        </div>
-    );
-}
-
-function PowerBadge({ text }: { text: string | null }) {
-    if (!text) return null;
-    return (
-        <div className="flex items-center gap-1 mt-1 text-[9px] font-bold text-slate-500 whitespace-nowrap">
-            <Gauge size={10} className="text-slate-400" />
-            {text}
-        </div>
-    );
-}
 
 // --- COMPOSANT PRINCIPAL ---
 
@@ -330,24 +275,4 @@ export default function DuelArena({ carA, carB }: Props) {
         </motion.div>
     </div>
   );
-}
-
-function DuelScore({ score, count, isWinner }: { score: number; count: number; isWinner?: boolean }) {
-    return (
-        <div className="flex flex-col items-center relative">
-            <div className="relative">
-                <ScoreBadge score={score} size="md" />
-                {isWinner && (
-                    <div className="absolute -top-3 -right-2 text-yellow-500 drop-shadow-sm animate-bounce">
-                        <Trophy size={14} fill="currentColor" />
-                    </div>
-                )}
-            </div>
-            {count > 1 && (
-                <span className="absolute top-full mt-1 text-[9px] text-slate-400 font-medium whitespace-nowrap">
-                    Moy. de {count}
-                </span>
-            )}
-        </div>
-    );
 }

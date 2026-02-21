@@ -1,23 +1,9 @@
 "use client";
 
 import { getScoreColor } from "@/lib/utils";
-import { motion, useMotionValue, useTransform, animate } from "framer-motion";
-import { useEffect } from "react";
+import { motion } from "framer-motion";
 import { Filter, Lock } from "lucide-react";
-
-// --- SOUS-COMPOSANT D'ANIMATION ---
-function AnimatedNumber({ value }: { value: number }) {
-  const count = useMotionValue(0); // On part de 0 ou de la valeur précédente idéalement
-  const rounded = useTransform(count, (latest) => Math.round(latest));
-
-  useEffect(() => {
-    // Animation fluide type "compteur"
-    const controls = animate(count, value, { duration: 1, ease: "circOut" });
-    return controls.stop;
-  }, [value, count]);
-
-  return <motion.span>{rounded}</motion.span>;
-}
+import AnimatedNumber from "./AnimatedNumber";
 
 export default function ScoreBadge({ 
   score, 
