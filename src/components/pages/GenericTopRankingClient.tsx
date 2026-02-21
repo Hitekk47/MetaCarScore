@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Trophy, Loader2, Search, Crown, Zap, Leaf, Fuel, Cog, Luggage, Sun, Info } from "lucide-react";
 import Link from "next/link";
 import { toSlug } from "@/lib/slugify";
+import { MACRO_CONFIG } from "@/lib/constants";
 
 // --- TYPES ---
 type RankingItem = {
@@ -34,57 +35,6 @@ type RpcParams = {
 };
 
 // --- CONFIGURATION NOMENCLATURE ---
-type SegmentDef = { code: string; label: string };
-
-const MACRO_CONFIG: { label: string; segments: SegmentDef[] }[] = [
-  { 
-    label: "Berline / Hatch", 
-    segments: [
-      { code: "A", label: "Micro-Citadines" },  // Twingo, Panda
-      { code: "B", label: "Citadines" },        // Clio, 208
-      { code: "C", label: "Compactes" },        // Golf, 308
-      { code: "D", label: "Berlines Familiales" }, // Passat, Model 3
-      { code: "E", label: "Routières / Luxe" }, // Série 5, Classe E
-      { code: "F", label: "Limousines" }        // Série 7, Classe S
-    ] 
-  },
-  { 
-    label: "SUV / Crossover", 
-    segments: [
-      { code: "A", label: "Micro-SUV" },     // Ignis
-      { code: "B", label: "SUV Urbains" },   // 2008, Captur
-      { code: "C", label: "SUV Compacts" },  // 3008, Tiguan
-      { code: "D", label: "SUV Familiaux" }, // X3, GLC
-      { code: "E", label: "Grands SUV Luxe" }, // X5, Cayenne
-      { code: "F", label: "SUV Prestige" }   // Range Rover, Bentayga
-    ] 
-  },
-  { 
-    label: "Sport / Coupé / Cab", 
-    segments: [
-      { code: "SPORT", label: "Sportives Light" }, // MX-5, Alpine
-      { code: "GT", label: "Grand Tourisme" },     // 911, AMG GT
-      { code: "SUPER", label: "Supercars" }        // Ferrari, McLaren
-    ] 
-  },
-  { 
-    label: "Familiale / Van", 
-    segments: [
-      { code: "B", label: "Ludospaces" },          // Kangoo, Berlingo
-      { code: "C", label: "Monospaces Compacts" }, // Scénic, Touran
-      { code: "D", label: "Grands Monospaces" },   // Espace, Sharan
-      { code: "E", label: "Vans VIP / Navettes" }  // Classe V, Multivan
-    ] 
-  },
-  { 
-    label: "Utilitaire / Pickup", 
-    segments: [
-      { code: "C", label: "Compact / City" },    // Kangoo, Caddy
-      { code: "D", label: "Moyen / 1 Tonne" },     // Ranger, Hilux, Amarok, Trafic
-      { code: "E", label: "Grand / Full Size" }    // F-150, RAM, Crafter
-    ] 
-  }
-];
 
 type Props = {
   title: string;
@@ -94,6 +44,16 @@ type Props = {
   filterCategory?: string; 
   filterTransmission?: string;
   customRpcName?: string;
+};
+
+const themeClasses = {
+  blue: "bg-blue-100 text-blue-600",
+  cyan: "bg-cyan-100 text-cyan-600",
+  green: "bg-lime-100 text-lime-700",
+  red: "bg-red-100 text-red-600",
+  amber: "bg-amber-100 text-amber-600",
+  slate: "bg-slate-200 text-slate-700",
+  orange: "bg-orange-100 text-orange-600",
 };
 
 export default function GenericTopRankingClient({ 
@@ -120,16 +80,6 @@ export default function GenericTopRankingClient({
     manual: Cog, luggage: Luggage, sun: Sun
   };
   const IconComponent = icons[iconType] || Trophy;
-
-  const themeClasses = {
-    blue: "bg-blue-100 text-blue-600",
-    cyan: "bg-cyan-100 text-cyan-600",
-    green: "bg-lime-100 text-lime-700",
-    red: "bg-red-100 text-red-600",
-    amber: "bg-amber-100 text-amber-600",
-    slate: "bg-slate-200 text-slate-700",
-    orange: "bg-orange-100 text-orange-600",
-  };
 
   // --- FETCH DATA ---
   useEffect(() => {

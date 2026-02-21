@@ -7,13 +7,9 @@ import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useRouter } from "next/navigation";
 import { toSlug } from "@/lib/slugify";
+import { SEARCH_PLACEHOLDERS } from "@/lib/constants";
 
 // --- CONFIGURATION TYPEWRITER ---
-const PLACEHOLDERS = [
-  "Trouvez le score de n'importe quel véhicule...",
-  "Ex : Porsche 911, Tesla Model Y, Peugeot 3008...",
-  "Recherchez une marque ou un modèle...",
-];
 
 type SearchResult = {
   Marque: string;
@@ -59,7 +55,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
     let timeoutId: NodeJS.Timeout;
 
     const type = () => {
-      const currentString = PLACEHOLDERS[currentStringIndex];
+      const currentString = SEARCH_PLACEHOLDERS[currentStringIndex];
 
       // Déterminer le texte à afficher
       if (isDeleting) {
@@ -81,7 +77,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
       } else if (isDeleting && currentCharIndex === 0) {
         // Mot effacé : on passe au suivant
         isDeleting = false;
-        currentStringIndex = (currentStringIndex + 1) % PLACEHOLDERS.length;
+        currentStringIndex = (currentStringIndex + 1) % SEARCH_PLACEHOLDERS.length;
         typeSpeed = 500; // Petite pause avant de recommencer à écrire
       }
 
