@@ -28,36 +28,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: item.priority || 0.9,
   }));
 
-  // 3. Récupération des données (Optimisée pour Sitemap avec Pagination)
+  // 3. Récupération des données (Optimisée via RPC)
+
+  // On utilise une fonction RPC pour récupérer uniquement les combinaisons distinctes
+  // ce qui réduit drastiquement la bande passante et l'usage mémoire.
+  const { data: rows, error } = await supabase.rpc('get_sitemap_data');
+
+  if (error) {
+    console.error('Error fetching sitemap data via RPC:', error);
+    // En cas d'erreur, on retourne uniquement les routes statiques
+  }
+
+  // --- DÉDOUBLONNAGE INTELLIGENT ---
 
   const brands = new Set<string>();
   const families = new Set<string>();
   const mys = new Set<string>();
   const models = new Set<string>();
 
-  const PAGE_SIZE = 1000;
-  let from = 0;
-  let hasMore = true;
-
-  while (hasMore) {
-    const { data: rows, error } = await supabase
-      .from('reviews')
-      .select('Marque, Famille, MY, Modele')
-      .not('Famille', 'is', null)
-      .not('Modele', 'is', null)
-      .range(from, from + PAGE_SIZE - 1);
-
-    if (error) {
-      console.error('Error fetching sitemap data:', error);
-      break;
-    }
-
-    if (!rows || rows.length === 0) {
-      hasMore = false;
-      break;
-    }
-
-    rows.forEach((row) => {
+  if (rows && Array.isArray(rows)) {
+    rows.forEach((row: any) => {
       const m = toSlug(row.Marque);
       const f = toSlug(row.Famille);
       const y = row.MY;
@@ -75,12 +65,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // Niveau 4 : Modèle
       models.add(`${BASE_URL}/${m}/${f}/${y}/${mo}`);
     });
-
-    if (rows.length < PAGE_SIZE) {
-      hasMore = false;
-    } else {
-      from += PAGE_SIZE;
-    }
   }
 
   // --- CONSTRUCTION DES ROUTES ---
