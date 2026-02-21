@@ -51,10 +51,10 @@ export default function Powertrain({ power, transmission, type }: Props) {
         window.addEventListener("scroll", closeSelf, { capture: true });
         window.addEventListener("click", closeSelf);
         window.addEventListener("resize", closeSelf);
-    }
 
-    // ÉCOUTEUR SPECIAL : Si un autre tooltip s'ouvre ailleurs, je me ferme
-    window.addEventListener(CLOSE_EVENT, closeSelf);
+        // ÉCOUTEUR SPECIAL : Si un autre tooltip s'ouvre ailleurs, je me ferme
+        window.addEventListener(CLOSE_EVENT, closeSelf);
+    }
 
     return () => {
         window.removeEventListener("scroll", closeSelf, { capture: true });
