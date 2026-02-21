@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import DuelPageClient from "@/components/duels/DuelPageClient";
 import { Loader2 } from "lucide-react";
 import { Metadata } from 'next';
+import { getFullContext } from "@/lib/queries";
 
 export async function generateMetadata({ searchParams }: { searchParams: Promise<{ left?: string; right?: string }> }): Promise<Metadata> {
   const { left, right } = await searchParams;
@@ -15,24 +16,47 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
         "Affrontez deux véhicules en VS et comparez instantanément leurs scores presse.",
     };
   }
-  // 2. Formatage des noms
-  const formatDuelName = (slug: string) => {
-    const p = slug.split('_');
-    if (p.length < 4) return slug.replace(/[_-]/g, ' '); // Sécurité si slug malformé
 
-    const marque = p[0].replace(/-/g, ' ');
-    const my = p[2];
-    const modele = p[3].replace(/-/g, ' ');
+  // 2. Résolution des noms (via RPC ou Fallback)
+  const resolveDuelName = async (slug: string) => {
+    const parts = slug.split('_');
+    // Fallback rapide si slug malformé
+    if (parts.length < 4) {
+       return slug.replace(/[_-]/g, ' ');
+    }
 
-    const capitalize = (s: string) => s.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    const marque = parts[0];
+    const famille = parts[1];
+    const my = parseInt(parts[2]);
+    const modele = parts.slice(3).join("_");
 
-    // On retourne : Marque Modele (MY)
-    return `${capitalize(marque)} ${capitalize(modele)} (${my})`;
+    // Tentative de résolution via RPC (cached)
+    try {
+      const context = await getFullContext({
+        p_marque_slug: marque,
+        p_famille_slug: famille,
+        p_my: my,
+        p_modele_slug: modele
+      });
+
+      if (context && context.real_marque && context.real_modele) {
+        return `${context.real_marque} ${context.real_modele} (${my})`;
+      }
+    } catch (e) {
+      console.error("Error resolving metadata context:", e);
+    }
+
+    // Fallback si context non trouvé ou erreur
+    const capitalize = (s: string) => s.split(/[- ]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    // Join modele parts with space
+    const prettyModele = parts.slice(3).map(p => capitalize(p.replace(/-/g, ' '))).join(' ');
+    return `${capitalize(marque)} ${prettyModele} (${my})`;
   };
 
-  const nameA = formatDuelName(left);
-  const nameB = formatDuelName(right);
-
+  const [nameA, nameB] = await Promise.all([
+    resolveDuelName(left),
+    resolveDuelName(right)
+  ]);
 
   const title = `${nameA} vs ${nameB} : Le verdict de la presse internationale`;
   const description = `Verdict du duel : Comparez les notes de la presse et les avis experts entre la ${nameA} et la ${nameB} sur MetaCarScore.`;
@@ -60,6 +84,7 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
     }
   };
 }
+
 export default function DuelsPage() {
   return (
     <>
