@@ -24,23 +24,32 @@ export default function DuelArena({ carA, carB }: Props) {
   const [showSticky, setShowSticky] = useState(false);
   // Ajout d'un flag pour éviter les erreurs d'hydratation sur le composant sticky
   const [isMounted, setIsMounted] = useState(false);
-  const headerRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
-    const el = headerRef.current;
+    const el = sentinelRef.current;
     if (!el) return;
 
-    // On déclenche le header sticky quand le header principal sort de l'écran
+    // On observe la sentinelle placée tout en bas du header statique
+    // On veut déclencher quand elle passe SOUS le header principal du site (top-16 / 64px)
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // isIntersecting = false => on a scrollé au-delà
-        setShowSticky(!entry.isIntersecting);
+        // La sentinelle est intersectante quand elle est visible dans le viewport (plus bas que 64px)
+        // Elle sort de l'intersection quand elle remonte et passe au-dessus de la ligne des 64px
+        // MAIS attention : isIntersecting peut être false si elle est tout en bas hors de l'écran (loading)
+        // Donc on vérifie aussi boundingClientRect.top
+
+        // Si elle n'est plus intersectante (sortie de la zone visible) ET qu'elle est en haut (top <= 64)
+        // C'est qu'on a scrollé vers le bas au-delà du header
+        const isScrolledPast = !entry.isIntersecting && entry.boundingClientRect.top <= 80; // Marge de sécurité un peu plus large que 64px
+        setShowSticky(isScrolledPast);
       },
       {
         threshold: 0,
-        // On veut que ça déclenche dès que le bas du header sort du viewport
-        rootMargin: "-80px 0px 0px 0px"
+        // La rootMargin déplace la "ligne de flottaison" du haut de 64px vers le bas
+        // Tout ce qui est au-dessus de 64px est considéré "hors champ"
+        rootMargin: "-64px 0px 0px 0px"
       }
     );
 
@@ -92,8 +101,8 @@ export default function DuelArena({ carA, carB }: Props) {
     <div className="relative isolate">
         
         {/* === HEADER PRINCIPAL (STATIC) === */}
-        {/* Ce header disparaît naturellement au scroll. Sert de référence pour l'observer. */}
-        <div ref={headerRef} className="bg-white rounded-t-xl border-b border-slate-200 shadow-sm grid grid-cols-3 px-2 md:px-6 py-6 overflow-hidden">
+        {/* Ce header disparaît naturellement au scroll. Sert de référence pour l'observer via la sentinelle en bas. */}
+        <div className="bg-white rounded-t-xl border-b border-slate-200 shadow-sm grid grid-cols-3 px-2 md:px-6 py-6 overflow-hidden relative">
             
             {/* CAR A */}
             <div className={cn("flex flex-col items-center justify-start text-center relative z-10", !isValidA && "opacity-80")}>
@@ -152,6 +161,9 @@ export default function DuelArena({ carA, carB }: Props) {
                     )}
                 </div>
             </div>
+
+            {/* SENTINELLE : Point de repère invisible tout en bas du header */}
+            <div ref={sentinelRef} className="absolute bottom-0 left-0 w-full h-px pointer-events-none opacity-0" />
         </div>
 
         {/* === HEADER STICKY (COMPACT) === */}
