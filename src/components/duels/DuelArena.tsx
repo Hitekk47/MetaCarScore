@@ -165,7 +165,7 @@ export default function DuelArena({ carA, carB }: Props) {
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: -100, opacity: 0 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-md"
+                        className="fixed top-16 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-md"
                     >
                         <div className="max-w-7xl mx-auto px-4 py-2 grid grid-cols-3 items-center h-14 md:h-16">
                             {/* CAR A (Compact) */}
