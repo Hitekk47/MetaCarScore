@@ -85,7 +85,7 @@ export default function DuelArena({ carA, carB }: Props) {
   return (
     <div className="relative isolate">
         
-        {/* Sentinelle */}
+        {/* Sentinelle - Doit rester hors du flux changeant pour éviter les boucles */}
         <div ref={triggerRef} className="h-px w-full absolute -top-1 pointer-events-none opacity-0" />
 
         <motion.div 
@@ -97,7 +97,7 @@ export default function DuelArena({ carA, carB }: Props) {
         
         {/* === STICKY HEADER (BLANC) === */}
         <div className={cn(
-            "sticky top-16 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm grid grid-cols-3 px-2 md:px-6 rounded-t-xl transition-[padding,height] duration-500 ease-in-out overflow-hidden will-change-[padding,height]",
+            "sticky top-16 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm grid grid-cols-3 px-2 md:px-6 rounded-t-xl transition-all duration-500 ease-in-out overflow-hidden will-change-[padding,height]",
             isCompact ? "py-2 items-center" : "py-6"
         )}>
             
@@ -115,7 +115,8 @@ export default function DuelArena({ carA, carB }: Props) {
                     </Link>
                 </div>
                 
-                <div className="transition-transform duration-300 origin-center">
+                {/* Score Badge - Transition fluide via scale */}
+                <div className={cn("transition-transform duration-500 ease-out origin-center", isCompact && "scale-75")}>
                     <ScoreBadge score={isValidA ? scoreA : 0} size={isCompact ? "md" : "xl"} reviewCount={countA} />
                 </div>
                 
@@ -158,9 +159,11 @@ export default function DuelArena({ carA, carB }: Props) {
                         </h2>
                     </Link>
                 </div>
-                <div className="transition-transform duration-300 origin-center">
+
+                <div className={cn("transition-transform duration-500 ease-out origin-center", isCompact && "scale-75")}>
                     <ScoreBadge score={isValidB ? scoreB : 0} size={isCompact ? "md" : "xl"} reviewCount={countB} />
                 </div>
+
                 <div className={cn(
                     "flex flex-col items-center transition-all duration-500 ease-in-out overflow-hidden", 
                     isCompact ? "max-h-0 opacity-0 mt-0" : "max-h-24 opacity-100 mt-2"
@@ -175,43 +178,12 @@ export default function DuelArena({ carA, carB }: Props) {
             </div>
         </div>
 
-        {/* === SECTION HEADER (GRIS) : DEVIENT INTELLIGENT === */}
-        <div className={cn(
-            "bg-slate-50 border-b border-slate-100 transition-all duration-500 overflow-hidden",
-            // J'utilise ton py-24, mais j'ajoute 'items-end' et 'pb-4' pour bien coller en bas
-            isCompact ? "h-48 items-end pb-2" : "h-10 items-center" 
-        )}>
-            {/* CORRECTION ICI : h-full + items-end */}
-            <div className="grid grid-cols-3 px-2 md:px-6 h-full items-end">
-                
-                {/* COLONNE GAUCHE */}
-                <div className={cn("flex flex-col items-center justify-end pb-1 transition-all duration-500", isCompact ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none")}>
-                    {isValidA && isCompact && (
-                        <>
-                            <PowerBadge text={getPowerRange(carA.reviews)} />
-                            <MiniScoreBar scores={scoresArrayA} />
-                        </>
-                    )}
-                </div>
-
-                {/* COLONNE CENTRE */}
-                <div className="flex flex-col items-center justify-center h-full pb-1">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
-                        <Trophy size={12} /> Face-à-Face ({matches.length})
-                    </span>
-                </div>
-
-                {/* COLONNE DROITE */}
-                <div className={cn("flex flex-col items-center justify-end pb-1 transition-all duration-500", isCompact ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none")}>
-                    {isValidB && isCompact && (
-                        <>
-                            <PowerBadge text={getPowerRange(carB.reviews)} />
-                            <MiniScoreBar scores={scoresArrayB} />
-                        </>
-                    )}
-                </div>
-
-            </div>
+        {/* === SECTION HEADER (GRIS) : FIXE === */}
+        {/* On retire la logique d'expansion h-48 qui causait le layout shift et le flicker */}
+        <div className="bg-slate-50 border-b border-slate-100 h-10 flex items-center justify-center overflow-hidden">
+             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
+                <Trophy size={12} /> Face-à-Face ({matches.length})
+            </span>
         </div>
 
         {/* === LISTE DES ESSAIS === */}
