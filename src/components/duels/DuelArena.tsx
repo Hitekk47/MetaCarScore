@@ -5,7 +5,7 @@ import { Review, AggregatedSource } from "@/lib/types";
 import ScoreBadge from "@/components/ui/ScoreBadge";
 import { cn, aggregateReviews, getPowerRange } from "@/lib/utils";
 import { Trophy, Minus, Gauge } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import DuelScore from "./DuelScore";
 import MiniScoreBar from "./MiniScoreBar";
@@ -20,21 +20,36 @@ type Props = {
 
 export default function DuelArena({ carA, carB }: Props) {
   
-  // DETECTION DU STICKY MODE
-  const [isCompact, setIsCompact] = useState(false);
-  const triggerRef = useRef<HTMLDivElement | null>(null);
+  // DETECTION DU SCROLL
+  const [showSticky, setShowSticky] = useState(false);
+  // Ajout d'un flag pour éviter les erreurs d'hydratation sur le composant sticky
+  const [isMounted, setIsMounted] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const el = triggerRef.current;
+    setIsMounted(true);
+    const el = sentinelRef.current;
     if (!el) return;
 
+    // On observe la sentinelle placée tout en bas du header statique
+    // On veut déclencher quand elle passe SOUS le header principal du site (top-16 / 64px)
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsCompact(!entry.isIntersecting);
+        // La sentinelle est intersectante quand elle est visible dans le viewport (plus bas que 64px)
+        // Elle sort de l'intersection quand elle remonte et passe au-dessus de la ligne des 64px
+        // MAIS attention : isIntersecting peut être false si elle est tout en bas hors de l'écran (loading)
+        // Donc on vérifie aussi boundingClientRect.top
+
+        // Si elle n'est plus intersectante (sortie de la zone visible) ET qu'elle est en haut (top <= 64)
+        // C'est qu'on a scrollé vers le bas au-delà du header
+        const isScrolledPast = !entry.isIntersecting && entry.boundingClientRect.top <= 80; // Marge de sécurité un peu plus large que 64px
+        setShowSticky(isScrolledPast);
       },
       {
-        rootMargin: "-66px 0px 0px 0px", // 64px header + 2px
         threshold: 0,
+        // La rootMargin déplace la "ligne de flottaison" du haut de 64px vers le bas
+        // Tout ce qui est au-dessus de 64px est considéré "hors champ"
+        rootMargin: "-64px 0px 0px 0px"
       }
     );
 
@@ -85,45 +100,24 @@ export default function DuelArena({ carA, carB }: Props) {
   return (
     <div className="relative isolate">
         
-        {/* Sentinelle */}
-        <div ref={triggerRef} className="h-px w-full absolute -top-1 pointer-events-none opacity-0" />
-
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="w-full bg-white rounded-xl shadow-sm border border-slate-200"
-        >
-        
-        {/* === STICKY HEADER (BLANC) === */}
-        <div className={cn(
-            "sticky top-16 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm grid grid-cols-3 px-2 md:px-6 rounded-t-xl transition-[padding,height] duration-500 ease-in-out overflow-hidden will-change-[padding,height]",
-            isCompact ? "py-2 items-center" : "py-6"
-        )}>
+        {/* === HEADER PRINCIPAL (STATIC) === */}
+        {/* Ce header disparaît naturellement au scroll. Sert de référence pour l'observer via la sentinelle en bas. */}
+        <div className="bg-white rounded-t-xl border-b border-slate-200 shadow-sm grid grid-cols-3 px-2 md:px-6 py-6 overflow-hidden relative">
             
             {/* CAR A */}
-            <div className={cn("flex flex-col items-center justify-start text-center relative z-10 transition-all", !isValidA && "opacity-80")}>
-                <div className={cn("w-full flex items-end justify-center transition-all duration-500", isCompact ? "h-6 mb-1" : "h-10 md:h-12 mb-3")}>
+            <div className={cn("flex flex-col items-center justify-start text-center relative z-10", !isValidA && "opacity-80")}>
+                <div className="w-full flex items-end justify-center h-10 md:h-12 mb-3">
                     <Link href={carA.url} className="block group">
-                        <h2 className={cn(
-                            "font-bold text-slate-500 uppercase tracking-wider w-full leading-tight group-hover:text-blue-600 transition-all duration-300",
-                            isCompact ? "text-[9px] line-clamp-1" : "text-[10px] md:text-xs line-clamp-2"
-                        )}>
+                        <h2 className="font-bold text-slate-500 uppercase tracking-wider w-full leading-tight group-hover:text-blue-600 transition-colors duration-300 text-[10px] md:text-xs line-clamp-2">
                             <span className="text-slate-400 mr-1 font-mono">{carA.my}</span>
                             {carA.name}
                         </h2>
                     </Link>
                 </div>
                 
-                <div className="transition-transform duration-300 origin-center">
-                    <ScoreBadge score={isValidA ? scoreA : 0} size={isCompact ? "md" : "xl"} reviewCount={countA} />
-                </div>
+                <ScoreBadge score={isValidA ? scoreA : 0} size="xl" reviewCount={countA} />
                 
-                {/* LES EXTRAS DISPARAISSENT EN MODE COMPACT */}
-                <div className={cn(
-                    "flex flex-col items-center transition-all duration-500 ease-in-out overflow-hidden", 
-                    isCompact ? "max-h-0 opacity-0 mt-0" : "max-h-24 opacity-100 mt-2"
-                )}>
+                <div className="flex flex-col items-center max-h-24 opacity-100 mt-2">
                     {isValidA && (
                         <>
                             <div className="mt-3"><MiniScoreBar scores={scoresArrayA} /></div>
@@ -134,10 +128,10 @@ export default function DuelArena({ carA, carB }: Props) {
             </div>
 
             {/* VS CENTER */}
-            <div className="flex flex-col items-center justify-center relative z-10 transition-all">
-                <span className={cn("font-black text-slate-200 italic pr-1 select-none transition-all duration-300", isCompact ? "text-xl" : "text-2xl md:text-4xl")}>VS</span>
+            <div className="flex flex-col items-center justify-center relative z-10">
+                <span className="font-black text-slate-200 italic pr-1 select-none text-2xl md:text-4xl transition-all duration-300">VS</span>
                 {matches.length > 0 && (
-                    <div className={cn("font-bold font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shadow-sm transition-all duration-300", isCompact ? "mt-1 text-[8px]" : "mt-2 text-[9px]")}>
+                    <div className="font-bold font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shadow-sm mt-2 text-[9px]">
                         <span className={winsA > winsB ? "text-emerald-600" : ""}>{winsA}</span>
                         <span className="mx-1">-</span>
                         <span className={winsB > winsA ? "text-emerald-600" : ""}>{winsB}</span>
@@ -146,25 +140,19 @@ export default function DuelArena({ carA, carB }: Props) {
             </div>
 
             {/* CAR B */}
-            <div className={cn("flex flex-col items-center justify-start text-center relative z-10 transition-all", !isValidB && "opacity-80")}>
-                <div className={cn("w-full flex items-end justify-center transition-all duration-500", isCompact ? "h-6 mb-1" : "h-10 md:h-12 mb-3")}>
+            <div className={cn("flex flex-col items-center justify-start text-center relative z-10", !isValidB && "opacity-80")}>
+                <div className="w-full flex items-end justify-center h-10 md:h-12 mb-3">
                     <Link href={carB.url} className="block group">
-                        <h2 className={cn(
-                            "font-bold text-slate-500 uppercase tracking-wider w-full leading-tight group-hover:text-blue-600 transition-all duration-300",
-                            isCompact ? "text-[9px] line-clamp-1" : "text-[10px] md:text-xs line-clamp-2"
-                        )}>
+                        <h2 className="font-bold text-slate-500 uppercase tracking-wider w-full leading-tight group-hover:text-blue-600 transition-colors duration-300 text-[10px] md:text-xs line-clamp-2">
                             <span className="text-slate-400 mr-1 font-mono">{carB.my}</span>
                             {carB.name}
                         </h2>
                     </Link>
                 </div>
-                <div className="transition-transform duration-300 origin-center">
-                    <ScoreBadge score={isValidB ? scoreB : 0} size={isCompact ? "md" : "xl"} reviewCount={countB} />
-                </div>
-                <div className={cn(
-                    "flex flex-col items-center transition-all duration-500 ease-in-out overflow-hidden", 
-                    isCompact ? "max-h-0 opacity-0 mt-0" : "max-h-24 opacity-100 mt-2"
-                )}>
+
+                <ScoreBadge score={isValidB ? scoreB : 0} size="xl" reviewCount={countB} />
+
+                <div className="flex flex-col items-center max-h-24 opacity-100 mt-2">
                     {isValidB && (
                         <>
                             <div className="mt-3"><MiniScoreBar scores={scoresArrayB} /></div>
@@ -173,106 +161,137 @@ export default function DuelArena({ carA, carB }: Props) {
                     )}
                 </div>
             </div>
+
+            {/* SENTINELLE : Point de repère invisible tout en bas du header */}
+            <div ref={sentinelRef} className="absolute bottom-0 left-0 w-full h-px pointer-events-none opacity-0" />
         </div>
 
-        {/* === SECTION HEADER (GRIS) : DEVIENT INTELLIGENT === */}
-        <div className={cn(
-            "bg-slate-50 border-b border-slate-100 transition-all duration-500 overflow-hidden",
-            // J'utilise ton py-24, mais j'ajoute 'items-end' et 'pb-4' pour bien coller en bas
-            isCompact ? "h-48 items-end pb-2" : "h-10 items-center" 
-        )}>
-            {/* CORRECTION ICI : h-full + items-end */}
-            <div className="grid grid-cols-3 px-2 md:px-6 h-full items-end">
-                
-                {/* COLONNE GAUCHE */}
-                <div className={cn("flex flex-col items-center justify-end pb-1 transition-all duration-500", isCompact ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none")}>
-                    {isValidA && isCompact && (
-                        <>
-                            <PowerBadge text={getPowerRange(carA.reviews)} />
-                            <MiniScoreBar scores={scoresArrayA} />
-                        </>
-                    )}
-                </div>
-
-                {/* COLONNE CENTRE */}
-                <div className="flex flex-col items-center justify-center h-full pb-1">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
-                        <Trophy size={12} /> Face-à-Face ({matches.length})
-                    </span>
-                </div>
-
-                {/* COLONNE DROITE */}
-                <div className={cn("flex flex-col items-center justify-end pb-1 transition-all duration-500", isCompact ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none")}>
-                    {isValidB && isCompact && (
-                        <>
-                            <PowerBadge text={getPowerRange(carB.reviews)} />
-                            <MiniScoreBar scores={scoresArrayB} />
-                        </>
-                    )}
-                </div>
-
-            </div>
-        </div>
-
-        {/* === LISTE DES ESSAIS === */}
-        <div className="divide-y divide-slate-100">
-            {matches.length === 0 ? (
-                <div className="py-8 text-center text-slate-400 text-sm italic">Aucune source commune.</div>
-            ) : (
-                matches.map(({ source, dataA, dataB }) => {
-                    const winA = dataA.avgScore > dataB.avgScore;
-                    const winB = dataB.avgScore > dataA.avgScore;
-                    const draw = dataA.avgScore === dataB.avgScore;
-
-                    return (
-                        <div key={source} className="grid grid-cols-3 items-center py-4 px-2 md:px-6 hover:bg-slate-50 transition-colors">
-                            <div className={cn("flex justify-center md:justify-end pr-0 md:pr-8", !winA && !draw && "opacity-40 grayscale")}>
-                                <DuelScore score={dataA.avgScore} count={dataA.count} isWinner={winA} />
+        {/* === HEADER STICKY (COMPACT) === */}
+        {/* Apparaît via AnimatePresence quand showSticky est true */}
+        {/* On vérifie isMounted pour éviter l'erreur d'hydratation */}
+        {isMounted && (
+            <AnimatePresence>
+                {showSticky && (
+                    <motion.div
+                        initial={{ y: -100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -100, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="fixed top-16 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-md"
+                    >
+                        <div className="max-w-7xl mx-auto px-4 py-2 grid grid-cols-3 items-center h-14 md:h-16">
+                            {/* CAR A (Compact) */}
+                            <div className="flex items-center justify-start gap-2">
+                                {/* Score à gauche */}
+                                <div className="shrink-0 scale-75 origin-left">
+                                    <ScoreBadge score={isValidA ? scoreA : 0} size="md" reviewCount={countA} />
+                                </div>
+                                <div className="flex flex-col items-start min-w-0">
+                                    <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase truncate w-full text-left line-clamp-1">
+                                        {carA.name}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-slate-400">{carA.my}</span>
+                                </div>
                             </div>
-                            <div className="flex justify-center">
-                                <span className="text-[10px] md:text-xs font-bold uppercase text-slate-700 text-center truncate px-2">
-                                    {source}
-                                </span>
+
+                            {/* VS CENTER (Compact) */}
+                            <div className="flex flex-col items-center justify-center">
+                                <span className="font-black text-slate-300 italic text-xl select-none">VS</span>
+                                {matches.length > 0 && (
+                                    <div className="text-[8px] font-bold font-mono text-slate-400 bg-slate-100 px-1 py-0.5 rounded border border-slate-200">
+                                        <span className={winsA > winsB ? "text-emerald-600" : ""}>{winsA}</span>
+                                        <span className="mx-1">-</span>
+                                        <span className={winsB > winsA ? "text-emerald-600" : ""}>{winsB}</span>
+                                    </div>
+                                )}
                             </div>
-                            <div className={cn("flex justify-center md:justify-start pl-0 md:pl-8", !winB && !draw && "opacity-40 grayscale")}>
-                                <DuelScore score={dataB.avgScore} count={dataB.count} isWinner={winB} />
+
+                            {/* CAR B (Compact) */}
+                            <div className="flex items-center justify-end gap-2 text-right">
+                                <div className="flex flex-col items-end min-w-0">
+                                    <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase truncate w-full text-right line-clamp-1">
+                                        {carB.name}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-slate-400">{carB.my}</span>
+                                </div>
+                                {/* Score à droite */}
+                                <div className="shrink-0 scale-75 origin-right">
+                                    <ScoreBadge score={isValidB ? scoreB : 0} size="md" reviewCount={countB} />
+                                </div>
                             </div>
                         </div>
-                    );
-                })
-            )}
-        </div>
-
-        {/* --- ESSAIS UNIQUES --- */}
-        {(onlyA.length > 0 || onlyB.length > 0) && (
-            <>
-                <div className="bg-slate-50 py-2 text-center border-y border-slate-100 mt-4">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
-                        <Minus size={12} /> Essais Uniques
-                    </span>
-                </div>
-                
-                <div className="divide-y divide-slate-100 bg-slate-50/20">
-                    {onlyA.map((item) => (
-                        <div key={`A-${item.sourceName}`} className="grid grid-cols-3 items-center py-4 px-2 md:px-6 hover:bg-slate-50">
-                            <div className="flex justify-center md:justify-end pr-0 md:pr-8"><DuelScore score={item.avgScore} count={item.count} /></div>
-                            <div className="flex justify-center"><span className="text-[10px] md:text-xs font-bold uppercase text-slate-400 text-center truncate">{item.sourceName}</span></div>
-                            <div className="flex justify-center md:justify-start pl-0 md:pl-8"><div className="w-8 h-1 bg-slate-200/50 rounded-full"></div></div>
-                        </div>
-                    ))}
-
-                    {onlyB.map((item) => (
-                        <div key={`B-${item.sourceName}`} className="grid grid-cols-3 items-center py-4 px-2 md:px-6 hover:bg-slate-50">
-                            <div className="flex justify-center md:justify-end pr-0 md:pr-8"><div className="w-8 h-1 bg-slate-200/50 rounded-full"></div></div>
-                            <div className="flex justify-center"><span className="text-[10px] md:text-xs font-bold uppercase text-slate-400 text-center truncate">{item.sourceName}</span></div>
-                            <div className="flex justify-center md:justify-start pl-0 md:pl-8"><DuelScore score={item.avgScore} count={item.count} /></div>
-                        </div>
-                    ))}
-                </div>
-            </>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         )}
 
-        </motion.div>
+
+        <div className="bg-white rounded-b-xl border-x border-b border-slate-200 shadow-sm overflow-hidden">
+            {/* === SECTION HEADER (GRIS) : FIXE === */}
+            <div className="bg-slate-50 border-b border-slate-100 h-10 flex items-center justify-center overflow-hidden">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
+                    <Trophy size={12} /> Face-à-Face ({matches.length})
+                </span>
+            </div>
+
+            {/* === LISTE DES ESSAIS === */}
+            <div className="divide-y divide-slate-100">
+                {matches.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 text-sm italic">Aucune source commune.</div>
+                ) : (
+                    matches.map(({ source, dataA, dataB }) => {
+                        const winA = dataA.avgScore > dataB.avgScore;
+                        const winB = dataB.avgScore > dataA.avgScore;
+                        const draw = dataA.avgScore === dataB.avgScore;
+
+                        return (
+                            <div key={source} className="grid grid-cols-3 items-center py-4 px-2 md:px-6 hover:bg-slate-50 transition-colors">
+                                <div className={cn("flex justify-center md:justify-end pr-0 md:pr-8", !winA && !draw && "opacity-40 grayscale")}>
+                                    <DuelScore score={dataA.avgScore} count={dataA.count} isWinner={winA} />
+                                </div>
+                                <div className="flex justify-center">
+                                    <span className="text-[10px] md:text-xs font-bold uppercase text-slate-700 text-center truncate px-2">
+                                        {source}
+                                    </span>
+                                </div>
+                                <div className={cn("flex justify-center md:justify-start pl-0 md:pl-8", !winB && !draw && "opacity-40 grayscale")}>
+                                    <DuelScore score={dataB.avgScore} count={dataB.count} isWinner={winB} />
+                                </div>
+                            </div>
+                        );
+                    })
+                )}
+            </div>
+
+            {/* --- ESSAIS UNIQUES --- */}
+            {(onlyA.length > 0 || onlyB.length > 0) && (
+                <>
+                    <div className="bg-slate-50 py-2 text-center border-y border-slate-100 mt-4">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center justify-center gap-2">
+                            <Minus size={12} /> Essais Uniques
+                        </span>
+                    </div>
+
+                    <div className="divide-y divide-slate-100 bg-slate-50/20">
+                        {onlyA.map((item) => (
+                            <div key={`A-${item.sourceName}`} className="grid grid-cols-3 items-center py-4 px-2 md:px-6 hover:bg-slate-50">
+                                <div className="flex justify-center md:justify-end pr-0 md:pr-8"><DuelScore score={item.avgScore} count={item.count} /></div>
+                                <div className="flex justify-center"><span className="text-[10px] md:text-xs font-bold uppercase text-slate-400 text-center truncate">{item.sourceName}</span></div>
+                                <div className="flex justify-center md:justify-start pl-0 md:pl-8"><div className="w-8 h-1 bg-slate-200/50 rounded-full"></div></div>
+                            </div>
+                        ))}
+
+                        {onlyB.map((item) => (
+                            <div key={`B-${item.sourceName}`} className="grid grid-cols-3 items-center py-4 px-2 md:px-6 hover:bg-slate-50">
+                                <div className="flex justify-center md:justify-end pr-0 md:pr-8"><div className="w-8 h-1 bg-slate-200/50 rounded-full"></div></div>
+                                <div className="flex justify-center"><span className="text-[10px] md:text-xs font-bold uppercase text-slate-400 text-center truncate">{item.sourceName}</span></div>
+                                <div className="flex justify-center md:justify-start pl-0 md:pl-8"><DuelScore score={item.avgScore} count={item.count} /></div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+        </div>
     </div>
   );
 }
