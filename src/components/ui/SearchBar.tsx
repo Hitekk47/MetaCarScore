@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Search, Loader2, History, LayoutGrid, X } from "lucide-react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -316,10 +317,10 @@ export default function SearchBar({ placeholder, variant = "header", className, 
                   </div>
                   <p className="text-slate-900 font-bold mb-1">Aucun modèle trouvé</p>
                   <p className="text-slate-500 text-xs mb-4">Nous n'avons pas trouvé de résultat pour "{query}".</p>
-                  <a href="/marques" className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold uppercase hover:bg-slate-200 transition">
+                  <Link href="/marques" className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold uppercase hover:bg-slate-200 transition">
                     <LayoutGrid size={14} />
                     Voir toutes les marques
-                  </a>
+                  </Link>
                </div>
             )}
 
