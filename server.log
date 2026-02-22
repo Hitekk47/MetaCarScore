@@ -1,0 +1,19 @@
+$ next dev
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+- Experiments (use with caution):
+  · serverActions
+
+✓ Starting...
+✓ Ready in 1148ms
+ GET / 200 in 2.2s (compile: 1542ms, render: 664ms)
+ GET / 200 in 200ms (compile: 8ms, render: 192ms)
+ GET / 200 in 232ms (compile: 6ms, render: 226ms)
+ GET / 200 in 373ms (compile: 106ms, render: 267ms)
+ GET / 200 in 336ms (compile: 87ms, render: 249ms)
+ GET /marques 200 in 1783ms (compile: 1604ms, render: 179ms)
+ GET / 200 in 353ms (compile: 91ms, render: 262ms)
+ GET / 200 in 364ms (compile: 96ms, render: 268ms)
+ GET / 200 in 176ms (compile: 7ms, render: 168ms)
+ GET /marques 200 in 172ms (compile: 88ms, render: 84ms)

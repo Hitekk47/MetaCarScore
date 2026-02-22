@@ -12,6 +12,7 @@ import { CalendarRange, Gauge, Search, SlidersHorizontal, X, ChevronRight, Sword
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { toSlug } from "@/lib/slugify";
 
 type PageLevel = 'family' | 'my' | 'modele' | 'powertrain';
 
@@ -100,9 +101,12 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
       </span>
     );
   };
+
+  // Refactor: Use toSlug to generate clean link
   const duelSlug = (modele && my) 
-    ? `${marque}_${famille}_${my}_${modele}` 
+    ? `${toSlug(marque)}_${toSlug(famille)}_${my}_${toSlug(modele)}`
     : null;
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
       <Header />

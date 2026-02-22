@@ -28,13 +28,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: item.priority || 0.9,
   }));
 
-  // 3. Récupération des données (Optimisée pour Sitemap)
+  // 3. Récupération des données (Optimisée via RPC)
 
-  const { data: rows } = await supabase
-    .from('reviews')
-    .select('Marque, Famille, MY, Modele')
-    .not('Famille', 'is', null)
-    .not('Modele', 'is', null);
+  // On utilise une fonction RPC pour récupérer uniquement les combinaisons distinctes
+  // ce qui réduit drastiquement la bande passante et l'usage mémoire.
+  const { data: rows, error } = await supabase.rpc('get_sitemap_data');
+
+  if (error) {
+    console.error('Error fetching sitemap data via RPC:', error);
+    // En cas d'erreur, on retourne uniquement les routes statiques
+  }
 
   // --- DÉDOUBLONNAGE INTELLIGENT ---
 
@@ -43,24 +46,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const mys = new Set<string>();
   const models = new Set<string>();
 
-  rows?.forEach((row) => {
-    const m = toSlug(row.Marque);
-    const f = toSlug(row.Famille);
-    const y = row.MY;
-    const mo = toSlug(row.Modele);
+  if (rows && Array.isArray(rows)) {
+    rows.forEach((row: any) => {
+      const m = toSlug(row.Marque);
+      const f = toSlug(row.Famille);
+      const y = row.MY;
+      const mo = toSlug(row.Modele);
 
-    // Niveau 1 : Marque
-    brands.add(`${BASE_URL}/${m}`);
+      // Niveau 1 : Marque
+      brands.add(`${BASE_URL}/${m}`);
 
-    // Niveau 2 : Famille
-    families.add(`${BASE_URL}/${m}/${f}`);
+      // Niveau 2 : Famille
+      families.add(`${BASE_URL}/${m}/${f}`);
 
-    // Niveau 3 : Année (MY)
-    mys.add(`${BASE_URL}/${m}/${f}/${y}`);
+      // Niveau 3 : Année (MY)
+      mys.add(`${BASE_URL}/${m}/${f}/${y}`);
 
-    // Niveau 4 : Modèle
-    models.add(`${BASE_URL}/${m}/${f}/${y}/${mo}`);
-  });
+      // Niveau 4 : Modèle
+      models.add(`${BASE_URL}/${m}/${f}/${y}/${mo}`);
+    });
+  }
 
   // --- CONSTRUCTION DES ROUTES ---
   
