@@ -22,9 +22,12 @@ export default function DuelArena({ carA, carB }: Props) {
   
   // DETECTION DU SCROLL
   const [showSticky, setShowSticky] = useState(false);
+  // Ajout d'un flag pour éviter les erreurs d'hydratation sur le composant sticky
+  const [isMounted, setIsMounted] = useState(false);
   const headerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    setIsMounted(true);
     const el = headerRef.current;
     if (!el) return;
 
@@ -37,7 +40,6 @@ export default function DuelArena({ carA, carB }: Props) {
       {
         threshold: 0,
         // On veut que ça déclenche dès que le bas du header sort du viewport
-        // Ajuster rootMargin si besoin pour fine-tuner le moment exact
         rootMargin: "-80px 0px 0px 0px"
       }
     );
@@ -154,59 +156,62 @@ export default function DuelArena({ carA, carB }: Props) {
 
         {/* === HEADER STICKY (COMPACT) === */}
         {/* Apparaît via AnimatePresence quand showSticky est true */}
-        <AnimatePresence>
-            {showSticky && (
-                <motion.div
-                    initial={{ y: -100, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -100, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-md"
-                >
-                    <div className="max-w-7xl mx-auto px-4 py-2 grid grid-cols-3 items-center h-14 md:h-16">
-                         {/* CAR A (Compact) */}
-                        <div className="flex items-center justify-start gap-2">
-                             {/* Score à gauche */}
-                            <div className="shrink-0 scale-75 origin-left">
-                                <ScoreBadge score={isValidA ? scoreA : 0} size="md" reviewCount={countA} />
-                            </div>
-                            <div className="flex flex-col items-start min-w-0">
-                                <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase truncate w-full text-left line-clamp-1">
-                                    {carA.name}
-                                </span>
-                                <span className="text-[9px] font-mono text-slate-400">{carA.my}</span>
-                            </div>
-                        </div>
-
-                        {/* VS CENTER (Compact) */}
-                        <div className="flex flex-col items-center justify-center">
-                            <span className="font-black text-slate-300 italic text-xl select-none">VS</span>
-                             {matches.length > 0 && (
-                                <div className="text-[8px] font-bold font-mono text-slate-400 bg-slate-100 px-1 py-0.5 rounded border border-slate-200">
-                                    <span className={winsA > winsB ? "text-emerald-600" : ""}>{winsA}</span>
-                                    <span className="mx-1">-</span>
-                                    <span className={winsB > winsA ? "text-emerald-600" : ""}>{winsB}</span>
+        {/* On vérifie isMounted pour éviter l'erreur d'hydratation */}
+        {isMounted && (
+            <AnimatePresence>
+                {showSticky && (
+                    <motion.div
+                        initial={{ y: -100, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: -100, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-md"
+                    >
+                        <div className="max-w-7xl mx-auto px-4 py-2 grid grid-cols-3 items-center h-14 md:h-16">
+                            {/* CAR A (Compact) */}
+                            <div className="flex items-center justify-start gap-2">
+                                {/* Score à gauche */}
+                                <div className="shrink-0 scale-75 origin-left">
+                                    <ScoreBadge score={isValidA ? scoreA : 0} size="md" reviewCount={countA} />
                                 </div>
-                            )}
-                        </div>
+                                <div className="flex flex-col items-start min-w-0">
+                                    <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase truncate w-full text-left line-clamp-1">
+                                        {carA.name}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-slate-400">{carA.my}</span>
+                                </div>
+                            </div>
 
-                        {/* CAR B (Compact) */}
-                        <div className="flex items-center justify-end gap-2 text-right">
-                             <div className="flex flex-col items-end min-w-0">
-                                <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase truncate w-full text-right line-clamp-1">
-                                    {carB.name}
-                                </span>
-                                <span className="text-[9px] font-mono text-slate-400">{carB.my}</span>
+                            {/* VS CENTER (Compact) */}
+                            <div className="flex flex-col items-center justify-center">
+                                <span className="font-black text-slate-300 italic text-xl select-none">VS</span>
+                                {matches.length > 0 && (
+                                    <div className="text-[8px] font-bold font-mono text-slate-400 bg-slate-100 px-1 py-0.5 rounded border border-slate-200">
+                                        <span className={winsA > winsB ? "text-emerald-600" : ""}>{winsA}</span>
+                                        <span className="mx-1">-</span>
+                                        <span className={winsB > winsA ? "text-emerald-600" : ""}>{winsB}</span>
+                                    </div>
+                                )}
                             </div>
-                            {/* Score à droite */}
-                            <div className="shrink-0 scale-75 origin-right">
-                                <ScoreBadge score={isValidB ? scoreB : 0} size="md" reviewCount={countB} />
+
+                            {/* CAR B (Compact) */}
+                            <div className="flex items-center justify-end gap-2 text-right">
+                                <div className="flex flex-col items-end min-w-0">
+                                    <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase truncate w-full text-right line-clamp-1">
+                                        {carB.name}
+                                    </span>
+                                    <span className="text-[9px] font-mono text-slate-400">{carB.my}</span>
+                                </div>
+                                {/* Score à droite */}
+                                <div className="shrink-0 scale-75 origin-right">
+                                    <ScoreBadge score={isValidB ? scoreB : 0} size="md" reviewCount={countB} />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        )}
 
 
         <div className="bg-white rounded-b-xl border-x border-b border-slate-200 shadow-sm overflow-hidden">
