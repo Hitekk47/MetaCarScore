@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from 'next/link';
 import { Search, Loader2, History, LayoutGrid, X } from "lucide-react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";

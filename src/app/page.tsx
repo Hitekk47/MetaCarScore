@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import Link from "next/link";
 import RecentScoresCarousel from "@/components/bento/RecentScoresCarousel";
 import { supabase } from "@/lib/supabase";
 import { Review } from "@/lib/types";
@@ -135,22 +136,22 @@ export default async function Home() {
             </div>
 
             {/* LIEN TOPS */}
-            <a href="/tops" className="group bg-slate-50 hover:bg-slate-900 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100 hover:shadow-xl hover:-translate-y-1">
+            <Link href="/tops" className="group bg-slate-50 hover:bg-slate-900 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100 hover:shadow-xl hover:-translate-y-1">
               <div className="flex justify-between items-start mb-2">
                 <span className="font-bold text-lg">Top Classements</span>
                 <Activity className="text-slate-300 group-hover:text-emerald-400 transition-colors" />
               </div>
               <p className="text-xs text-slate-500 group-hover:text-slate-400">Les meilleurs par thématique.</p>
-            </a>
+            </Link>
 
             {/* LIEN DUELS */}
-            <a href="/duels" className="group bg-slate-50 hover:bg-blue-600 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100 hover:shadow-xl hover:-translate-y-1">
+            <Link href="/duels" className="group bg-slate-50 hover:bg-blue-600 hover:text-white rounded-xl p-6 transition-all cursor-pointer border border-slate-100 hover:shadow-xl hover:-translate-y-1">
               <div className="flex justify-between items-start mb-2">
                 <span className="font-bold text-lg">Mode Duel</span>
                 <Swords className="text-slate-300 group-hover:text-white" />
               </div>
               <p className="text-xs text-slate-500 group-hover:text-blue-100">Affrontez deux modèles.</p>
-            </a>
+            </Link>
           </div>
         </section>
 
