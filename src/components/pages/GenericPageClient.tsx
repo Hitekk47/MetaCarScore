@@ -9,7 +9,7 @@ import ReviewsTableCompact from "@/components/tables/ReviewsTableCompact";
 import SmartBreadcrumb from "@/components/ui/SmartBreadcrumb";
 import { Review } from "@/lib/types";
 import { CalendarRange, Gauge, Search, SlidersHorizontal, X, ChevronRight, Swords } from "lucide-react"; // Ajout ChevronRight
-import { cn } from "@/lib/utils";
+import { cn, calculatePageStats } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { toSlug } from "@/lib/slugify";
@@ -65,14 +65,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
     const visibleReviews = filteredReviews.slice(0, displayLimit);
 
   // --- CALCULS STATS ---
-  const scores = filteredReviews.map(r => r.Score);
-  const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-  const years = filteredReviews.map(r => r.MY).filter(y => y > 0);
-  const minYear = years.length ? Math.min(...years) : 0;
-  const maxYear = years.length ? Math.max(...years) : 0;
-  const powers = filteredReviews.map(r => r.Puissance).filter(p => p > 0);
-  const minPowerStat = powers.length ? Math.min(...powers) : 0;
-  const maxPowerStat = powers.length ? Math.max(...powers) : 0;
+  const { avgScore, minYear, maxYear, minPowerStat, maxPowerStat } = calculatePageStats(filteredReviews);
 
   const clearFilters = () => { setFilterMY("all"); setFilterType("all"); setFilterTrans("all"); setMinPower(""); setMaxPower(""); };
   const activeFiltersCount = (filterMY !== "all" ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (filterTrans !== "all" ? 1 : 0) + (minPower || maxPower ? 1 : 0);

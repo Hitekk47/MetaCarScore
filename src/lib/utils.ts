@@ -73,6 +73,41 @@ export function aggregateReviews(reviews: Review[]): Record<string, AggregatedSo
   return map;
 }
 
+export function calculatePageStats(filteredReviews: Review[]) {
+  let scoreSum = 0;
+  let minYear = Infinity;
+  let maxYear = -Infinity;
+  let minPowerStat = Infinity;
+  let maxPowerStat = -Infinity;
+  let validYearsCount = 0;
+  let validPowersCount = 0;
+
+  for (let i = 0; i < filteredReviews.length; i++) {
+    const r = filteredReviews[i];
+    scoreSum += r.Score;
+
+    if (r.MY > 0) {
+      if (r.MY < minYear) minYear = r.MY;
+      if (r.MY > maxYear) maxYear = r.MY;
+      validYearsCount++;
+    }
+
+    if (r.Puissance > 0) {
+      if (r.Puissance < minPowerStat) minPowerStat = r.Puissance;
+      if (r.Puissance > maxPowerStat) maxPowerStat = r.Puissance;
+      validPowersCount++;
+    }
+  }
+
+  const avgScore = filteredReviews.length > 0 ? Math.round(scoreSum / filteredReviews.length) : 0;
+  minYear = validYearsCount > 0 ? minYear : 0;
+  maxYear = validYearsCount > 0 ? maxYear : 0;
+  minPowerStat = validPowersCount > 0 ? minPowerStat : 0;
+  maxPowerStat = validPowersCount > 0 ? maxPowerStat : 0;
+
+  return { avgScore, minYear, maxYear, minPowerStat, maxPowerStat };
+}
+
 export function getPowerRange(reviews: Review[]) {
     const powers = reviews.map(r => r.Puissance).filter(p => p > 0);
     if (powers.length === 0) return null;
