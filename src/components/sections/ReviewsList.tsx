@@ -30,13 +30,20 @@ export default function ReviewsList({ reviews }: { reviews: Review[] }) {
 
   // --- MOTEUR DE FILTRAGE (Le Cœur) ---
   const filteredReviews = useMemo(() => {
+    const lowerQuery = query ? query.toLowerCase() : "";
+    const filterMYInt = filterMY !== "all" ? parseInt(filterMY, 10) : null;
+    const minPowerInt = minPower ? parseInt(minPower, 10) : null;
+    const maxPowerInt = maxPower ? parseInt(maxPower, 10) : null;
+
     return reviews.filter(r => {
       // 1. Recherche Textuelle (Insensible casse, cherche dans Modèle, Finition, Testeur)
-      const searchStr = `${r.Modele} ${r.Finition || ''} ${r.Testeur}`.toLowerCase();
-      if (query && !searchStr.includes(query.toLowerCase())) return false;
+      if (lowerQuery) {
+        const searchStr = `${r.Modele} ${r.Finition || ''} ${r.Testeur}`.toLowerCase();
+        if (!searchStr.includes(lowerQuery)) return false;
+      }
 
       // 2. Filtre MY
-      if (filterMY !== "all" && r.MY !== parseInt(filterMY)) return false;
+      if (filterMYInt !== null && r.MY !== filterMYInt) return false;
 
       // 3. Filtre Type (Moteur)
       if (filterType !== "all" && r.Type !== filterType) return false;
@@ -48,8 +55,8 @@ export default function ReviewsList({ reviews }: { reviews: Review[] }) {
       }
 
       // 5. Filtre Puissance
-      if (minPower && r.Puissance < parseInt(minPower)) return false;
-      if (maxPower && r.Puissance > parseInt(maxPower)) return false;
+      if (minPowerInt !== null && r.Puissance < minPowerInt) return false;
+      if (maxPowerInt !== null && r.Puissance > maxPowerInt) return false;
 
       return true;
     }).sort((a, b) => {
