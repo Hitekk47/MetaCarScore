@@ -82,9 +82,15 @@ export function calculatePageStats(filteredReviews: Review[]) {
   let validYearsCount = 0;
   let validPowersCount = 0;
 
-  for (let i = 0; i < filteredReviews.length; i++) {
+  const length = filteredReviews.length;
+  const scores = new Array(length);
+
+  for (let i = 0; i < length; i++) {
     const r = filteredReviews[i];
-    scoreSum += r.Score;
+    const score = r.Score;
+
+    scores[i] = score;
+    scoreSum += score;
 
     if (r.MY > 0) {
       if (r.MY < minYear) minYear = r.MY;
@@ -99,13 +105,13 @@ export function calculatePageStats(filteredReviews: Review[]) {
     }
   }
 
-  const avgScore = filteredReviews.length > 0 ? Math.round(scoreSum / filteredReviews.length) : 0;
+  const avgScore = length > 0 ? Math.round(scoreSum / length) : 0;
   minYear = validYearsCount > 0 ? minYear : 0;
   maxYear = validYearsCount > 0 ? maxYear : 0;
   minPowerStat = validPowersCount > 0 ? minPowerStat : 0;
   maxPowerStat = validPowersCount > 0 ? maxPowerStat : 0;
 
-  return { avgScore, minYear, maxYear, minPowerStat, maxPowerStat };
+  return { avgScore, minYear, maxYear, minPowerStat, maxPowerStat, scores };
 }
 
 export function getPowerRange(reviews: Review[]) {

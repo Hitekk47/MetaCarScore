@@ -65,7 +65,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
     const visibleReviews = filteredReviews.slice(0, displayLimit);
 
   // --- CALCULS STATS ---
-  const { avgScore, minYear, maxYear, minPowerStat, maxPowerStat } = calculatePageStats(filteredReviews);
+  const { avgScore, minYear, maxYear, minPowerStat, maxPowerStat, scores } = calculatePageStats(filteredReviews);
 
   const clearFilters = () => { setFilterMY("all"); setFilterType("all"); setFilterTrans("all"); setMinPower(""); setMaxPower(""); };
   const activeFiltersCount = (filterMY !== "all" ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (filterTrans !== "all" ? 1 : 0) + (minPower || maxPower ? 1 : 0);
