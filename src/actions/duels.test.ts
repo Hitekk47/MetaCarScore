@@ -161,4 +161,48 @@ describe("fetchFighterReviews & fetchBatchFighterReviews", () => {
     // Result should return empty array for bad slug
     expect(result['bad"_famille_2020_model']).toEqual([]); // It initializes keys for requested slugs
   });
+
+  // --- Optimization Tests ---
+  it("should handle multiple slugs mapping to the same real context via Map<string, Context[]> structure", async () => {
+    // We simulate two valid slugs that for some reason both map to the same exact REAL car.
+    // E.g., maybe one has an alternate spelling that our RPC normalizes to the same context.
+    const mockGetFullContextSpecial = async (params: any) => {
+      // Both return the exact same real context
+      if (params.p_marque_slug === "porsche" || params.p_marque_slug === "porsche-alt") {
+        return {
+          real_marque: "Porsche",
+          real_famille: "911",
+          real_modele: "GT3",
+          real_powertrain: null
+        };
+      }
+      return null;
+    };
+
+    // Replace the mock implementation for this test
+    mockGetFullContext.mockImplementation(mockGetFullContextSpecial);
+
+    // Mock DB returns only ONE row, because it's the exact same vehicle
+    mockOr.mockResolvedValueOnce({
+      data: [{ Marque: "Porsche", Famille: "911", MY: 2022, Modele: "GT3", Score: 99 }],
+      error: null
+    });
+
+    const slugs = [
+      "porsche_911_2022_gt3",
+      "porsche-alt_911_2022_gt3"
+    ];
+
+    const result = await fetchBatchFighterReviews(slugs);
+
+    // Both slugs should have received the same review,
+    // proving the Map<string, Context[]> structure properly pushes the review to ALL matching contexts
+    expect(result["porsche_911_2022_gt3"]).toBeDefined();
+    expect(result["porsche_911_2022_gt3"]).toHaveLength(1);
+    expect(result["porsche_911_2022_gt3"][0].Score).toBe(99);
+
+    expect(result["porsche-alt_911_2022_gt3"]).toBeDefined();
+    expect(result["porsche-alt_911_2022_gt3"]).toHaveLength(1);
+    expect(result["porsche-alt_911_2022_gt3"][0].Score).toBe(99);
+  });
 });

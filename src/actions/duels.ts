@@ -143,25 +143,37 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
 
   if (validContexts.length === 0) return {};
 
-  const conditions = validContexts.map(ctx => {
-    // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers)
-    return `and(Marque.eq."${ctx.real_marque}",Famille.eq."${ctx.real_famille}",MY.eq.${ctx.my},Modele.eq."${ctx.real_modele}")`;
-  });
+  // To avoid exceeding Supabase PostgREST URL limits (usually ~8KB max for GET, but conservative at 50 to avoid any risk),
+  // we chunk the valid contexts and query them in batches.
+  const BATCH_SIZE = 50;
+  let reviews: Review[] = [];
 
-  // Join with comma for OR operator in PostgREST
-  const orQuery = conditions.join(',');
+  for (let i = 0; i < validContexts.length; i += BATCH_SIZE) {
+    const chunk = validContexts.slice(i, i + BATCH_SIZE);
+    const conditions = chunk.map(ctx => {
+      // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers)
+      return `and(Marque.eq."${ctx.real_marque}",Famille.eq."${ctx.real_famille}",MY.eq.${ctx.my},Modele.eq."${ctx.real_modele}")`;
+    });
 
-  const { data, error } = await supabase
-    .from('reviews')
-    .select('*')
-    .or(orQuery);
+    // Join with comma for OR operator in PostgREST
+    const orQuery = conditions.join(',');
 
-  if (error) {
-    console.error("❌ Erreur Supabase Batch: An unexpected error occurred");
-    return {};
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .or(orQuery);
+
+    if (error) {
+      console.error("❌ Erreur Supabase Batch: An unexpected error occurred in chunk", i);
+      // We continue to other chunks, returning what we have, or could fail the whole batch.
+      // Deciding to continue to return partial results is safer.
+      continue;
+    }
+
+    if (data) {
+      reviews = reviews.concat(data as Review[]);
+    }
   }
-
-  const reviews = (data as Review[]) || [];
   const result: Record<string, Review[]> = {};
 
   // Initialize result arrays for requested slugs
@@ -171,20 +183,29 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
   // Note: We need to map back from (Real Names) -> (Original Slug)
   // Since multiple slugs might map to same real car (unlikely but possible), or we just iterate contexts
 
-  reviews.forEach(r => {
-    // Find matching context(s)
-    const matchingContexts = validContexts.filter(ctx =>
-      ctx.real_marque === r.Marque &&
-      ctx.real_famille === r.Famille &&
-      ctx.my === r.MY &&
-      ctx.real_modele === r.Modele
-    );
+  // Create an O(1) lookup map using a composite key
+  // Using a pipe '|' character as separator because it doesn't appear in car names (unlike underscores or spaces)
+  const contextMap = new Map<string, typeof validContexts>();
 
-    matchingContexts.forEach(ctx => {
-      if (result[ctx.slug]) {
-        result[ctx.slug].push(r);
-      }
-    });
+  validContexts.forEach(ctx => {
+    const key = `${ctx.real_marque}|${ctx.real_famille}|${ctx.my}|${ctx.real_modele}`;
+    if (!contextMap.has(key)) {
+      contextMap.set(key, []);
+    }
+    contextMap.get(key)!.push(ctx);
+  });
+
+  reviews.forEach(r => {
+    const key = `${r.Marque}|${r.Famille}|${r.MY}|${r.Modele}`;
+    const matchingContexts = contextMap.get(key);
+
+    if (matchingContexts) {
+      matchingContexts.forEach(ctx => {
+        if (result[ctx.slug]) {
+          result[ctx.slug].push(r);
+        }
+      });
+    }
   });
 
   return result;
