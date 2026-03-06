@@ -67,30 +67,6 @@ export const getFamilies = cache(async (brandName: string) => {
   return (data as FamilyItem[]) || [];
 });
 
-// 4. Cached Reviews
-export type GetReviewsParams = {
-  marque: string;
-  famille?: string;
-  my?: string; // stored as number in DB usually, but passed as string in params sometimes. Let's use string to match page props or number?
-               // The DB has MY as number. The page props has my as string.
-               // Let's use strict types for the query function.
-  modele?: string;
-  powertrain?: string; // This usually requires parsing into Type and Puissance
-  // Wait, for powertrain page, the query is complex:
-  // .eq('Type', realType).eq('Puissance', power).ilike('Transmission', slugTrans)
-  // To make this generic, we might need a flexible params object or specific functions.
-
-  // Let's look at the usage:
-  // FamilyPage: eq(Marque), eq(Famille)
-  // MYPage: eq(Marque), eq(Famille), eq(MY)
-  // ModelePage: eq(Marque), eq(Famille), eq(MY), eq(Modele)
-  // PowertrainPage: eq(Marque), eq(Famille), eq(MY), eq(Modele), eq(Type), eq(Puissance), ilike(Transmission)
-};
-
-// Since PowertrainPage has specific logic to parse the slug into Type/Power/Transmission,
-// and that logic happens in the page component BEFORE the query,
-// we should probably pass the resolved values to getReviews.
-
 export type ReviewFilters = {
   marque: string;
   famille?: string;
