@@ -31,65 +31,6 @@ function isValidYear(year: number): boolean {
   return !isNaN(year) && year >= 1900 && year <= 2100;
 }
 
-// --- Legacy Function (Still exported for compatibility if needed, but we'll try to move away from it) ---
-export async function fetchFighterReviews(slug: string): Promise<Review[]> {
-  console.log("⚡ Server Action Triggered for:", slug); // Log serveur (visible dans le terminal, pas le navigateur)
-
-  try {
-    if (!slug) return [];
-    
-    const parts = slug.split("_");
-    if (parts.length < 4) {
-      console.error("❌ Slug invalide:", slug);
-      return [];
-    }
-
-    const marqueSlug = parts[0];
-    const familleSlug = parts[1];
-    const my = parseInt(parts[2]);
-    const modeleSlug = parts.slice(3).join("_"); // Join back in case modele slug has underscores (though discouraged)
-
-    // 🔒 Security Validation
-    if (!isValidSlugPart(marqueSlug) || !isValidSlugPart(familleSlug) || !isValidYear(my) || !isValidModelPart(modeleSlug)) {
-      console.error("❌ Slug rejected by security validation:", slug);
-      return [];
-    }
-
-    // Resolve context using RPC
-    const context = await getFullContext({
-      p_marque_slug: marqueSlug,
-      p_famille_slug: familleSlug,
-      p_my: my,
-      p_modele_slug: modeleSlug
-    });
-
-    if (!context || !context.real_marque || !context.real_famille || !context.real_modele) {
-      console.warn("⚠️ Could not resolve context for slug:", slug);
-      return [];
-    }
-
-    // Requête using resolved real names
-    const { data, error } = await supabase
-      .from('reviews')
-      .select('*')
-      .eq('Marque', context.real_marque)
-      .eq('Famille', context.real_famille)
-      .eq('MY', my)
-      .eq('Modele', context.real_modele);
-
-    if (error) {
-      console.error("❌ Erreur Supabase: An unexpected error occurred");
-      return [];
-    }
-
-    return (data as Review[]) || [];
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    console.error("❌ Crash Server Action:", errorMessage);
-    return [];
-  }
-}
-
 // --- New Cached Batch Function ---
 
 /**
