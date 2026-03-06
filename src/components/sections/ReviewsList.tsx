@@ -25,8 +25,20 @@ export default function ReviewsList({ reviews }: { reviews: Review[] }) {
 
   // --- LISTES DÉROULANTES DYNAMIQUES (Basées sur les données présentes) ---
   // On ne propose que les années ou types qui existent vraiment dans cette liste
-  const availableYears = useMemo(() => [...new Set(reviews.map(r => r.MY))].sort((a,b) => b-a), [reviews]);
-  const availableTypes = useMemo(() => [...new Set(reviews.map(r => r.Type))].sort(), [reviews]);
+  const { availableYears, availableTypes } = useMemo(() => {
+    const yearSet = new Set<number>();
+    const typeSet = new Set<string>();
+
+    for (const r of reviews) {
+      yearSet.add(r.MY);
+      typeSet.add(r.Type);
+    }
+
+    return {
+      availableYears: Array.from(yearSet).sort((a, b) => b - a),
+      availableTypes: Array.from(typeSet).sort((a, b) => a.localeCompare(b))
+    };
+  }, [reviews]);
 
   // --- MOTEUR DE FILTRAGE (Le Cœur) ---
   const filteredReviews = useMemo(() => {
