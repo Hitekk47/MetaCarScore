@@ -67,12 +67,6 @@ export const getFamilies = cache(async (brandName: string) => {
   return (data as FamilyItem[]) || [];
 });
 
-// 4. Cached Reviews
-
-// Since PowertrainPage has specific logic to parse the slug into Type/Power/Transmission,
-// and that logic happens in the page component BEFORE the query,
-// we should probably pass the resolved values to getReviews.
-
 export type ReviewFilters = {
   marque: string;
   famille?: string;
