@@ -185,7 +185,14 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
 
   // Create an O(1) lookup map using a composite key
   // Using a pipe '|' character as separator because it doesn't appear in car names (unlike underscores or spaces)
-  const contextMap = new Map<string, typeof validContexts>();
+  type ContextType = {
+    slug: string;
+    real_marque: string;
+    real_famille: string;
+    real_modele: string;
+    my: number;
+  };
+  const contextMap = new Map<string, ContextType[]>();
 
   validContexts.forEach(ctx => {
     const key = `${ctx.real_marque}|${ctx.real_famille}|${ctx.my}|${ctx.real_modele}`;
