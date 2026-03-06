@@ -78,7 +78,7 @@ export async function fetchFighterReviews(slug: string): Promise<Review[]> {
       .eq('Modele', context.real_modele);
 
     if (error) {
-      console.error("❌ Erreur Supabase:", error.message);
+      console.error("❌ Erreur Supabase: An unexpected error occurred");
       return [];
     }
 
@@ -157,7 +157,7 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
     .or(orQuery);
 
   if (error) {
-    console.error("❌ Erreur Supabase Batch:", error.message);
+    console.error("❌ Erreur Supabase Batch: An unexpected error occurred");
     return {};
   }
 

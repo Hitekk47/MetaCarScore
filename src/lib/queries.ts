@@ -34,7 +34,7 @@ export const getBrandContext = cache(async (slug: string) => {
   });
 
   if (error) {
-    console.error('Error fetching brand context:', error);
+    console.error('Error fetching brand context: An unexpected error occurred');
     return null;
   }
 
@@ -46,7 +46,7 @@ export const getFullContext = cache(async (params: FullContextParams) => {
   const { data, error } = await supabase.rpc('get_full_context_by_slugs', params);
 
   if (error) {
-    console.error('Error fetching full context:', error);
+    console.error('Error fetching full context: An unexpected error occurred');
     return null;
   }
 
@@ -60,7 +60,7 @@ export const getFamilies = cache(async (brandName: string) => {
   });
 
   if (error) {
-    console.error('Error fetching families:', error);
+    console.error('Error fetching families: An unexpected error occurred');
     return [];
   }
 
@@ -137,7 +137,7 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching reviews:', error);
+    console.error('Error fetching reviews: An unexpected error occurred');
     return [];
   }
 

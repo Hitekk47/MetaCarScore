@@ -35,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data: rows, error } = await supabase.rpc('get_sitemap_data');
 
   if (error) {
-    console.error('Error fetching sitemap data via RPC:', error);
+    console.error('Error fetching sitemap data via RPC: An unexpected error occurred');
     // En cas d'erreur, on retourne uniquement les routes statiques
   }
 
