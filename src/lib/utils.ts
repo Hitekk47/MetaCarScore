@@ -43,7 +43,7 @@ export const formatReviewDate = (dateString: string) => {
 };
 
 // Petite fonction helper pour grouper les données
-export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => K) =>
+export const groupBy = <T, K extends PropertyKey>(list: T[], getKey: (item: T) => K) =>
   list.reduce((previous, currentItem) => {
     const group = getKey(currentItem);
     if (!previous[group]) previous[group] = [];
@@ -54,7 +54,7 @@ export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => 
 /**
  * Stringifies an object and escapes the '<' character to prevent XSS in <script> tags.
  */
-export function serializeJsonLd(data: any) {
+export function serializeJsonLd<T extends object>(data: T | T[]) {
   return JSON.stringify(data).replace(/</g, '\\u003c');
 }
 

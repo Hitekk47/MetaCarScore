@@ -2,7 +2,7 @@ import Header from "@/components/Header";
 import Link from "next/link";
 import RecentScoresCarousel from "@/components/bento/RecentScoresCarousel";
 import { supabase } from "@/lib/supabase";
-import { Review } from "@/lib/types";
+import { Review, CarouselItem } from "@/lib/types";
 import { Database, Layers, Swords, Activity } from "lucide-react";
 import LatestReviewsSection from "@/components/sections/LatestReviewsSection";
 import SearchBar from "@/components/ui/SearchBar";
@@ -33,7 +33,7 @@ export default async function Home() {
   // Plus besoin de toute la logique de regroupement JS !
   // La BDD nous renvoie directement le format parfait pour le carrousel.
   // Note: On doit caster car TypeScript ne connait pas le retour RPC par défaut
-  const metaScores = (trendingReq.data || []) as any[]; 
+  const metaScores = (trendingReq.data || []) as CarouselItem[];
 
   const stats = statsReq.data as { total_reviews: number, unique_models: number } | null;
   const totalEssais = stats?.total_reviews || 20000;
