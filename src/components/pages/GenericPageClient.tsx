@@ -112,7 +112,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                 
                 <SmartBreadcrumb marque={marque} famille={famille} my={my} modele={modele} powertrain={powertrain} />
 
-                <div className="flex flex-col md:flex-row md:items-end gap-6 md:gap-10">
+                <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-10">
                     <div className="shrink-0">
                         <ScoreBadge score={avgScore} size="xl" isFiltered={isFiltered} reviewCount={filteredReviews.length} />
                     </div>
