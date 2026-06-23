@@ -3,6 +3,7 @@ import { Review } from "@/lib/types";
 import ScoreBadge from "../ui/ScoreBadge";
 import Powertrain from "../ui/Powertrain";
 import { toSlug } from "@/lib/slugify";
+import { MagazineBadge } from "@/components/ui/MagazineBadge";
 
 export default function ReviewsTableCompact({ data, hideBrand = false }: { data: Review[], hideBrand?: boolean }) {
   
@@ -111,8 +112,8 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
 
               {/* 5. SOURCE */}
               <td className="px-2 md:px-3 py-1 align-middle text-right md:text-left">
-                <div className="flex flex-col items-end md:items-start justify-center leading-tight">
-                  <span className="text-[9px] md:text-[10px] font-bold text-slate-700 uppercase truncate max-w-[80px] md:max-w-none">{row.Testeur}</span>
+                <div className="flex flex-col items-end md:items-start justify-center gap-1 leading-tight">
+                  <MagazineBadge name={row.Testeur} className="max-w-[100px] md:max-w-none" />
                   <span className="text-[9px] md:text-[10px] text-slate-400 font-mono">
                     {formatYearMonth(row.Test_date)}
                   </span>
