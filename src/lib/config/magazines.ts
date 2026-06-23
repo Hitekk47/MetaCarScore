@@ -91,4 +91,7 @@ export const magazineCountries: Record<string, string> = {
 
   // --- Russia 🇷🇺 ---
   "auto review": "ru",
+
+  // --- Unverified Sources 🌐 ---
+  // Mapping for sources where the country is not definitively known or verified.
 };

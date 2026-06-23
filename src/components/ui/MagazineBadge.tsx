@@ -21,7 +21,7 @@ export const MagazineBadge = ({ name, className = "" }: MagazineBadgeProps) => {
           aria-hidden="true"
         />
       ) : (
-        <span className="select-none text-base leading-none" aria-hidden="true">🌐</span>
+        <span className="select-none text-[1.1em] leading-none" aria-hidden="true">🌐</span>
       )}
       <span>{name}</span>
     </span>
