@@ -21,12 +21,10 @@ export const magazineCountries: Record<string, string> = {
   "auto plus": "fr",
   "auto plus crossovers": "fr",
   "auto plus crossovers suv": "fr",
-  "electricar": "fr",
   "l'auto-journal": "fr",
   "l'auto-journal 4x4": "fr",
   "l'automobile magazine": "fr",
   "l'automobile nouvelles énergies": "fr",
-  "moove": "fr",
   "motorsport": "fr",
   "sport auto france": "fr",
   "top's cars": "fr",
@@ -41,7 +39,9 @@ export const magazineCountries: Record<string, string> = {
   "auto test": "de",
   "auto zeitung": "de",
   "electric drive": "de",
+  "electricar": "de",  
   "grip": "de",
+  "moove": "de",  
   "suv magazin": "de",
   "sport auto": "de",
 
@@ -51,6 +51,7 @@ export const magazineCountries: Record<string, string> = {
   "car magazine": "gb",
   "diesel & eco car": "gb",
   "diesel car & eco car": "gb",
+  "drivenation": "gb",  
   "evo": "gb",
   "the intercooler": "gb",
   "top gear": "gb",
@@ -63,7 +64,6 @@ export const magazineCountries: Record<string, string> = {
   // --- Italy 🇮🇹 ---
   "auto it": "it",
   "quattroruote": "it",
-  "quattrouote": "it", // Typo in DB
 
   // --- Spain 🇪🇸 ---
   "altagama coches": "es",
@@ -86,11 +86,8 @@ export const magazineCountries: Record<string, string> = {
   "motor": "au",
   "wheels": "au",
 
-  // --- Luxembourg 🇱🇺 ---
-  "drivenation": "lu",
-
-  // --- Russia 🇷🇺 ---
-  "auto review": "ru",
+  // --- Netherlands 🇳🇱 ---
+  "auto review": "nl",
 
   // --- Unverified Sources 🌐 ---
   // Mapping for sources where the country is not definitively known or verified.

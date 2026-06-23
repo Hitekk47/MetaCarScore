@@ -63,7 +63,7 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
                   
                   {/* --- FILIGRANE MOBILE --- */}
                   {/* z-0 : Reste au niveau de base, mais derrière le z-10 */}
-                  <div className="md:hidden absolute right-8 top-1/2 -translate-y-1/2 text-5xl font-black text-slate-100 select-none pointer-events-none italic tracking-tighter z-0">
+                  <div className="md:hidden absolute right-20 top-1/2 -translate-y-1/2 text-5xl font-black text-slate-100 select-none pointer-events-none italic tracking-tighter z-0">
                       {row.MY}
                   </div>
 
