@@ -24,7 +24,7 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
             
             <th className="py-2 px-2 md:px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Véhicule</th>
             <th className="py-2 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:table-cell">Moteur</th>
-            <th className="py-2 px-2 md:px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-[80px] md:w-auto text-right md:text-left">Source</th>
+            <th className="py-2 px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:table-cell">Source</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -69,29 +69,41 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
 
                   {/* --- CONTENU --- */}
                   {/* z-10 relative : Passe DEVANT le filigrane */}
-                  <div className="flex flex-col justify-center gap-0.5 relative z-10">
-
-                    <Link
-                      href={modelHref}
-                      className="font-bold text-xs md:text-sm text-slate-900 group-hover:text-blue-600 transition leading-tight truncate max-w-[180px] md:max-w-none block"
-                    >
-                      {hideBrand ? row.Modele : `${row.Marque} ${row.Modele}`}
-                    </Link>
-
-                    {row.Finition && (
-                      <span className="text-[9px] md:text-[11px] text-slate-500 font-medium tracking-tight truncate max-w-[150px] leading-none">
-                        {row.Finition}
-                      </span>
-                    )}
-
-                    <div className="md:hidden mt-1 origin-left transform scale-90">
-                      <Link href={powertrainHref}>
-                          <Powertrain
-                              power={row.Puissance}
-                              transmission={row.Transmission}
-                              type={row.Type}
-                          />
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className="flex flex-col justify-center gap-0.5 min-w-0">
+                      <Link
+                        href={modelHref}
+                        className="font-bold text-xs md:text-sm text-slate-900 group-hover:text-blue-600 transition leading-tight truncate max-w-[180px] md:max-w-none block"
+                      >
+                        {hideBrand ? row.Modele : `${row.Marque} ${row.Modele}`}
                       </Link>
+
+                      {row.Finition && (
+                        <span className="text-[9px] md:text-[11px] text-slate-500 font-medium tracking-tight truncate max-w-[150px] leading-none">
+                          {row.Finition}
+                        </span>
+                      )}
+
+                      <div className="md:hidden mt-1 origin-left transform scale-90">
+                        <Link href={powertrainHref}>
+                            <Powertrain
+                                power={row.Puissance}
+                                transmission={row.Transmission}
+                                type={row.Type}
+                            />
+                        </Link>
+                      </div>
+                    </div>
+
+                    {/* SOURCE MOBILE (Apparaît sur la droite au-dessus du filigrane) */}
+                    <div className="md:hidden flex flex-col items-end justify-center leading-tight ml-2 shrink-0">
+                      <MagazineBadge
+                        name={row.Testeur}
+                        className="text-[9px] font-bold text-slate-700 uppercase"
+                      />
+                      <span className="text-[9px] text-slate-400 font-mono">
+                        {formatYearMonth(row.Test_date)}
+                      </span>
                     </div>
                   </div>
                 </td>
@@ -110,14 +122,14 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
                   </Link>
                 </td>
 
-              {/* 5. SOURCE */}
-              <td className="px-2 md:px-3 py-1 align-middle text-right md:text-left">
-                <div className="flex flex-col items-end md:items-start justify-center leading-tight">
+              {/* 5. SOURCE (Desktop Only) */}
+              <td className="px-3 py-1 align-middle hidden md:table-cell">
+                <div className="flex flex-col items-start justify-center leading-tight">
                   <MagazineBadge
                     name={row.Testeur}
-                    className="text-[9px] md:text-[10px] font-bold text-slate-700 uppercase truncate max-w-[80px] md:max-w-none"
+                    className="text-[10px] font-bold text-slate-700 uppercase"
                   />
-                  <span className="text-[9px] md:text-[10px] text-slate-400 font-mono">
+                  <span className="text-[10px] text-slate-400 font-mono">
                     {formatYearMonth(row.Test_date)}
                   </span>
                 </div>
