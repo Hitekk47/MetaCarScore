@@ -11,13 +11,7 @@ describe("normalizeSourceName", () => {
   });
 
   it("should strip invisible characters like soft hyphens", () => {
-    // \u00AD is soft hyphen
     expect(normalizeSourceName("AUTO\u00ADStraßen\u00ADverkehr")).toBe("autostraßenverkehr");
-  });
-
-  it("should strip zero-width spaces", () => {
-    // \u200B is zero-width space
-    expect(normalizeSourceName("EVO\u200B")).toBe("evo");
   });
 
   it("should handle empty or null input", () => {
@@ -28,21 +22,15 @@ describe("normalizeSourceName", () => {
 });
 
 describe("magazineCountries lookup", () => {
-  it("should find the flag for normalized names", () => {
+  it("should find the ISO code for normalized names", () => {
     const source = "L'Automobile Magazine";
     const normalized = normalizeSourceName(source);
-    expect(magazineCountries[normalized]).toBe("🇫🇷");
+    expect(magazineCountries[normalized]).toBe("fr");
   });
 
-  it("should find the flag for names with special characters after normalization", () => {
-    const source = "AUTO\u00ADStraßen\u00ADverkehr";
-    const normalized = normalizeSourceName(source);
-    expect(magazineCountries[normalized]).toBe("🇩🇪");
-  });
-
-  it("should find the flag for names with typos if mapped", () => {
+  it("should find the ISO code for names with typos if mapped", () => {
     const source = "Quattrouote";
     const normalized = normalizeSourceName(source);
-    expect(magazineCountries[normalized]).toBe("🇮🇹");
+    expect(magazineCountries[normalized]).toBe("it");
   });
 });

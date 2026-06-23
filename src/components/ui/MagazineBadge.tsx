@@ -7,15 +7,22 @@ interface MagazineBadgeProps {
 
 /**
  * A style-agnostic component that prepends a country flag to a magazine name.
- * Inherits typography and layout from its parent for a seamless look.
+ * Uses flag-icons (SVG) for consistent cross-platform rendering (including Windows).
  */
 export const MagazineBadge = ({ name, className = "" }: MagazineBadgeProps) => {
   const normalized = normalizeSourceName(name);
-  const flag = magazineCountries[normalized] || "🌐";
+  const countryCode = magazineCountries[normalized];
 
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span aria-hidden="true" className="select-none text-base leading-none">{flag}</span>
+      {countryCode ? (
+        <span
+          className={`fi fi-${countryCode} shrink-0 rounded-sm shadow-sm border border-slate-100/10`}
+          aria-hidden="true"
+        />
+      ) : (
+        <span className="select-none text-base leading-none" aria-hidden="true">🌐</span>
+      )}
       <span>{name}</span>
     </span>
   );
