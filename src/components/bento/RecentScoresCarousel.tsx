@@ -108,7 +108,7 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
                     <div className="pr-2">
                         <div className="flex items-center gap-2 mb-1">
                             <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                                {item.Famille}
+                                Gamme {item.Famille}
                             </span>
                             <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black rounded border border-slate-200 uppercase tracking-tighter">
                                 MY {item.MY}
