@@ -99,14 +99,14 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
                     </div>
                   )}
 
-                  <div className="relative z-10 flex flex-col justify-between h-full flex-grow pointer-events-none">
+                  <div className="flex flex-col justify-between h-full flex-grow">
                     {/* HEADER CARD */}
                     <div className="flex justify-between items-start">
                       <div className="pr-2">
                           <div className="flex items-center gap-2 mb-1">
                               <Link
                                   href={`/${toSlug(item.Marque)}/${toSlug(item.Famille)}`}
-                                  className="text-[10px] font-bold uppercase text-slate-400 tracking-wider hover:underline hover:text-blue-600 transition-colors pointer-events-auto relative z-20"
+                                  className="text-[10px] font-bold uppercase text-slate-400 tracking-wider hover:underline hover:text-blue-600 transition-colors relative z-20"
                               >
                                   Gamme {item.Famille}
                               </Link>
@@ -117,19 +117,17 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
                           <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-tight group-hover/card:text-blue-600 transition-colors">
                             <Link
                                 href={`/${toSlug(item.Marque)}/${toSlug(item.Famille)}/${item.MY}/${toSlug(item.Modele)}`}
-                                className="pointer-events-auto after:absolute after:inset-0 after:z-0"
                             >
+                                <span className="absolute inset-0 z-10" aria-hidden="true" />
                                 {item.Marque} <br/> {item.Modele}
                             </Link>
                           </h3>
                       </div>
-                      <div className="pointer-events-none">
-                        <ScoreBadge score={Math.round(item.AvgScore)} size="md" />
-                      </div>
+                      <ScoreBadge score={Math.round(item.AvgScore)} size="md" />
                     </div>
 
                     {/* FOOTER CARD */}
-                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-end justify-between pointer-events-none">
+                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-end justify-between">
 
                       {/* Nombre d'essais */}
                       <div className="text-xs text-slate-400 font-medium">
