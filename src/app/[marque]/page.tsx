@@ -82,10 +82,14 @@ export default async function BrandPage({ params }: PageProps) {
     colorClass: "bg-slate-50 text-slate-700 border-slate-200"
   }));
 
+  const subtitle = families.length === 1
+    ? `Découvrez l'unique gamme de véhicules ${realMarque} analysée par des experts.`
+    : `Découvrez les ${families.length} gammes de véhicules ${realMarque} analysées par des experts.`;
+
   return (
     <GenericDirectoryClient 
       title={realMarque} // On affiche le beau nom ("Land Rover")
-      subtitle={`Découvrez les ${families.length} gammes de véhicules ${realMarque} analysées par des experts.`}
+      subtitle={subtitle}
       items={items}
       placeholderSearch={`Filtrer la gamme ${realMarque}...`}
     />
