@@ -90,61 +90,67 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
             return (
               <div key={`${item.Marque}-${item.MY}-${item.Modele}`} className="snap-center shrink-0 w-[280px] md:w-[320px]">
                 
-                {/* LIEN GLOBAL SUR LA CARTE VERS LA PAGE MODÈLE */}
-                <Link 
-                    href={`/${toSlug(item.Marque)}/${toSlug(item.Famille)}/${item.MY}/${toSlug(item.Modele)}`}
-                    className="block bg-white border border-slate-200 rounded-xl p-6 h-full hover:shadow-xl hover:border-blue-300 transition-all cursor-pointer group/card relative flex flex-col justify-between min-h-[200px]"
-                >
+                <div className="bg-white border border-slate-200 rounded-xl p-6 h-full hover:shadow-xl hover:border-blue-300 transition-all cursor-pointer group/card relative flex flex-col justify-between min-h-[200px]">
                   
                   {/* BADGE NEW */}
                   {isNew && (
-                    <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider z-10 shadow-sm">
+                    <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider z-20 shadow-sm pointer-events-none">
                       New
                     </div>
                   )}
 
-                  {/* HEADER CARD */}
-                  <div className="flex justify-between items-start">
-                    <div className="pr-2">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                                {item.Famille}
-                            </span>
-                            <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black rounded border border-slate-200 uppercase tracking-tighter">
-                                MY {item.MY}
-                            </span>
-                        </div>
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-tight group-hover/card:text-blue-600 transition-colors">
-                            {item.Marque} <br/> {item.Modele}
-                        </h3>
+                  <div className="flex flex-col justify-between h-full flex-grow">
+                    {/* HEADER CARD */}
+                    <div className="flex justify-between items-start">
+                      <div className="pr-2">
+                          <div className="flex items-center gap-2 mb-1">
+                              <Link
+                                  href={`/${toSlug(item.Marque)}/${toSlug(item.Famille)}`}
+                                  className="text-[10px] font-bold uppercase text-slate-400 tracking-wider hover:underline hover:text-blue-600 transition-colors relative z-20"
+                              >
+                                  Gamme {item.Famille}
+                              </Link>
+                              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-black rounded border border-slate-200 uppercase tracking-tighter">
+                                  MY {item.MY}
+                              </span>
+                          </div>
+                          <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight leading-tight group-hover/card:text-blue-600 transition-colors">
+                            <Link
+                                href={`/${toSlug(item.Marque)}/${toSlug(item.Famille)}/${item.MY}/${toSlug(item.Modele)}`}
+                            >
+                                <span className="absolute inset-0 z-10" aria-hidden="true" />
+                                {item.Marque} <br/> {item.Modele}
+                            </Link>
+                          </h3>
+                      </div>
+                      <ScoreBadge score={Math.round(item.AvgScore)} size="md" />
                     </div>
-                    <ScoreBadge score={Math.round(item.AvgScore)} size="md" />
-                  </div>
 
-                  {/* FOOTER CARD */}
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-end justify-between">
-                    
-                    {/* Nombre d'essais */}
-                    <div className="text-xs text-slate-400 font-medium">
-                       <strong className="text-slate-700">{item.ReviewCount}</strong> essais
-                    </div>
+                    {/* FOOTER CARD */}
+                    <div className="mt-6 pt-4 border-t border-slate-100 flex items-end justify-between">
 
-                    {/* Puissance avec Icône Gauge */}
-                    <div className="text-right">
-                        <div className="flex items-center justify-end gap-1.5 text-slate-900 font-mono font-bold text-sm">
-                            <Gauge className="w-4 h-4 text-slate-400" strokeWidth={2.5} /> 
-                            
-                            {item.MinPower === item.MaxPower 
-                                ? <span>{item.MinPower}</span> 
-                                : <span>{item.MinPower}-{item.MaxPower}</span>
-                            }
-                            <span className="text-[10px] text-slate-400 uppercase font-sans">ch</span>
-                        </div>
+                      {/* Nombre d'essais */}
+                      <div className="text-xs text-slate-400 font-medium">
+                        <strong className="text-slate-700">{item.ReviewCount}</strong> essais
+                      </div>
+
+                      {/* Puissance avec Icône Gauge */}
+                      <div className="text-right">
+                          <div className="flex items-center justify-end gap-1.5 text-slate-900 font-mono font-bold text-sm">
+                              <Gauge className="w-4 h-4 text-slate-400" strokeWidth={2.5} />
+
+                              {item.MinPower === item.MaxPower
+                                  ? <span>{item.MinPower}</span>
+                                  : <span>{item.MinPower}-{item.MaxPower}</span>
+                              }
+                              <span className="text-[10px] text-slate-400 uppercase font-sans">ch</span>
+                          </div>
+                      </div>
                     </div>
                   </div>
 
                   {/* BARRE DE PROGRESSION */}
-                  <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-50 overflow-hidden rounded-b-xl">
+                  <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-50 overflow-hidden rounded-b-xl z-0">
                     <div 
                       className={cn("h-full transition-all duration-500", 
                         item.AvgScore >= 61 ? 'bg-score-good' : item.AvgScore >= 40 ? 'bg-score-mixed' : 'bg-score-bad'
@@ -153,7 +159,7 @@ export default function RecentScoresCarousel({ items }: { items: CarouselItem[] 
                     ></div>
                   </div>
 
-                </Link>
+                </div>
               </div>
             );
         })}
