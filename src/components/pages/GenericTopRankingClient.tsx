@@ -119,8 +119,9 @@ export default function GenericTopRankingClient({
 
   // --- LOGIQUE D'AFFICHAGE (PODIUM vs LISTE) ---
   const filteredData = useMemo(() => {
+    const lowerQuery = searchQuery.toLowerCase();
     return data.filter(item => 
-      `${item.Marque} ${item.Modele}`.toLowerCase().includes(searchQuery.toLowerCase())
+      `${item.Marque} ${item.Modele}`.toLowerCase().includes(lowerQuery)
     );
   }, [data, searchQuery]);
 

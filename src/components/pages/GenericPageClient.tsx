@@ -45,19 +45,26 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
 
 
   const filteredReviews = useMemo(() => {
+    const lowerQuery = query.toLowerCase();
+    const parsedFilterMY = filterMY !== "all" ? parseInt(filterMY) : null;
+    const parsedMinPower = minPower ? parseInt(minPower) : null;
+    const parsedMaxPower = maxPower ? parseInt(maxPower) : null;
+
     return initialReviews.filter(r => {
-      const searchStr = `${r.Modele} ${r.Finition || ''} ${r.Testeur}`.toLowerCase();
-      if (query && !searchStr.includes(query.toLowerCase())) return false;
-      if (filterMY !== "all" && r.MY !== parseInt(filterMY)) return false;
+      if (lowerQuery) {
+        const searchStr = `${r.Modele} ${r.Finition || ''} ${r.Testeur}`.toLowerCase();
+        if (!searchStr.includes(lowerQuery)) return false;
+      }
+      if (parsedFilterMY !== null && r.MY !== parsedFilterMY) return false;
       if (filterType !== "all" && r.Type !== filterType) return false;
       if (filterTrans !== "all") {
         const boite = r.Transmission.slice(-1);
         if (boite !== filterTrans) return false;
       }
-      if (minPower && r.Puissance < parseInt(minPower)) return false;
-      if (maxPower && r.Puissance > parseInt(maxPower)) return false;
+      if (parsedMinPower !== null && r.Puissance < parsedMinPower) return false;
+      if (parsedMaxPower !== null && r.Puissance > parsedMaxPower) return false;
       return true;
-    }).sort((a, b) => new Date(b.Test_date).getTime() - new Date(a.Test_date).getTime());
+    }).sort((a, b) => b.Test_date.localeCompare(a.Test_date));
   }, [initialReviews, query, filterMY, filterType, filterTrans, minPower, maxPower]);
     useEffect(() => {
     setDisplayLimit(50);
