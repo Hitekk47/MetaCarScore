@@ -49,7 +49,7 @@ export const groupBy = <T, K extends PropertyKey>(list: T[], getKey: (item: T) =
     if (!previous[group]) previous[group] = [];
     previous[group].push(currentItem);
     return previous;
-  }, {} as Record<K, T[]>);
+  }, Object.create(null) as Record<K, T[]>);
 
 /**
  * Stringifies an object and escapes potentially dangerous characters to prevent XSS in <script> tags.
@@ -64,7 +64,7 @@ export function serializeJsonLd(data: any) {
 }
 
 export function aggregateReviews(reviews: Review[]): Record<string, AggregatedSource> {
-  const map: Record<string, AggregatedSource> = {};
+  const map: Record<string, AggregatedSource> = Object.create(null);
   reviews.forEach((r) => {
     const source = r.Testeur.trim();
     if (!map[source]) map[source] = { sourceName: source, avgScore: 0, count: 0, rawScores: [] };
