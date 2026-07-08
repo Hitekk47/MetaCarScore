@@ -17,8 +17,6 @@ import {
  * Internal function to perform the actual DB query for multiple slugs.
  */
 async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Review[]>> {
-  console.log("⚡ Batch DB Query Triggered for:", slugs);
-
   if (!slugs || slugs.length === 0) return {};
 
   // Resolve all slugs in parallel
