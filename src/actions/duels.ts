@@ -36,7 +36,7 @@ function isValidYear(year: number): boolean {
  * See: https://postgrest.org/en/stable/references/api/resource_embedding.html#embedded-filters
  */
 function escapePostgRESTString(val: string): string {
-  return val.replace(/"/g, '""');
+  return val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 // --- New Cached Batch Function ---
