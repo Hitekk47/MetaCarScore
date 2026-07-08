@@ -1,43 +1,15 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
 import { unstable_cache } from 'next/cache';
 import { Review } from "@/lib/types";
 import { getFullContext } from "@/lib/queries";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// --- Validation Helpers ---
-
-function isValidSlugPart(part: string): boolean {
-  // Allow alphanumeric, hyphens.
-  // Strictly disallow quotes, slashes, and other special chars to prevent injection/XSS.
-  // Underscores are NOT allowed in marque/famille because they are separators in the composite slug.
-  // Enforcing lowercase for strict slug compliance.
-  return /^[a-z0-9\-]+$/.test(part);
-}
-
-function isValidModelPart(part: string): boolean {
-  // Models can contain underscores if they were joined back from parts,
-  // or spaces if passed raw.
-  // Strictly disallow quotes.
-  // Enforcing lowercase for strict slug compliance.
-  return /^[a-z0-9\-_]+$/.test(part);
-}
-
-function isValidYear(year: number): boolean {
-  return !isNaN(year) && year >= 1900 && year <= 2100;
-}
-
-/**
- * Escapes strings for PostgREST double-quoted literals by doubling double quotes.
- * See: https://postgrest.org/en/stable/references/api/resource_embedding.html#embedded-filters
- */
-function escapePostgRESTString(val: string): string {
-  return val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-}
+import { supabase } from "@/lib/supabase";
+import {
+  isValidSlugPart,
+  isValidModelPart,
+  isValidYear,
+  escapePostgrestValue
+} from "@/lib/validation";
 
 // --- New Cached Batch Function ---
 
@@ -101,10 +73,10 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
     const chunk = validContexts.slice(i, i + BATCH_SIZE);
     const conditions = chunk.map(ctx => {
       // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers).
-      // 🔒 Security: Double quotes within values must be escaped by doubling them ("").
-      const m = escapePostgRESTString(ctx.real_marque);
-      const f = escapePostgRESTString(ctx.real_famille);
-      const mod = escapePostgRESTString(ctx.real_modele);
+      // 🔒 Security: Double quotes within values must be escaped by prefixing them with backslash (\").
+      const m = escapePostgrestValue(ctx.real_marque);
+      const f = escapePostgrestValue(ctx.real_famille);
+      const mod = escapePostgrestValue(ctx.real_modele);
       return `and(Marque.eq."${m}",Famille.eq."${f}",MY.eq.${ctx.my},Modele.eq."${mod}")`;
     });
 
