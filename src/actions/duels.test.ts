@@ -11,15 +11,15 @@ mock.module("@/lib/queries", () => ({
   getFullContext: mockGetFullContext,
 }));
 
-// Mock supabase
+// Mock @/lib/supabase
 const mockOr = mock(() => Promise.resolve({ data: [], error: null }));
 const mockSelect = mock(() => ({ or: mockOr }));
 const mockFrom = mock(() => ({ select: mockSelect }));
 
-mock.module("@supabase/supabase-js", () => ({
-  createClient: () => ({
+mock.module("@/lib/supabase", () => ({
+  supabase: {
     from: mockFrom,
-  }),
+  },
 }));
 
 // Define the test
@@ -57,8 +57,8 @@ describe("fetchBatchFighterReviews security", () => {
     expect(mockOr).toHaveBeenCalled();
     const orQuery = mockOr.mock.calls[0][0] as string;
 
-    // The expected PostgREST syntax for escaping " is ""
-    // and(Marque.eq."Brand ""With"" Quotes",Famille.eq."Family",MY.eq.2023,Modele.eq."Model")
-    expect(orQuery).toContain('Marque.eq."Brand ""With"" Quotes"');
+    // The expected PostgREST syntax for escaping " is \"
+    // and(Marque.eq."Brand \"With\" Quotes",Famille.eq."Family",MY.eq.2023,Modele.eq."Model")
+    expect(orQuery).toContain('Marque.eq."Brand \\"With\\" Quotes"');
   });
 });
