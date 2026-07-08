@@ -64,7 +64,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
       if (parsedMinPower !== null && r.Puissance < parsedMinPower) return false;
       if (parsedMaxPower !== null && r.Puissance > parsedMaxPower) return false;
       return true;
-    }).sort((a, b) => b.Test_date.localeCompare(a.Test_date));
+    }).sort((a, b) => (a.Test_date < b.Test_date ? 1 : a.Test_date > b.Test_date ? -1 : 0));
   }, [initialReviews, query, filterMY, filterType, filterTrans, minPower, maxPower]);
     useEffect(() => {
     setDisplayLimit(50);
