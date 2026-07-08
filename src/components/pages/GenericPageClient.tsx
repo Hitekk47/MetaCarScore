@@ -39,25 +39,45 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
   const [maxPower, setMaxPower] = useState<string>("");
   const [displayLimit, setDisplayLimit] = useState(50);  
 
-  const availableYears = useMemo(() => [...new Set(initialReviews.map(r => r.MY))].sort((a,b) => b-a), [initialReviews]);
-  const availableTypes = useMemo(() => [...new Set(initialReviews.map(r => r.Type))].sort(), [initialReviews]);
+  const { availableYears, availableTypes } = useMemo(() => {
+    const yearsSet = new Set<number>();
+    const typesSet = new Set<string>();
+
+    for (let i = 0; i < initialReviews.length; i++) {
+      const r = initialReviews[i];
+      yearsSet.add(r.MY);
+      typesSet.add(r.Type);
+    }
+
+    return {
+      availableYears: Array.from(yearsSet).sort((a, b) => b - a),
+      availableTypes: Array.from(typesSet).sort(),
+    };
+  }, [initialReviews]);
 
 
 
   const filteredReviews = useMemo(() => {
+    const lowerQuery = query.toLowerCase();
+    const parsedFilterMY = filterMY !== "all" ? parseInt(filterMY) : null;
+    const parsedMinPower = minPower ? parseInt(minPower) : null;
+    const parsedMaxPower = maxPower ? parseInt(maxPower) : null;
+
     return initialReviews.filter(r => {
-      const searchStr = `${r.Modele} ${r.Finition || ''} ${r.Testeur}`.toLowerCase();
-      if (query && !searchStr.includes(query.toLowerCase())) return false;
-      if (filterMY !== "all" && r.MY !== parseInt(filterMY)) return false;
+      if (lowerQuery) {
+        const searchStr = `${r.Modele} ${r.Finition || ''} ${r.Testeur}`.toLowerCase();
+        if (!searchStr.includes(lowerQuery)) return false;
+      }
+      if (parsedFilterMY !== null && r.MY !== parsedFilterMY) return false;
       if (filterType !== "all" && r.Type !== filterType) return false;
       if (filterTrans !== "all") {
         const boite = r.Transmission.slice(-1);
         if (boite !== filterTrans) return false;
       }
-      if (minPower && r.Puissance < parseInt(minPower)) return false;
-      if (maxPower && r.Puissance > parseInt(maxPower)) return false;
+      if (parsedMinPower !== null && r.Puissance < parsedMinPower) return false;
+      if (parsedMaxPower !== null && r.Puissance > parsedMaxPower) return false;
       return true;
-    }).sort((a, b) => new Date(b.Test_date).getTime() - new Date(a.Test_date).getTime());
+    }).sort((a, b) => (a.Test_date < b.Test_date ? 1 : a.Test_date > b.Test_date ? -1 : 0));
   }, [initialReviews, query, filterMY, filterType, filterTrans, minPower, maxPower]);
     useEffect(() => {
     setDisplayLimit(50);
@@ -112,7 +132,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                 
                 <SmartBreadcrumb marque={marque} famille={famille} my={my} modele={modele} powertrain={powertrain} />
 
-                <div className="flex flex-col md:flex-row md:items-end gap-6 md:gap-10">
+                <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-10">
                     <div className="shrink-0">
                         <ScoreBadge score={avgScore} size="xl" isFiltered={isFiltered} reviewCount={filteredReviews.length} />
                     </div>

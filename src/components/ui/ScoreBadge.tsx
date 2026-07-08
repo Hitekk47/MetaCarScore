@@ -69,8 +69,10 @@ export default function ScoreBadge({
     ${isFiltered && !isPending ? 'ring-4 ring-offset-2 ring-offset-slate-900 ring-orange-500' : ''}
   `;
 
+  const wrapperMarginClass = (isPending && size === 'xl') ? "mb-10 md:mb-12" : "";
+
   return (
-    <div className={`relative ${sizeClasses[size]} shrink-0`}> 
+    <div className={`relative ${sizeClasses[size]} shrink-0 ${wrapperMarginClass}`}>
       
       {shouldAnimate ? (
         <motion.div

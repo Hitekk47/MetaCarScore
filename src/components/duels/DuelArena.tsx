@@ -10,6 +10,7 @@ import Link from "next/link";
 import DuelScore from "./DuelScore";
 import MiniScoreBar from "./MiniScoreBar";
 import PowerBadge from "./PowerBadge";
+import { MagazineBadge } from "@/components/ui/MagazineBadge";
 
 type Props = {
   carA: { name: string; reviews: Review[]; my: number; url: string };
@@ -250,9 +251,10 @@ export default function DuelArena({ carA, carB }: Props) {
                                     <DuelScore score={dataA.avgScore} count={dataA.count} isWinner={winA} />
                                 </div>
                                 <div className="flex justify-center">
-                                    <span className="text-[10px] md:text-xs font-bold uppercase text-slate-700 text-center truncate px-2">
-                                        {source}
-                                    </span>
+                                    <MagazineBadge
+                                        name={source}
+                                        className="text-[10px] md:text-xs font-bold uppercase text-slate-700 text-center truncate px-2"
+                                    />
                                 </div>
                                 <div className={cn("flex justify-center md:justify-start pl-0 md:pl-8", !winB && !draw && "opacity-40 grayscale")}>
                                     <DuelScore score={dataB.avgScore} count={dataB.count} isWinner={winB} />
@@ -276,7 +278,7 @@ export default function DuelArena({ carA, carB }: Props) {
                         {onlyA.map((item) => (
                             <div key={`A-${item.sourceName}`} className="grid grid-cols-3 items-center py-4 px-2 md:px-6 hover:bg-slate-50">
                                 <div className="flex justify-center md:justify-end pr-0 md:pr-8"><DuelScore score={item.avgScore} count={item.count} /></div>
-                                <div className="flex justify-center"><span className="text-[10px] md:text-xs font-bold uppercase text-slate-400 text-center truncate">{item.sourceName}</span></div>
+                                <div className="flex justify-center"><MagazineBadge name={item.sourceName} className="text-[10px] md:text-xs font-bold uppercase text-slate-400 text-center truncate" /></div>
                                 <div className="flex justify-center md:justify-start pl-0 md:pl-8"><div className="w-8 h-1 bg-slate-200/50 rounded-full"></div></div>
                             </div>
                         ))}
@@ -284,7 +286,7 @@ export default function DuelArena({ carA, carB }: Props) {
                         {onlyB.map((item) => (
                             <div key={`B-${item.sourceName}`} className="grid grid-cols-3 items-center py-4 px-2 md:px-6 hover:bg-slate-50">
                                 <div className="flex justify-center md:justify-end pr-0 md:pr-8"><div className="w-8 h-1 bg-slate-200/50 rounded-full"></div></div>
-                                <div className="flex justify-center"><span className="text-[10px] md:text-xs font-bold uppercase text-slate-400 text-center truncate">{item.sourceName}</span></div>
+                                <div className="flex justify-center"><MagazineBadge name={item.sourceName} className="text-[10px] md:text-xs font-bold uppercase text-slate-400 text-center truncate" /></div>
                                 <div className="flex justify-center md:justify-start pl-0 md:pl-8"><DuelScore score={item.avgScore} count={item.count} /></div>
                             </div>
                         ))}

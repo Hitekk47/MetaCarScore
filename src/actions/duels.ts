@@ -1,35 +1,15 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
 import { unstable_cache } from 'next/cache';
 import { Review } from "@/lib/types";
 import { getFullContext } from "@/lib/queries";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// --- Validation Helpers ---
-
-function isValidSlugPart(part: string): boolean {
-  // Allow alphanumeric, hyphens.
-  // Strictly disallow quotes, slashes, and other special chars to prevent injection/XSS.
-  // Underscores are NOT allowed in marque/famille because they are separators in the composite slug.
-  // Enforcing lowercase for strict slug compliance.
-  return /^[a-z0-9\-]+$/.test(part);
-}
-
-function isValidModelPart(part: string): boolean {
-  // Models can contain underscores if they were joined back from parts,
-  // or spaces if passed raw.
-  // Strictly disallow quotes.
-  // Enforcing lowercase for strict slug compliance.
-  return /^[a-z0-9\-_]+$/.test(part);
-}
-
-function isValidYear(year: number): boolean {
-  return !isNaN(year) && year >= 1900 && year <= 2100;
-}
+import { supabase } from "@/lib/supabase";
+import {
+  isValidSlugPart,
+  isValidModelPart,
+  isValidYear,
+  escapePostgrestValue
+} from "@/lib/validation";
 
 // --- New Cached Batch Function ---
 
@@ -37,8 +17,6 @@ function isValidYear(year: number): boolean {
  * Internal function to perform the actual DB query for multiple slugs.
  */
 async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Review[]>> {
-  console.log("⚡ Batch DB Query Triggered for:", slugs);
-
   if (!slugs || slugs.length === 0) return {};
 
   // Resolve all slugs in parallel
@@ -92,8 +70,12 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
   for (let i = 0; i < validContexts.length; i += BATCH_SIZE) {
     const chunk = validContexts.slice(i, i + BATCH_SIZE);
     const conditions = chunk.map(ctx => {
-      // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers)
-      return `and(Marque.eq."${ctx.real_marque}",Famille.eq."${ctx.real_famille}",MY.eq.${ctx.my},Modele.eq."${ctx.real_modele}")`;
+      // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers).
+      // 🔒 Security: Double quotes within values must be escaped by prefixing them with backslash (\").
+      const m = escapePostgrestValue(ctx.real_marque);
+      const f = escapePostgrestValue(ctx.real_famille);
+      const mod = escapePostgrestValue(ctx.real_modele);
+      return `and(Marque.eq."${m}",Famille.eq."${f}",MY.eq.${ctx.my},Modele.eq."${mod}")`;
     });
 
     // Join with comma for OR operator in PostgREST

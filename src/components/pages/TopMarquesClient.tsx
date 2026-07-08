@@ -52,14 +52,17 @@ export default function TopMarquesClient() {
   }, [timeRange]);
 
   const filteredData = useMemo(() => {
-    return data.filter(item => item.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+    const lowerQuery = searchQuery.toLowerCase();
+    return data.filter(item => item.brand.toLowerCase().includes(lowerQuery));
   }, [data, searchQuery]);
 
   // Optimisation: Carte des rangs pour éviter O(N^2) dans le rendu de la liste
   const rankMap = useMemo(() => {
     const map = new Map<string, number>();
     data.forEach((item, index) => {
-      map.set(item.brand, index + 1);
+      if (!map.has(item.brand)) {
+        map.set(item.brand, index + 1);
+      }
     });
     return map;
   }, [data]);
@@ -108,7 +111,7 @@ export default function TopMarquesClient() {
 
                     <div className="divide-y divide-slate-100">
                         {(searchQuery ? filteredData : list).map((item, index) => {
-                            const realRank = rankMap.get(item.brand) ?? (data.findIndex(d => d.brand === item.brand) + 1);
+                            const realRank = rankMap.get(item.brand) ?? 0;
                             const roundedScore = Math.round(item.avg_score);
                             const currentTier = getTier(roundedScore);
                             const prevItem = index > 0 ? (searchQuery ? filteredData : list)[index - 1] : null;
