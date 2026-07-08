@@ -52,7 +52,8 @@ export default function TopMarquesClient() {
   }, [timeRange]);
 
   const filteredData = useMemo(() => {
-    return data.filter(item => item.brand.toLowerCase().includes(searchQuery.toLowerCase()));
+    const lowerQuery = searchQuery.toLowerCase();
+    return data.filter(item => item.brand.toLowerCase().includes(lowerQuery));
   }, [data, searchQuery]);
 
   // Optimisation: Carte des rangs pour éviter O(N^2) dans le rendu de la liste
