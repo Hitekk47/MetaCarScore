@@ -40,7 +40,7 @@ Le projet est bâti avec les technologies les plus récentes pour des performanc
 
 ## Développement & Vision
 
-Ce projet est intégralement **vibe codé par Gemini** (utilisant successivement les versions 2.5 Pro au départ, puis 3.0, et enfin une combinaison de 3.1 Pro et 3.5 Flash).
+Ce projet est intégralement **vibe codé par Gemini** (utilisant successivement les versions 2.5 Pro au départ, puis 3 Pro, et enfin une combinaison de 3.1 Pro et 3.5 Flash).
 
 Toute la base de données et le développement du site sont l'œuvre de **Hitekk47**.
 
@@ -91,7 +91,7 @@ The project is built with the latest technologies for optimal performance and re
 
 ## Development & Vision
 
-This project is entirely **vibe coded by Gemini** (using successively versions 2.5 Pro at the start, then 3.0, and finally a combination of 3.1 Pro and 3.5 Flash).
+This project is entirely **vibe coded by Gemini** (using successively versions 2.5 Pro at the start, then 3 Pro, and finally a combination of 3.1 Pro and 3.5 Flash).
 
 The entire database and website development are the work of **Hitekk47**.
 
