@@ -145,7 +145,7 @@ export default function GenericTopRankingClient({
   const podium = showPodium ? filteredData.slice(0, 3) : [];
   const list = showPodium ? filteredData.slice(3) : filteredData;
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
+    <div className="min-h-screen text-slate-900 font-sans pb-20">
       <Header />
 
       <main className="max-w-4xl mx-auto px-4 py-8 md:py-12">

@@ -58,7 +58,7 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
+    <div className="min-h-screen text-slate-900 font-sans pb-20">
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 py-12">
