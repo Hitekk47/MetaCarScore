@@ -70,8 +70,8 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
 
   const currentList = rankings[activeTab];
 
-  // Si aucune donnée (ex: liste vide), on n'affiche rien
-  if (rawModelsData.length === 0) return null;
+  // Si moins de 2 modèles distincts (Modele + MY), le podium n'a pas d'intérêt
+  if (rawModelsData.length <= 1) return null;
 
   // Pour construire les liens, on a besoin de la Marque et Famille (communes à tous les reviews ici)
   const slugMarque = toSlug(reviews[0]?.Marque || "");
