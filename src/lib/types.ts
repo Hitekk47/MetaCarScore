@@ -61,3 +61,15 @@ export type BrandRankingItem = {
   worst_famille: string | null;
   worst_my: number | null;
 };
+
+export type CarouselItem = {
+  Marque: string;
+  Famille: string;
+  Modele: string;
+  MY: number;
+  AvgScore: number;
+  ReviewCount: number;
+  MinPower: number;
+  MaxPower: number;
+  FirstTestDate: string;
+};

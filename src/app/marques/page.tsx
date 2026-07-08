@@ -1,6 +1,7 @@
 import GenericDirectoryClient, { DirectoryItem } from "@/components/pages/GenericDirectoryClient";
 import { supabase } from "@/lib/supabase";
 import { toSlug } from "@/lib/slugify";
+import type { BrandRankingItem } from "@/lib/types";
 
 export const revalidate = 3600; // Cache 1h
 
@@ -17,7 +18,7 @@ export default async function MarquesPage() {
   });
 
   // Transformation des données pour le composant générique
-  const items: DirectoryItem[] = (data || []).map((brand: any) => ({
+  const items: DirectoryItem[] = (data || []).map((brand: BrandRankingItem) => ({
     id: brand.brand,
     title: brand.brand,
     subtitle: `${brand.review_count} Essai${brand.review_count > 1 ? 's' : ''}`,
@@ -25,7 +26,7 @@ export default async function MarquesPage() {
     href: `/${toSlug(brand.brand)}`, 
     
     letter: brand.brand.charAt(0),
-  })).sort((a: any, b: any) => a.title.localeCompare(b.title));
+  })).sort((a: DirectoryItem, b: DirectoryItem) => a.title.localeCompare(b.title));
 
   return (
     <GenericDirectoryClient 

@@ -6,18 +6,7 @@ import { ChevronLeft, ChevronRight, Gauge } from 'lucide-react';
 import ScoreBadge from '../ui/ScoreBadge';
 import { cn } from '@/lib/utils';
 import { toSlug } from "@/lib/slugify";
-
-type CarouselItem = {
-  Marque: string;
-  Famille: string;
-  Modele: string;
-  MY: number;
-  AvgScore: number;
-  ReviewCount: number;
-  MinPower: number;
-  MaxPower: number;
-  FirstTestDate: string;
-};
+import type { CarouselItem } from '@/lib/types';
 
 export default function RecentScoresCarousel({ items }: { items: CarouselItem[] }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);

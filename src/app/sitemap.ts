@@ -5,6 +5,13 @@ import { TOPS_MENU } from '@/lib/constants';
 
 const BASE_URL = 'https://metacarscore.com';
 
+interface SitemapRow {
+  Marque: string;
+  Famille: string;
+  MY: number;
+  Modele: string;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   
   // 1. Pages Statiques (Priorité 1.0)
@@ -47,7 +54,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const models = new Set<string>();
 
   if (rows && Array.isArray(rows)) {
-    rows.forEach((row: any) => {
+    rows.forEach((row: SitemapRow) => {
       const m = toSlug(row.Marque);
       const f = toSlug(row.Famille);
       const y = row.MY;

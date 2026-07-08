@@ -6,16 +6,16 @@ import userEvent from '@testing-library/user-event';
 
 // Mock window and document
 const window = new Window({ url: 'http://localhost:3000' });
-global.window = window as any;
-global.document = window.document as any;
-global.navigator = window.navigator as any;
-global.HTMLElement = window.HTMLElement as any;
-global.HTMLInputElement = window.HTMLInputElement as any;
-global.Event = window.Event as any;
-global.KeyboardEvent = window.KeyboardEvent as any;
-global.MouseEvent = window.MouseEvent as any;
-global.localStorage = window.localStorage as any;
-(window as any).SyntaxError = SyntaxError;
+global.window = window as unknown as Window & typeof globalThis;
+global.document = window.document as unknown as Document;
+global.navigator = window.navigator as unknown as Navigator;
+global.HTMLElement = window.HTMLElement as unknown as typeof HTMLElement;
+global.HTMLInputElement = window.HTMLInputElement as unknown as typeof HTMLInputElement;
+global.Event = window.Event as unknown as typeof Event;
+global.KeyboardEvent = window.KeyboardEvent as unknown as typeof KeyboardEvent;
+global.MouseEvent = window.MouseEvent as unknown as typeof MouseEvent;
+global.localStorage = window.localStorage as unknown as Storage;
+(window as unknown as Window & { SyntaxError: typeof SyntaxError }).SyntaxError = SyntaxError;
 
 // Mock next/navigation
 mock.module("next/navigation", () => ({
@@ -28,7 +28,7 @@ mock.module("next/navigation", () => ({
 // Mock next/link
 // We need to mock Link to render an actual <a> tag that we can click
 // Using a simple functional component for the mock
-const MockLink = ({ href, children, onClick }: any) => {
+const MockLink = ({ href, children, onClick }: { href: string, children: React.ReactNode, onClick?: () => void }) => {
     return <a href={href} onClick={onClick} data-testid="link-mock">{children}</a>;
 };
 
@@ -64,7 +64,7 @@ mock.module("lucide-react", () => ({
 
 // Mock useDebounce to return value immediately to speed up test
 mock.module("@/hooks/useDebounce", () => ({
-    useDebounce: (value: any) => value,
+    useDebounce: (value: unknown) => value,
 }));
 
 
@@ -75,7 +75,7 @@ describe("SearchBar", () => {
   });
 
   it("renders 'Voir toutes les marques' link and resets state on click", async () => {
-    const user = userEvent.setup({ document: window.document as any });
+    const user = userEvent.setup({ document: window.document as unknown as Document });
     // Dynamic import to ensure mocks are applied before the component is loaded
     const SearchBar = (await import('./SearchBar')).default;
 
