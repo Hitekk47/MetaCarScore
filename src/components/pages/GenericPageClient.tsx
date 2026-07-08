@@ -39,8 +39,21 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
   const [maxPower, setMaxPower] = useState<string>("");
   const [displayLimit, setDisplayLimit] = useState(50);  
 
-  const availableYears = useMemo(() => [...new Set(initialReviews.map(r => r.MY))].sort((a,b) => b-a), [initialReviews]);
-  const availableTypes = useMemo(() => [...new Set(initialReviews.map(r => r.Type))].sort(), [initialReviews]);
+  const { availableYears, availableTypes } = useMemo(() => {
+    const yearsSet = new Set<number>();
+    const typesSet = new Set<string>();
+
+    for (let i = 0; i < initialReviews.length; i++) {
+      const r = initialReviews[i];
+      yearsSet.add(r.MY);
+      typesSet.add(r.Type);
+    }
+
+    return {
+      availableYears: Array.from(yearsSet).sort((a, b) => b - a),
+      availableTypes: Array.from(typesSet).sort(),
+    };
+  }, [initialReviews]);
 
 
 
@@ -112,7 +125,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                 
                 <SmartBreadcrumb marque={marque} famille={famille} my={my} modele={modele} powertrain={powertrain} />
 
-                <div className="flex flex-col md:flex-row md:items-end gap-6 md:gap-10">
+                <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-10">
                     <div className="shrink-0">
                         <ScoreBadge score={avgScore} size="xl" isFiltered={isFiltered} reviewCount={filteredReviews.length} />
                     </div>

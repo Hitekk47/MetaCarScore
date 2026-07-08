@@ -117,6 +117,20 @@ export default function GenericTopRankingClient({
 
   const currentMacroConfig = MACRO_CONFIG.find(m => m.label === activeMacro);
 
+  // Optimisation: Carte des rangs pour éviter O(N^2) dans le rendu de la liste
+  // et corriger les bugs de collision de noms de modèles (ex: Renault 5 vs Omoda 5)
+  const rankMap = useMemo(() => {
+    const map = new Map<string, number>();
+    data.forEach((item, index) => {
+      // Use pipe separator as recommended in memory
+      const key = `${item.Marque}|${item.Modele}|${item.MY}`;
+      if (!map.has(key)) {
+        map.set(key, index + 1);
+      }
+    });
+    return map;
+  }, [data]);
+
   // --- LOGIQUE D'AFFICHAGE (PODIUM vs LISTE) ---
   const filteredData = useMemo(() => {
     return data.filter(item => 
@@ -311,6 +325,8 @@ export default function GenericTopRankingClient({
                         <div className="divide-y divide-slate-100">
                             {(searchQuery ? filteredData : list).map((item) => {
                                 const realRank = rankMap.get(`${item.Modele}|${item.MY}`) ?? 0;
+                                const key = `${item.Marque}|${item.Modele}|${item.MY}`;
+                                const realRank = rankMap.get(key) ?? 0;
 
                                 return (
                                     <div key={`${item.Marque}-${item.Modele}-${item.MY}`}>
