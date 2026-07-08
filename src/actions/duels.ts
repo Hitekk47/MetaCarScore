@@ -31,6 +31,14 @@ function isValidYear(year: number): boolean {
   return !isNaN(year) && year >= 1900 && year <= 2100;
 }
 
+/**
+ * Escapes strings for PostgREST double-quoted literals by doubling double quotes.
+ * See: https://postgrest.org/en/stable/references/api/resource_embedding.html#embedded-filters
+ */
+function escapePostgRESTString(val: string): string {
+  return val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 // --- New Cached Batch Function ---
 
 /**
@@ -92,8 +100,12 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
   for (let i = 0; i < validContexts.length; i += BATCH_SIZE) {
     const chunk = validContexts.slice(i, i + BATCH_SIZE);
     const conditions = chunk.map(ctx => {
-      // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers)
-      return `and(Marque.eq."${ctx.real_marque}",Famille.eq."${ctx.real_famille}",MY.eq.${ctx.my},Modele.eq."${ctx.real_modele}")`;
+      // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers).
+      // 🔒 Security: Double quotes within values must be escaped by doubling them ("").
+      const m = escapePostgRESTString(ctx.real_marque);
+      const f = escapePostgRESTString(ctx.real_famille);
+      const mod = escapePostgRESTString(ctx.real_modele);
+      return `and(Marque.eq."${m}",Famille.eq."${f}",MY.eq.${ctx.my},Modele.eq."${mod}")`;
     });
 
     // Join with comma for OR operator in PostgREST
