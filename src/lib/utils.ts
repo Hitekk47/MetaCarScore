@@ -52,10 +52,15 @@ export const groupBy = <T, K extends keyof any>(list: T[], getKey: (item: T) => 
   }, {} as Record<K, T[]>);
 
 /**
- * Stringifies an object and escapes the '<' character to prevent XSS in <script> tags.
+ * Stringifies an object and escapes potentially dangerous characters to prevent XSS in <script> tags.
  */
 export function serializeJsonLd(data: any) {
-  return JSON.stringify(data).replace(/</g, '\\u003c');
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
 }
 
 export function aggregateReviews(reviews: Review[]): Record<string, AggregatedSource> {
