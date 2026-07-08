@@ -20,9 +20,8 @@ export function isValidSlugPart(part: string): boolean {
 }
 
 export function isValidModelPart(part: string): boolean {
-  // Models can contain underscores if they were joined back from parts,
-  // or spaces if passed raw.
-  // Strictly disallow quotes.
+  // Models can contain underscores if they were joined back from parts.
+  // Strictly disallow quotes and spaces to match slug format.
   // Enforcing lowercase for strict slug compliance.
   return /^[a-z0-9\-_]+$/.test(part);
 }
@@ -33,10 +32,11 @@ export function isValidYear(year: number): boolean {
 
 /**
  * Escapes special characters for PostgREST query strings.
- * Inside double quotes, " must be escaped as "" per PostgREST/SQL standards.
+ * PostgREST uses a backslash to escape a double quote inside a quoted value.
+ * The backslash itself must be escaped first to avoid ambiguous sequences.
  */
 export function escapePostgrestValue(value: string): string {
-  return value.replace(/"/g, '""');
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
 // --- New Cached Batch Function ---
