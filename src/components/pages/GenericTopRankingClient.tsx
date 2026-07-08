@@ -324,7 +324,6 @@ export default function GenericTopRankingClient({
 
                         <div className="divide-y divide-slate-100">
                             {(searchQuery ? filteredData : list).map((item) => {
-                                const realRank = rankMap.get(`${item.Modele}|${item.MY}`) ?? 0;
                                 const key = `${item.Marque}|${item.Modele}|${item.MY}`;
                                 const realRank = rankMap.get(key) ?? 0;
 
