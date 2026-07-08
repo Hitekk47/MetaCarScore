@@ -143,21 +143,6 @@ export default function GenericTopRankingClient({
   
   const podium = showPodium ? filteredData.slice(0, 3) : [];
   const list = showPodium ? filteredData.slice(3) : filteredData;
-
-  // Optimisation: Carte des rangs pour éviter O(N^2) dans le rendu de la liste
-  const rankMap = useMemo(() => {
-    const map = new Map<string, number>();
-    data.forEach((item, index) => {
-      // Clé composite pour identifier de manière unique un modèle par année
-      const key = `${item.Modele}|${item.MY}`;
-      if (!map.has(key)) {
-        map.set(key, index + 1);
-      }
-    });
-    return map;
-  }, [data]);
-
-
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
       <Header />
