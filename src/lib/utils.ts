@@ -54,7 +54,7 @@ export const groupBy = <T, K extends PropertyKey>(list: T[], getKey: (item: T) =
 /**
  * Stringifies an object and escapes potentially dangerous characters to prevent XSS in <script> tags.
  */
-export function serializeJsonLd(data: any) {
+export function serializeJsonLd(data: unknown) {
   return JSON.stringify(data)
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
