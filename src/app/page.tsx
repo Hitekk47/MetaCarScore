@@ -13,9 +13,6 @@ import { SEARCH_PLACEHOLDERS } from "@/lib/constants";
 // --- OPTIMISATION 1 : CACHE (1h) ---
 export const revalidate = 3600; 
 
-// Helper moyenne
-const average = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
-
 export default async function Home() {
   
   // 1. APPELS PARALLÈLES
