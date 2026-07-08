@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- Validation Helpers ---
 
-function isValidSlugPart(part: string): boolean {
+export function isValidSlugPart(part: string): boolean {
   // Allow alphanumeric, hyphens.
   // Strictly disallow quotes, slashes, and other special chars to prevent injection/XSS.
   // Underscores are NOT allowed in marque/famille because they are separators in the composite slug.
@@ -19,7 +19,7 @@ function isValidSlugPart(part: string): boolean {
   return /^[a-z0-9\-]+$/.test(part);
 }
 
-function isValidModelPart(part: string): boolean {
+export function isValidModelPart(part: string): boolean {
   // Models can contain underscores if they were joined back from parts,
   // or spaces if passed raw.
   // Strictly disallow quotes.
@@ -27,8 +27,16 @@ function isValidModelPart(part: string): boolean {
   return /^[a-z0-9\-_]+$/.test(part);
 }
 
-function isValidYear(year: number): boolean {
+export function isValidYear(year: number): boolean {
   return !isNaN(year) && year >= 1900 && year <= 2100;
+}
+
+/**
+ * Escapes special characters for PostgREST query strings.
+ * Inside double quotes, " must be escaped as "" per PostgREST/SQL standards.
+ */
+export function escapePostgrestValue(value: string): string {
+  return value.replace(/"/g, '""');
 }
 
 // --- New Cached Batch Function ---
@@ -93,7 +101,11 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
     const chunk = validContexts.slice(i, i + BATCH_SIZE);
     const conditions = chunk.map(ctx => {
       // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers)
-      return `and(Marque.eq."${ctx.real_marque}",Famille.eq."${ctx.real_famille}",MY.eq.${ctx.my},Modele.eq."${ctx.real_modele}")`;
+      const escapedMarque = escapePostgrestValue(ctx.real_marque);
+      const escapedFamille = escapePostgrestValue(ctx.real_famille);
+      const escapedModele = escapePostgrestValue(ctx.real_modele);
+
+      return `and(Marque.eq."${escapedMarque}",Famille.eq."${escapedFamille}",MY.eq.${ctx.my},Modele.eq."${escapedModele}")`;
     });
 
     // Join with comma for OR operator in PostgREST
