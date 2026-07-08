@@ -42,8 +42,9 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 1. FILTRAGE
+  const lowerQuery = query.toLowerCase();
   const filteredItems = items.filter(item => 
-    item.title.toLowerCase().includes(query.toLowerCase())
+    item.title.toLowerCase().includes(lowerQuery)
   );
 
   // 2. TRI CONDITIONNEL
