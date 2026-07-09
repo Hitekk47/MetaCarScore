@@ -3,14 +3,16 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Animated grid-wave background.
+ * Animated ribbon-wave background.
  *
- * Dots sit on a regular grid. Each dot's position is displaced by a
- * travelling sine wave based on its column and row indices, so the whole
- * mesh ripples smoothly like a cloth or data-surface wave.
+ * Several horizontal rows of evenly-spaced dots travel across the screen.
+ * Each row is a flowing ribbon: dot Y-positions are displaced by a large-
+ * amplitude travelling sine wave so the whole ribbon rises and falls
+ * dramatically. Dots in the same row are connected by horizontal lines;
+ * adjacent rows connect vertically — giving a clear mesh structure that
+ * ripples like the reference image.
  *
- * Lines are drawn only between direct grid neighbours (right / down),
- * so the connections always form a clean grid — never triangles or polygons.
+ * No diagonal connections, no polygon artefacts.
  */
 export default function NetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,128 +27,127 @@ export default function NetworkBackground() {
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    // Brand blue in r,g,b form so we can vary opacity cheaply.
-    const COLOR = "37, 99, 235";
+    const COLOR = "37, 99, 235"; // brand blue r,g,b
 
-    // ── Grid ───────────────────────────────────────────────────────────────
-    const SPACING = 80; // px between grid points at rest
+    // ── Layout ─────────────────────────────────────────────────────────────
+    const COL_SPACING = 55;   // px between dots horizontally
+    const ROW_COUNT   = 9;    // number of ribbon rows
+    const ROW_BAND    = 80;   // vertical px between ribbon centre-lines at rest
 
     // ── Wave ───────────────────────────────────────────────────────────────
-    // Primary wave — travels horizontally across columns.
-    const WAVE_AMP_Y   = 22;   // vertical displacement amplitude (px)
-    const WAVE_AMP_X   = 6;    // slight horizontal wobble
-    const WAVE_FREQ    = 0.055; // spatial frequency (radians per grid column)
-    const WAVE_SPEED   = 0.022; // temporal speed (radians per frame)
-    // Secondary wave — different direction / phase, adds depth.
-    const WAVE2_AMP_Y  = 10;
-    const WAVE2_FREQ   = 0.035;
-    const WAVE2_SPEED  = 0.014;
+    // Primary wave — large amplitude, travels left → right.
+    const AMP1   = 70;    // px — large so the ribbon really rises and falls
+    const FREQ1  = 0.038; // spatial frequency (radians per column-step)
+    const SPD1   = 0.018; // temporal speed (radians per frame)
+
+    // Secondary wave — adds complexity, slightly different freq/speed.
+    const AMP2   = 30;
+    const FREQ2  = 0.065;
+    const SPD2   = 0.011;
+
+    // Each row has its own phase offset so they look independent.
+    const ROW_PHASE_STEP = 0.55; // radians — shift between successive rows
 
     // ── Dots ───────────────────────────────────────────────────────────────
-    const BASE_RADIUS = 1.4;
-    const RADIUS_VAR  = 1.8; // random extra radius per dot (fixed at build time)
+    const BASE_R = 1.3;
+    const VAR_R  = 1.6; // random extra radius per dot, fixed at build time
 
     type Dot = {
       col: number;
       row: number;
-      // base grid position (screen coords)
-      bx: number;
-      by: number;
-      // fixed per-dot radius jitter
-      r: number;
+      bx: number; // base x (changes only on resize)
+      by: number; // base y (rest-position of the row centre-line)
+      r: number;  // dot radius
     };
 
     let width = 0;
     let height = 0;
     let dpr = 1;
     let cols = 0;
-    let rows = 0;
     let dots: Dot[] = [];
-    // 2-D lookup: grid[row][col] → index into dots[]
+    // grid[row][col] → index in dots[]
     let grid: number[][] = [];
     let t = 0;
     let animId = 0;
 
-    // ── Build the grid ─────────────────────────────────────────────────────
-    const buildGrid = () => {
+    // ── Build dots ─────────────────────────────────────────────────────────
+    const buildDots = () => {
       dots = [];
       grid = [];
 
-      // Extend one cell beyond each edge so the mesh always fills the canvas.
-      const extraCols = Math.ceil(width  / SPACING) + 2;
-      const extraRows = Math.ceil(height / SPACING) + 2;
-      cols = extraCols;
-      rows = extraRows;
+      cols = Math.ceil(width / COL_SPACING) + 3;
 
-      const offsetX = -SPACING * 0.5;
-      const offsetY = -SPACING * 0.5;
+      // Spread rows evenly across the full canvas height, with one row above
+      // and one below the visible area so the wave never shows a bare edge.
+      const totalBand = ROW_COUNT * ROW_BAND;
+      const yStart = (height - totalBand) / 2;
 
-      for (let row = 0; row < rows; row++) {
+      for (let row = 0; row < ROW_COUNT; row++) {
         grid.push([]);
+        const by = yStart + row * ROW_BAND;
         for (let col = 0; col < cols; col++) {
           grid[row].push(dots.length);
           dots.push({
             col,
             row,
-            bx: offsetX + col * SPACING,
-            by: offsetY + row * SPACING,
-            r: BASE_RADIUS + Math.random() * RADIUS_VAR,
+            bx: (col - 1) * COL_SPACING,
+            by,
+            r: BASE_R + Math.random() * VAR_R,
           });
         }
       }
     };
 
-    // ── Resize handler ─────────────────────────────────────────────────────
+    // ── Resize ─────────────────────────────────────────────────────────────
     const resize = () => {
-      dpr    = Math.min(window.devicePixelRatio || 1, 2);
-      width  = window.innerWidth;
+      dpr   = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
       height = window.innerHeight;
       canvas.width  = width  * dpr;
       canvas.height = height * dpr;
       canvas.style.width  = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildGrid();
+      buildDots();
     };
 
-    // ── Wave displacement for a dot ────────────────────────────────────────
-    //
-    // The phase is driven by (col * WAVE_FREQ - t * WAVE_SPEED) so the
-    // wave travels horizontally across the grid (left → right).
-    // A row-based term adds the vertical "ribbon" tilt seen in the reference.
+    // ── Displaced position of a dot ────────────────────────────────────────
+    // Phase is driven by column index (spatial) and t (temporal) so the wave
+    // travels horizontally. A per-row phase offset makes each ribbon
+    // independent.
     const getPos = (d: Dot): [number, number] => {
-      const phase1 = d.col * WAVE_FREQ + d.row * WAVE_FREQ * 0.4 - t * WAVE_SPEED;
-      const phase2 = d.col * WAVE2_FREQ - d.row * WAVE2_FREQ * 0.3 - t * WAVE2_SPEED + 1.5;
+      const rowPhase = d.row * ROW_PHASE_STEP;
+      const phase1   = d.col * FREQ1 - t * SPD1 + rowPhase;
+      const phase2   = d.col * FREQ2 - t * SPD2 + rowPhase * 1.3;
 
-      const dy = WAVE_AMP_Y  * Math.sin(phase1) + WAVE2_AMP_Y  * Math.sin(phase2);
-      const dx = WAVE_AMP_X  * Math.cos(phase1);
+      const dy = AMP1 * Math.sin(phase1) + AMP2 * Math.sin(phase2);
+      // Tiny horizontal wobble so lines don't look perfectly mechanical.
+      const dx = 4 * Math.cos(phase1 * 0.7);
 
       return [d.bx + dx, d.by + dy];
     };
 
-    // ── Main draw loop ─────────────────────────────────────────────────────
+    // ── Draw ───────────────────────────────────────────────────────────────
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
       t += 1;
 
-      // Cache all displaced positions.
       const pos = dots.map(getPos);
 
-      // Draw grid lines — right neighbour and down neighbour only.
-      ctx.lineWidth = 0.6;
+      ctx.lineWidth = 0.7;
 
-      for (let row = 0; row < rows; row++) {
+      for (let row = 0; row < ROW_COUNT; row++) {
         for (let col = 0; col < cols; col++) {
-          const i = grid[row][col];
+          const i  = grid[row][col];
           const [ax, ay] = pos[i];
 
-          // → right
+          // Horizontal line → right neighbour (within same ribbon row).
           if (col + 1 < cols) {
             const j = grid[row][col + 1];
             const [bx, by] = pos[j];
-            const dist = Math.hypot(bx - ax, by - ay);
-            // Fade as the wave stretches the segment.
-            const alpha = Math.max(0, 0.13 - (dist - SPACING) * 0.004);
+            // Alpha based on natural rest distance so stretched segments fade.
+            const stretch = Math.hypot(bx - ax, by - ay) / COL_SPACING;
+            const alpha   = Math.max(0, 0.22 - (stretch - 1) * 0.18);
             ctx.strokeStyle = `rgba(${COLOR}, ${alpha})`;
             ctx.beginPath();
             ctx.moveTo(ax, ay);
@@ -154,12 +155,12 @@ export default function NetworkBackground() {
             ctx.stroke();
           }
 
-          // ↓ down
-          if (row + 1 < rows) {
+          // Vertical line ↓ down neighbour (connects adjacent ribbons).
+          if (row + 1 < ROW_COUNT) {
             const j = grid[row + 1][col];
             const [bx, by] = pos[j];
-            const dist = Math.hypot(bx - ax, by - ay);
-            const alpha = Math.max(0, 0.11 - (dist - SPACING) * 0.003);
+            const stretch = Math.hypot(bx - ax, by - ay) / ROW_BAND;
+            const alpha   = Math.max(0, 0.14 - (stretch - 1) * 0.14);
             ctx.strokeStyle = `rgba(${COLOR}, ${alpha})`;
             ctx.beginPath();
             ctx.moveTo(ax, ay);
@@ -169,12 +170,11 @@ export default function NetworkBackground() {
         }
       }
 
-      // Draw dots on top of the lines.
+      // Dots on top.
       for (let i = 0; i < dots.length; i++) {
         const [x, y] = pos[i];
         const d = dots[i];
-        // Larger dots get a touch more opacity.
-        const alpha = 0.18 + (d.r - BASE_RADIUS) / RADIUS_VAR * 0.20;
+        const alpha = 0.25 + (d.r - BASE_R) / VAR_R * 0.25;
         ctx.fillStyle = `rgba(${COLOR}, ${alpha})`;
         ctx.beginPath();
         ctx.arc(x, y, d.r, 0, Math.PI * 2);
