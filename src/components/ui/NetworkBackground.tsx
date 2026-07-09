@@ -2,27 +2,11 @@
 
 import { useEffect, useRef } from "react";
 
-type Point = {
-  // Base drift position (updated each frame by velocity).
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  // Wave parameters — each point oscillates independently.
-  waveAmpX: number;   // horizontal wave amplitude in px
-  waveAmpY: number;   // vertical wave amplitude in px
-  waveFreqX: number;  // horizontal angular frequency
-  waveFreqY: number;  // vertical angular frequency
-  wavePhaseX: number; // per-point phase offset so they don't all sync
-  wavePhaseY: number;
-  // Visual variation.
-  radius: number;     // dot size (px, varied per point)
-};
-
 /**
- * Animated "data network" background.
- * Points drift and undulate in waves, connected by straight lines.
- * Sits fixed behind all page content.
+ * Animated grid-wave background.
+ * Nodes sit on an evenly-spaced grid and undulate like a cloth surface
+ * via a 2-D travelling sinusoidal wave. Neighbours are connected by
+ * straight lines. Sits fixed behind all page content.
  */
 export default function NetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,103 +21,144 @@ export default function NetworkBackground() {
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
+    // Brand blue (#2563eb) expressed as r,g,b for alpha compositing.
+    const COLOR = "37, 99, 235";
+
+    // Grid spacing in logical pixels.
+    const SPACING = 80;
+
+    // Wave parameters — tweak to taste.
+    const WAVE_AMP   = 14;   // max displacement in px
+    const WAVE_FREQ  = 0.016; // spatial frequency (rad / grid-unit)
+    const WAVE_SPEED = 0.018; // how fast the wave travels (rad / frame)
+    // A secondary wave at a slightly different angle/speed adds richness.
+    const WAVE2_AMP   = 8;
+    const WAVE2_FREQ  = 0.022;
+    const WAVE2_SPEED = 0.011;
+
+    // Visual — dots vary in radius so the grid has subtle texture.
+    const BASE_RADIUS = 1.8;
+    const RADIUS_VAR  = 1.4; // added per-node randomly, stays constant
+
+    type Node = {
+      // Fixed grid origin.
+      ox: number;
+      oy: number;
+      // Column / row indices drive per-node wave phase.
+      col: number;
+      row: number;
+      // Random size jitter (constant throughout animation).
+      radiusJitter: number;
+    };
+
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let points: Point[] = [];
+    let nodes: Node[] = [];
+    let cols = 0;
+    let rows = 0;
     let animationId = 0;
-    let t = 0; // global time accumulator (increments each frame)
+    let t = 0;
 
-    // Brand palette (matches #2563eb) in rgb for alpha blending.
-    const POINT_COLOR = "37, 99, 235";
-    const LINE_COLOR = "37, 99, 235";
-    const CONNECT_DISTANCE = 150;
+    const buildGrid = () => {
+      nodes = [];
+      // Add half-spacing margin so the grid extends slightly beyond edges.
+      const marginX = SPACING / 2;
+      const marginY = SPACING / 2;
+      cols = Math.ceil((width + SPACING) / SPACING);
+      rows = Math.ceil((height + SPACING) / SPACING);
 
-    const rand = (min: number, max: number) =>
-      min + Math.random() * (max - min);
-
-    const buildPoints = () => {
-      const area = width * height;
-      const count = Math.min(90, Math.max(28, Math.round(area / 22000)));
-      points = Array.from({ length: count }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: (Math.random() - 0.5) * 0.25,
-        // Wave: amplitude 8-28 px, slow frequency, random phase.
-        waveAmpX: rand(8, 28),
-        waveAmpY: rand(8, 28),
-        waveFreqX: rand(0.004, 0.010),
-        waveFreqY: rand(0.003, 0.009),
-        wavePhaseX: rand(0, Math.PI * 2),
-        wavePhaseY: rand(0, Math.PI * 2),
-        // Dot radius: small range so variation is noticeable but subtle.
-        radius: rand(1.2, 3.8),
-      }));
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          nodes.push({
+            ox: -marginX + c * SPACING,
+            oy: -marginY + r * SPACING,
+            col: c,
+            row: r,
+            radiusJitter: Math.random() * RADIUS_VAR,
+          });
+        }
+      }
     };
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = window.innerWidth;
+      width  = window.innerWidth;
       height = window.innerHeight;
-      canvas.width = width * dpr;
+      canvas.width  = width  * dpr;
       canvas.height = height * dpr;
-      canvas.style.width = `${width}px`;
+      canvas.style.width  = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildPoints();
+      buildGrid();
+    };
+
+    /**
+     * For node (col, row) at time t, return the displaced [x, y] position.
+     * Two overlapping waves travelling in slightly different diagonal
+     * directions produce the undulating cloth effect.
+     */
+    const displaced = (n: Node): [number, number] => {
+      const phase1 = n.col * WAVE_FREQ + n.row * WAVE_FREQ * 0.6 - t * WAVE_SPEED;
+      const phase2 = n.col * WAVE2_FREQ * 0.7 - n.row * WAVE2_FREQ - t * WAVE2_SPEED;
+
+      const dx = WAVE_AMP  * Math.sin(phase1) + WAVE2_AMP * Math.cos(phase2);
+      const dy = WAVE_AMP  * Math.cos(phase1) + WAVE2_AMP * Math.sin(phase2);
+
+      return [n.ox + dx, n.oy + dy];
     };
 
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
       t += 1;
 
-      // Update base position via drift velocity.
-      for (const p of points) {
-        p.x += p.vx;
-        p.y += p.vy;
+      // Pre-compute all displaced positions.
+      const pos: [number, number][] = nodes.map(displaced);
 
-        // Wrap around edges with a soft margin.
-        if (p.x < -40) p.x = width + 40;
-        if (p.x > width + 40) p.x = -40;
-        if (p.y < -40) p.y = height + 40;
-        if (p.y > height + 40) p.y = -40;
-      }
+      // Draw lines only between direct grid neighbours (right + down).
+      ctx.lineWidth = 0.7;
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
 
-      // Compute rendered positions (base drift + wave offset).
-      const rx = points.map(
-        (p) => p.x + p.waveAmpX * Math.sin(t * p.waveFreqX + p.wavePhaseX)
-      );
-      const ry = points.map(
-        (p) => p.y + p.waveAmpY * Math.cos(t * p.waveFreqY + p.wavePhaseY)
-      );
+        // Right neighbour.
+        if (n.col < cols - 1) {
+          const j = i + 1;
+          const [ax, ay] = pos[i];
+          const [bx, by] = pos[j];
+          // Fade lines that are stretched far (wave tension feel).
+          const stretch = Math.hypot(bx - ax, by - ay) / SPACING;
+          const alpha = Math.max(0, 0.14 - (stretch - 1) * 0.12);
+          ctx.strokeStyle = `rgba(${COLOR}, ${alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+          ctx.stroke();
+        }
 
-      // Draw connecting lines using rendered positions.
-      for (let i = 0; i < points.length; i++) {
-        for (let j = i + 1; j < points.length; j++) {
-          const dx = rx[i] - rx[j];
-          const dy = ry[i] - ry[j];
-          const dist = Math.hypot(dx, dy);
-          if (dist < CONNECT_DISTANCE) {
-            const alpha = (1 - dist / CONNECT_DISTANCE) * 0.18;
-            ctx.strokeStyle = `rgba(${LINE_COLOR}, ${alpha})`;
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            ctx.moveTo(rx[i], ry[i]);
-            ctx.lineTo(rx[j], ry[j]);
-            ctx.stroke();
-          }
+        // Down neighbour.
+        if (n.row < rows - 1) {
+          const j = i + cols;
+          const [ax, ay] = pos[i];
+          const [bx, by] = pos[j];
+          const stretch = Math.hypot(bx - ax, by - ay) / SPACING;
+          const alpha = Math.max(0, 0.14 - (stretch - 1) * 0.12);
+          ctx.strokeStyle = `rgba(${COLOR}, ${alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+          ctx.stroke();
         }
       }
 
-      // Draw dots with per-point radius and a slight alpha variation by size.
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i];
-        // Larger dots are slightly more opaque so big ones pop gently.
-        const alpha = 0.22 + (p.radius / 3.8) * 0.2;
-        ctx.fillStyle = `rgba(${POINT_COLOR}, ${alpha})`;
+      // Draw dots on top of lines.
+      for (let i = 0; i < nodes.length; i++) {
+        const [x, y] = pos[i];
+        const r = BASE_RADIUS + nodes[i].radiusJitter;
+        // Slightly more opaque for larger dots.
+        const alpha = 0.22 + (nodes[i].radiusJitter / RADIUS_VAR) * 0.18;
+        ctx.fillStyle = `rgba(${COLOR}, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(rx[i], ry[i], p.radius, 0, Math.PI * 2);
+        ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -143,12 +168,7 @@ export default function NetworkBackground() {
     resize();
 
     if (prefersReducedMotion) {
-      for (const p of points) {
-        p.vx = 0;
-        p.vy = 0;
-        p.waveAmpX = 0;
-        p.waveAmpY = 0;
-      }
+      // Render one static frame with no displacement.
       draw();
       cancelAnimationFrame(animationId);
     } else {
