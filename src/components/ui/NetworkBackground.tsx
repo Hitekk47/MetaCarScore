@@ -2,13 +2,13 @@
 
 import { useEffect, useRef } from "react";
 
-export default function TerrainWaveBackground() {
+export default function ParticleWaveBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d", { alpha: false }); // alpha: false is a huge perf boost, we manually clear to white
+    const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -22,12 +22,40 @@ export default function TerrainWaveBackground() {
     let animId = 0;
     let time = 0;
 
-    // --- Terrain Settings ---
-    const ROWS = 16;       // Number of horizontal lines (Z-depth)
-    const COLS = 70;       // Resolution of the waves (X-axis)
-    const WAVE_AMP = 60;   // How tall the waves get
-    const WAVE_SPEED = 0.012; 
-    const TILT = 0.6;      // Perspective tilt (how far back it stretches)
+    // --- Particle Topography Settings ---
+    const ROWS = 35;        // Depth of the grid
+    const COLS = 80;        // Width of the grid
+    const WAVE_SPEED = 0.015;
+    const JITTER = 0.4;     // The "Chaos" factor - breaks the rigid grid look
+
+    type Particle = {
+      x: number;
+      z: number;
+      sizeOffset: number;
+    };
+
+    let particles: Particle[] = [];
+
+    const initParticles = () => {
+      particles = [];
+      for (let z = 0; z < ROWS; z++) {
+        for (let x = 0; x < COLS; x++) {
+          // Base grid position (0 to 1)
+          const baseX = x / (COLS - 1);
+          const baseZ = z / (ROWS - 1);
+
+          // Add random "chaos" to break up the perfect squares
+          const jitterX = (Math.random() - 0.5) * (JITTER / COLS);
+          const jitterZ = (Math.random() - 0.5) * (JITTER / ROWS);
+
+          particles.push({
+            x: baseX + jitterX,
+            z: baseZ + jitterZ,
+            sizeOffset: Math.random(), // For twinkling/size variation
+          });
+        }
+      }
+    };
 
     const resize = () => {
       dpr = window.devicePixelRatio || 1;
@@ -38,74 +66,62 @@ export default function TerrainWaveBackground() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      initParticles();
     };
 
     const draw = () => {
-      // Fast manual clear (better than clearRect when alpha: false)
-      ctx.fillStyle = "#ffffff"; // Assuming a white/light background
+      // Fast manual clear
+      ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, width, height);
 
       time += WAVE_SPEED;
       if (prefersReducedMotion) time = 0;
 
-      const centerY = height * 0.65; // Position the terrain near the bottom
+      const centerY = height * 0.6; // Vertical center of the terrain
+      const fov = 350; // Camera field of view
 
-      // Draw back-to-front for proper 3D overlap
-      for (let z = 0; z < ROWS; z++) {
-        const depth = z / (ROWS - 1); // 0 (back) to 1 (front)
-        
-        // Depth variables
-        const perspectiveScale = 0.3 + (0.7 * depth); // Back rows are smaller
-        const rowOpacity = 0.05 + (0.35 * depth);     // Back rows fade into fog
-        const yOffset = centerY - (ROWS - z) * (height * 0.04 * TILT); 
+      ctx.fillStyle = `rgb(${R}, ${G}, ${B})`;
 
-        // Set styles for this entire row (drastically reduces draw calls)
-        ctx.strokeStyle = `rgba(${R}, ${G}, ${B}, ${rowOpacity})`;
-        ctx.fillStyle = `rgba(${R}, ${G}, ${B}, ${rowOpacity * 1.5})`;
-        ctx.lineWidth = 1 * perspectiveScale;
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
 
+        // --- The "Chaos" Wave Math ---
+        // Overlapping sine waves create an unpredictable, organic ocean-like swell
+        let y = Math.sin(p.x * 12 + time) * 0.15;
+        y += Math.sin(p.z * 8 - time * 0.8) * 0.15;
+        y += Math.sin((p.x + p.z) * 5 + time * 1.2) * 0.1;
+
+        // --- 3D Projection ---
+        // Center X around 0 for projection
+        const centeredX = (p.x - 0.5) * width * 1.5;
+
+        // Z depth (1 is close, higher is further back)
+        const zDepth = 1 + p.z * 4.5;
+        const scale = fov / (fov + zDepth * 100);
+
+        const screenX = (width / 2) + centeredX * scale;
+        const screenY = centerY + (y * height * 0.6) * scale + (p.z * height * 0.3);
+
+        // --- Rendering ---
+        // Fade out dots that are further back, keep near dots crisp
+        const opacity = Math.max(0, 0.9 - p.z * 0.8);
+
+        // Skip rendering if practically invisible (huge performance boost)
+        if (opacity < 0.05) continue;
+
+        // Size decreases with depth, plus a little random twinkle
+        const dotSize = (1.5 + p.sizeOffset * 1.5) * scale;
+
+        ctx.globalAlpha = opacity;
+
+        // Draw the particle
         ctx.beginPath();
-
-        // Arrays to store dot positions so we can draw them after the line
-        const dotXs = [];
-        const dotYs = [];
-
-        for (let x = 0; x <= COLS; x++) {
-          const xProgress = x / COLS;
-          // Extend slightly off-screen so waves don't abruptly cut off
-          const screenX = (width * -0.1) + (xProgress * width * 1.2); 
-
-          // --- The Magic Organic Math ---
-          // Combine 3 sine waves at different frequencies to create natural terrain
-          const wave1 = Math.sin(xProgress * 8 + time + depth * 4) * 1.2;
-          const wave2 = Math.cos(xProgress * 4 - time * 0.8 + depth * 2) * 0.8;
-          const wave3 = Math.sin(xProgress * 12 + time * 1.5) * 0.4;
-          
-          const totalWave = (wave1 + wave2 + wave3) * WAVE_AMP * perspectiveScale;
-          const screenY = yOffset + totalWave;
-
-          if (x === 0) {
-            ctx.moveTo(screenX, screenY);
-          } else {
-            ctx.lineTo(screenX, screenY);
-          }
-
-          dotXs.push(screenX);
-          dotYs.push(screenY);
-        }
-        
-        // Stroke the continuous horizontal wave line
-        ctx.stroke();
-
-        // Draw the dots for this row
-        // Using rect instead of arc is visually identical for tiny dots but 5x faster
-        const dotSize = 2.5 * perspectiveScale;
-        ctx.beginPath();
-        for (let i = 0; i < dotXs.length; i++) {
-          ctx.rect(dotXs[i] - dotSize/2, dotYs[i] - dotSize/2, dotSize, dotSize);
-        }
+        // Using arc for pure dots since we don't have lines dragging down performance
+        ctx.arc(screenX, screenY, dotSize, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      ctx.globalAlpha = 1; // Reset alpha
 
       if (!prefersReducedMotion) {
         animId = requestAnimationFrame(draw);
