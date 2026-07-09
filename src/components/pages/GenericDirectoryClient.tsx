@@ -58,7 +58,7 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
+    <div className="min-h-screen text-slate-900 font-sans pb-20">
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 py-12">
@@ -138,7 +138,9 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
                                 href={item.href}
                                 className={cn(
                                     "group relative block h-40 rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-lg",
-                                    item.colorClass ? item.colorClass.replace('text-', 'bg-').replace('600', '50') : "bg-white border-slate-200 hover:border-slate-400"
+                                    item.colorClass 
+                                        ? item.colorClass.split(' ').filter(cls => cls.startsWith('bg-') || cls.startsWith('border-')).join(' ')
+                                        : "bg-white border-slate-200 hover:border-slate-400"
                                 )}
                             >
                                 <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none select-none transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-12">

@@ -121,7 +121,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
     : null;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
+    <div className="min-h-screen text-slate-900 font-sans pb-20">
       <Header />
 
       <main>

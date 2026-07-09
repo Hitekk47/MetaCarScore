@@ -5,6 +5,7 @@ import "flag-icons/css/flag-icons.min.css";
 import { cn } from "@/lib/utils"; // Utilitaire pour fusionner les classes proprement
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import NetworkBackground from "@/components/ui/NetworkBackground";
 
 // Configuration de la police
 const dmSans = DM_Sans({ 
@@ -77,6 +78,7 @@ export default function RootLayout({
         )}
         suppressHydrationWarning={true}
       >
+        <NetworkBackground />
         {children}
         <Analytics />
         <SpeedInsights />        

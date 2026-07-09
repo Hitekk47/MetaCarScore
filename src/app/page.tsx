@@ -39,7 +39,7 @@ export default async function Home() {
   const latestAdditions = (latestReq.data || []) as Review[];
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans pb-20">
+    <div className="min-h-screen text-slate-900 font-sans pb-20">
       <meta name="google-site-verification" content="X3dRJsde6CqGdiEbn-Sk3T2saCbPuh6bS4MpN4FT5mc" />
       <Header />
 
