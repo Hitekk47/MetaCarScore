@@ -2,27 +2,15 @@
 
 import { useEffect, useRef } from "react";
 
-type Point = {
-  // Base drift position (updated each frame by velocity).
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  // Wave parameters — each point oscillates independently.
-  waveAmpX: number;   // horizontal wave amplitude in px
-  waveAmpY: number;   // vertical wave amplitude in px
-  waveFreqX: number;  // horizontal angular frequency
-  waveFreqY: number;  // vertical angular frequency
-  wavePhaseX: number; // per-point phase offset so they don't all sync
-  wavePhaseY: number;
-  // Visual variation.
-  radius: number;     // dot size (px, varied per point)
-};
-
 /**
- * Animated "data network" background.
- * Points drift and undulate in waves, connected by straight lines.
- * Sits fixed behind all page content.
+ * Animated particle-grid background.
+ *
+ * Dots are placed on a strict evenly-spaced grid.
+ * Lines connect only direct horizontal and vertical neighbours.
+ * A large-amplitude travelling sine wave displaces each dot in Y
+ * based on its column index and time, creating flowing 3-D terrain waves.
+ *
+ * Sits fixed behind all page content (-z-10, pointer-events-none).
  */
 export default function NetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,103 +25,135 @@ export default function NetworkBackground() {
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    let width = 0;
+    // ── tunable constants ──────────────────────────────────────────
+    const SPACING   = 70;          // px between grid nodes (before wave)
+    const AMPLITUDE = 55;          // max vertical displacement in px
+    const WAVE_FREQ = 0.055;       // spatial frequency (cols per radian)
+    const WAVE_SPEED = 0.018;      // radians per frame the wave travels
+    // second, slower wave layered on top for depth
+    const AMP2      = 25;
+    const FREQ2     = 0.030;
+    const SPEED2    = 0.010;
+    // dot radii: each node gets a fixed random radius at build time
+    const R_MIN = 1.2;
+    const R_MAX = 3.2;
+    // Brand colour rgb components
+    const BRAND = "37, 99, 235";
+    // ──────────────────────────────────────────────────────────────
+
+    let width  = 0;
     let height = 0;
-    let dpr = 1;
-    let points: Point[] = [];
+    let dpr    = 1;
+
+    // Grid dimensions
+    let cols = 0;
+    let rows = 0;
+    // Base (rest) positions — these never move
+    let baseX: Float32Array;
+    let baseY: Float32Array;
+    // Per-node fixed radius
+    let radii: Float32Array;
+
     let animationId = 0;
-    let t = 0; // global time accumulator (increments each frame)
+    let t = 0;
 
-    // Brand palette (matches #2563eb) in rgb for alpha blending.
-    const POINT_COLOR = "37, 99, 235";
-    const LINE_COLOR = "37, 99, 235";
-    const CONNECT_DISTANCE = 150;
+    const buildGrid = () => {
+      // Add one extra column / row so lines reach the canvas edge
+      cols = Math.ceil(width  / SPACING) + 1;
+      rows = Math.ceil(height / SPACING) + 1;
 
-    const rand = (min: number, max: number) =>
-      min + Math.random() * (max - min);
+      const total = cols * rows;
+      baseX  = new Float32Array(total);
+      baseY  = new Float32Array(total);
+      radii  = new Float32Array(total);
 
-    const buildPoints = () => {
-      const area = width * height;
-      const count = Math.min(90, Math.max(28, Math.round(area / 22000)));
-      points = Array.from({ length: count }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: (Math.random() - 0.5) * 0.25,
-        // Wave: amplitude 8-28 px, slow frequency, random phase.
-        waveAmpX: rand(8, 28),
-        waveAmpY: rand(8, 28),
-        waveFreqX: rand(0.004, 0.010),
-        waveFreqY: rand(0.003, 0.009),
-        wavePhaseX: rand(0, Math.PI * 2),
-        wavePhaseY: rand(0, Math.PI * 2),
-        // Dot radius: small range so variation is noticeable but subtle.
-        radius: rand(1.2, 3.8),
-      }));
+      // Centre the grid horizontally and vertically
+      const offsetX = (width  - (cols - 1) * SPACING) / 2;
+      const offsetY = (height - (rows - 1) * SPACING) / 2;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const i = r * cols + c;
+          baseX[i] = offsetX + c * SPACING;
+          baseY[i] = offsetY + r * SPACING;
+          radii[i] = R_MIN + Math.random() * (R_MAX - R_MIN);
+        }
+      }
     };
 
     const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = window.innerWidth;
+      dpr    = Math.min(window.devicePixelRatio || 1, 2);
+      width  = window.innerWidth;
       height = window.innerHeight;
-      canvas.width = width * dpr;
+      canvas.width  = width  * dpr;
       canvas.height = height * dpr;
-      canvas.style.width = `${width}px`;
+      canvas.style.width  = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildPoints();
+      buildGrid();
+    };
+
+    // Pre-allocate rendered position arrays (filled each frame)
+    const getRendered = (time: number) => {
+      const total = cols * rows;
+      const rx = new Float32Array(total);
+      const ry = new Float32Array(total);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const i = r * cols + c;
+          // Two overlapping waves, each travelling left
+          const wave1 = AMPLITUDE * Math.sin(c * WAVE_FREQ - time * WAVE_SPEED + r * 0.18);
+          const wave2 = AMP2      * Math.sin(c * FREQ2     - time * SPEED2     + r * 0.32);
+          rx[i] = baseX[i];
+          ry[i] = baseY[i] + wave1 + wave2;
+        }
+      }
+      return { rx, ry };
     };
 
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
-      t += 1;
+      if (!prefersReducedMotion) t += 1;
 
-      // Update base position via drift velocity.
-      for (const p of points) {
-        p.x += p.vx;
-        p.y += p.vy;
+      const { rx, ry } = getRendered(t);
 
-        // Wrap around edges with a soft margin.
-        if (p.x < -40) p.x = width + 40;
-        if (p.x > width + 40) p.x = -40;
-        if (p.y < -40) p.y = height + 40;
-        if (p.y > height + 40) p.y = -40;
-      }
-
-      // Compute rendered positions (base drift + wave offset).
-      const rx = points.map(
-        (p) => p.x + p.waveAmpX * Math.sin(t * p.waveFreqX + p.wavePhaseX)
-      );
-      const ry = points.map(
-        (p) => p.y + p.waveAmpY * Math.cos(t * p.waveFreqY + p.wavePhaseY)
-      );
-
-      // Draw connecting lines using rendered positions.
-      for (let i = 0; i < points.length; i++) {
-        for (let j = i + 1; j < points.length; j++) {
-          const dx = rx[i] - rx[j];
-          const dy = ry[i] - ry[j];
-          const dist = Math.hypot(dx, dy);
-          if (dist < CONNECT_DISTANCE) {
-            const alpha = (1 - dist / CONNECT_DISTANCE) * 0.18;
-            ctx.strokeStyle = `rgba(${LINE_COLOR}, ${alpha})`;
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            ctx.moveTo(rx[i], ry[i]);
-            ctx.lineTo(rx[j], ry[j]);
-            ctx.stroke();
-          }
+      // ── horizontal lines (connect right neighbour) ──────────────
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols - 1; c++) {
+          const i  = r * cols + c;
+          const i2 = i + 1;
+          ctx.strokeStyle = `rgba(${BRAND}, 0.13)`;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(rx[i],  ry[i]);
+          ctx.lineTo(rx[i2], ry[i2]);
+          ctx.stroke();
         }
       }
 
-      // Draw dots with per-point radius and a slight alpha variation by size.
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i];
-        // Larger dots are slightly more opaque so big ones pop gently.
-        const alpha = 0.22 + (p.radius / 3.8) * 0.2;
-        ctx.fillStyle = `rgba(${POINT_COLOR}, ${alpha})`;
+      // ── vertical lines (connect down neighbour) ──────────────────
+      for (let r = 0; r < rows - 1; r++) {
+        for (let c = 0; c < cols; c++) {
+          const i  = r * cols + c;
+          const i2 = i + cols;
+          ctx.strokeStyle = `rgba(${BRAND}, 0.10)`;
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          ctx.moveTo(rx[i],  ry[i]);
+          ctx.lineTo(rx[i2], ry[i2]);
+          ctx.stroke();
+        }
+      }
+
+      // ── dots ─────────────────────────────────────────────────────
+      for (let i = 0; i < cols * rows; i++) {
+        const r = radii[i];
+        // Slightly more opaque for larger dots
+        const alpha = 0.20 + (r / R_MAX) * 0.22;
+        ctx.fillStyle = `rgba(${BRAND}, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(rx[i], ry[i], p.radius, 0, Math.PI * 2);
+        ctx.arc(rx[i], ry[i], r, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -141,19 +161,7 @@ export default function NetworkBackground() {
     };
 
     resize();
-
-    if (prefersReducedMotion) {
-      for (const p of points) {
-        p.vx = 0;
-        p.vy = 0;
-        p.waveAmpX = 0;
-        p.waveAmpY = 0;
-      }
-      draw();
-      cancelAnimationFrame(animationId);
-    } else {
-      draw();
-    }
+    draw();
 
     window.addEventListener("resize", resize);
     return () => {
