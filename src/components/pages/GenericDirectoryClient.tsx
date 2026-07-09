@@ -138,7 +138,9 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
                                 href={item.href}
                                 className={cn(
                                     "group relative block h-40 rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-lg",
-                                    item.colorClass ?? "bg-white border-slate-200 hover:border-slate-400"
+                                    item.colorClass 
+                                        ? item.colorClass.split(' ').filter(cls => cls.startsWith('bg-') || cls.startsWith('border-')).join(' ')
+                                        : "bg-white border-slate-200 hover:border-slate-400"
                                 )}
                             >
                                 <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none select-none transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-12">
