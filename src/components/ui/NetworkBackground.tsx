@@ -3,20 +3,17 @@
 import { useEffect, useRef } from "react";
 
 type Point = {
-  // Base drift position (updated each frame by velocity).
   x: number;
   y: number;
   vx: number;
   vy: number;
-  // Wave parameters — each point oscillates independently.
-  waveAmpX: number;   // horizontal wave amplitude in px
-  waveAmpY: number;   // vertical wave amplitude in px
-  waveFreqX: number;  // horizontal angular frequency
-  waveFreqY: number;  // vertical angular frequency
-  wavePhaseX: number; // per-point phase offset so they don't all sync
+  waveAmpX: number;
+  waveAmpY: number;
+  waveFreqX: number;
+  waveFreqY: number;
+  wavePhaseX: number;
   wavePhaseY: number;
-  // Visual variation.
-  radius: number;     // dot size (px, varied per point)
+  radius: number;
 };
 
 /**
@@ -52,27 +49,31 @@ export default function NetworkBackground() {
     const rand = (min: number, max: number) =>
       min + Math.random() * (max - min);
 
+    // Helper to create a single random point (used on initial build and when adding points)
+    const createPoint = (): Point => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      waveAmpX: rand(8, 28),
+      waveAmpY: rand(8, 28),
+      waveFreqX: rand(0.004, 0.010),
+      waveFreqY: rand(0.003, 0.009),
+      wavePhaseX: rand(0, Math.PI * 2),
+      wavePhaseY: rand(0, Math.PI * 2),
+      radius: rand(1.2, 3.8),
+    });
+
     const buildPoints = () => {
       const area = width * height;
       const count = Math.min(90, Math.max(28, Math.round(area / 22000)));
-      points = Array.from({ length: count }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: (Math.random() - 0.5) * 0.25,
-        // Wave: amplitude 8-28 px, slow frequency, random phase.
-        waveAmpX: rand(8, 28),
-        waveAmpY: rand(8, 28),
-        waveFreqX: rand(0.004, 0.010),
-        waveFreqY: rand(0.003, 0.009),
-        wavePhaseX: rand(0, Math.PI * 2),
-        wavePhaseY: rand(0, Math.PI * 2),
-        // Dot radius: small range so variation is noticeable but subtle.
-        radius: rand(1.2, 3.8),
-      }));
+      points = Array.from({ length: count }, () => createPoint());
     };
 
     const resize = () => {
+      const prevWidth = width;
+      const prevHeight = height;
+
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
       height = window.innerHeight;
@@ -81,7 +82,29 @@ export default function NetworkBackground() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildPoints();
+
+      const area = width * height;
+      const desiredCount = Math.min(90, Math.max(28, Math.round(area / 22000)));
+
+      if (prevWidth && prevHeight && points.length > 0) {
+        // Preserve existing points: scale positions so the animation doesn't "jump".
+        const scaleX = width / prevWidth;
+        const scaleY = height / prevHeight;
+        for (const p of points) {
+          p.x *= scaleX;
+          p.y *= scaleY;
+        }
+        // If point count changed, add or remove while preserving existing ones.
+        if (points.length < desiredCount) {
+          const toAdd = desiredCount - points.length;
+          for (let i = 0; i < toAdd; i++) points.push(createPoint());
+        } else if (points.length > desiredCount) {
+          points.splice(desiredCount);
+        }
+      } else {
+        // First-time initialization (or previous size unknown) — build points fresh.
+        buildPoints();
+      }
     };
 
     const draw = () => {
@@ -129,7 +152,6 @@ export default function NetworkBackground() {
       // Draw dots with per-point radius and a slight alpha variation by size.
       for (let i = 0; i < points.length; i++) {
         const p = points[i];
-        // Larger dots are slightly more opaque so big ones pop gently.
         const alpha = 0.22 + (p.radius / 3.8) * 0.2;
         ctx.fillStyle = `rgba(${POINT_COLOR}, ${alpha})`;
         ctx.beginPath();
