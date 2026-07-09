@@ -3,14 +3,13 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Animated "flowing strands" background.
+ * Minimalist 3D-surface plexus background.
  *
- * Dots are arranged along dense, parallel, independent lines that sweep
- * horizontally across the screen like ribbons of silk. Each strand follows a
- * smooth, organic wave built from layered sines with slightly different
- * frequencies and speeds, so strands drift in and out of phase — overlapping
- * one another to create a sense of 3D depth and volume. There are no
- * cross-connections and no mesh: only fluid, parallel lines.
+ * Dots are placed on a tilted, gently-undulating surface (like a calm ocean
+ * swell seen from a slight elevation). A slow, low-amplitude wave rolls across
+ * it over time. Depth fog fades far dots to near-invisible. Faint connecting
+ * lines (≤10 % opacity) are drawn only between the closest neighbours,
+ * preserving the delicate geometric plexus feel.
  */
 export default function NetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,149 +24,201 @@ export default function NetworkBackground() {
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    // Brand palette (matches #2563eb).
-    const BLUE = "37, 99, 235";
+    // Brand blue RGB
+    const R = 37, G = 99, B = 235;
 
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let animationId = 0;
-    const startTime = performance.now();
+    let animId = 0;
+    const t0 = performance.now();
 
-    // ---- Strand configuration -------------------------------------------
-    type Strand = {
-      /** Base vertical position as a fraction of the band height (0..1). */
-      baseV: number;
-      /** Wave amplitude multiplier (organic variation between strands). */
-      ampMul: number;
-      /** Phase offset so strands drift in/out of sync. */
-      phase: number;
-      /** Speed multiplier for the travelling wave. */
-      speedMul: number;
-      /** Secondary-wave frequency multiplier (breaks mathematical rigidity). */
-      freqMul: number;
-      /** Depth 0 (far/faint) → 1 (near/bold). */
-      depth: number;
-      /** Per-strand dot size jitter, fixed at init. */
-      dotJitter: number[];
+    // ---- Grid params -------------------------------------------------------
+    // Logical 3-D grid dimensions (columns × rows). Keep sparse.
+    const COLS = 22;
+    const ROWS = 14;
+
+    // 3-D surface tilt: how much we compress the Y axis to fake perspective.
+    // 0 = flat top-down, 1 = fully side-on.
+    const TILT = 0.45;
+
+    // Wave: very gentle, slow rolling swell.
+    const WAVE_AMP   = 0.06;  // fraction of logical surface height
+    const WAVE_FREQ  = 1.8;   // spatial frequency (cycles across surface)
+    const WAVE_SPEED = 0.18;  // radians / second — very slow
+
+    // Depth fog: dots at depth 0 (far edge) are almost invisible.
+    const FOG_NEAR = 0.90;  // max alpha multiplier at nearest row
+    const FOG_FAR  = 0.08;  // min alpha multiplier at farthest row
+
+    // Visual style — ultra-minimal.
+    const DOT_MIN_R  = 0.8;
+    const DOT_MAX_R  = 2.2;
+    const DOT_ALPHA  = 0.55;   // before fog
+    const LINE_ALPHA = 0.10;   // before fog — always faint
+    const LINE_MAX_D = 0;      // filled in after resize; neighbour distance
+
+    // Per-dot random size jitter (fixed at init).
+    type Dot = {
+      col: number;   // 0..COLS-1
+      row: number;   // 0..ROWS-1
+      sizeT: number; // 0..1 random → mapped to DOT_MIN_R..DOT_MAX_R
     };
 
-    let strands: Strand[] = [];
-    let samples = 0; // dots per strand
+    let dots: Dot[] = [];
 
-    const build = () => {
-      // Dense dots along each strand; capped for performance.
-      samples = Math.min(160, Math.max(70, Math.round(width / 12)));
-      const STRAND_COUNT = 26;
-      strands = [];
-      for (let s = 0; s < STRAND_COUNT; s++) {
-        const t = s / (STRAND_COUNT - 1);
-        const dotJitter = new Array(samples);
-        for (let i = 0; i < samples; i++) {
-          dotJitter[i] = 0.75 + Math.random() * 0.7;
+    const buildDots = () => {
+      dots = [];
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          dots.push({ col, row, sizeT: Math.random() });
         }
-        strands.push({
-          // Cluster strands into a loose band with slight random spread —
-          // parallel but not perfectly even, like fibres in a ribbon.
-          baseV: t + (Math.random() - 0.5) * 0.05,
-          ampMul: 0.75 + Math.random() * 0.6,
-          phase: t * 2.4 + Math.random() * 0.7,
-          speedMul: 0.85 + Math.random() * 0.4,
-          freqMul: 0.9 + Math.random() * 0.25,
-          depth: Math.random(),
-          dotJitter,
-        });
       }
     };
 
+    // ---- Project a logical surface point to canvas 2-D ---------------------
+    // surfU, surfV ∈ [0,1] are position on the logical surface.
+    // waveZ ∈ [-1,1] is the height field displacement, already scaled.
+    const project = (
+      surfU: number,
+      surfV: number,
+      waveZ: number,
+      w: number,
+      h: number
+    ): { x: number; y: number; depth: number } => {
+      // Map U across the full width with a little padding.
+      const padX = w * 0.05;
+      const x = padX + surfU * (w - padX * 2);
+
+      // The surface sits in the lower 75 % of the viewport.
+      // V=0 is the far (top) edge, V=1 is the near (bottom) edge.
+      // TILT compresses the vertical extent so far rows converge.
+      const surfTop  = h * 0.18;
+      const surfBase = h * 0.82;
+      const surfH    = surfBase - surfTop;
+
+      // Isometric-style tilt: far rows are placed higher and closer together.
+      const perspScale = 0.45 + 0.55 * surfV; // smaller when far
+      const baseY = surfTop + surfV * surfH;
+
+      // Wave displaces Y (negative = upward lift).
+      const waveOffsetY = waveZ * surfH * WAVE_AMP * perspScale;
+      const y = baseY + waveOffsetY;
+
+      // depth 0 = far, 1 = near
+      const depth = surfV;
+
+      return { x, y, depth };
+    };
+
+    // ---- Compute screen position for a dot at a given time -----------------
+    const dotPosition = (
+      d: Dot,
+      t: number,
+      w: number,
+      h: number
+    ) => {
+      const surfU = d.col / (COLS - 1);
+      const surfV = d.row / (ROWS - 1);
+
+      // Two overlapping slow sine waves — different spatial & temporal freqs
+      // so the swell never looks mechanical.
+      const phase = surfU * Math.PI * 2 * WAVE_FREQ - t * WAVE_SPEED;
+      const waveZ =
+        Math.sin(phase) * 0.65 +
+        Math.sin(surfU * Math.PI * 1.1 * WAVE_FREQ + surfV * Math.PI * 0.9 - t * WAVE_SPEED * 0.7) * 0.35;
+
+      return project(surfU, surfV, waveZ, w, h);
+    };
+
+    let maxNeighbourDist = 0; // set in resize
+
     const resize = () => {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = window.innerWidth;
+      dpr   = Math.min(window.devicePixelRatio || 1, 2);
+      width  = window.innerWidth;
       height = window.innerHeight;
-      canvas.width = width * dpr;
+      canvas.width  = width  * dpr;
       canvas.height = height * dpr;
-      canvas.style.width = `${width}px`;
+      canvas.style.width  = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      build();
+
+      // Approximate the distance between adjacent dots in screen space so we
+      // can set a sensible neighbour threshold.
+      const cellW = (width  * 0.9) / (COLS - 1);
+      const cellH = (height * 0.64) / (ROWS - 1);
+      maxNeighbourDist = Math.sqrt(cellW * cellW + cellH * cellH) * 1.6;
+
+      buildDots();
     };
 
-    /**
-     * Smooth organic wave: three layered travelling sines with incommensurate
-     * frequencies so the motion never repeats visibly and reads as fluid,
-     * not as a plotted sine curve. Returns a -1..1-ish value.
-     */
-    const wave = (u: number, strand: Strand, time: number) => {
-      const t = time * strand.speedMul;
-      const f = strand.freqMul;
-      const p = strand.phase;
-      return (
-        Math.sin(u * Math.PI * 2.0 * f + t * 0.55 + p) * 0.55 +
-        Math.sin(u * Math.PI * 3.7 * f - t * 0.38 + p * 1.6) * 0.3 +
-        Math.sin(u * Math.PI * 1.3 * f + t * 0.24 - p * 0.8) * 0.35
-      );
+    // ---- Fog utility -------------------------------------------------------
+    const fogAlpha = (depth: number, base: number) => {
+      const fog = FOG_FAR + (FOG_NEAR - FOG_FAR) * depth;
+      return base * fog;
     };
 
+    // ---- Main draw loop ----------------------------------------------------
     const draw = () => {
-      const time = prefersReducedMotion
+      const t = prefersReducedMotion
         ? 0
-        : (performance.now() - startTime) / 1000;
+        : (performance.now() - t0) / 1000;
 
       ctx.clearRect(0, 0, width, height);
 
-      // The strand band occupies the middle of the viewport and breathes
-      // slowly as a whole, adding to the organic feel.
-      const bandCenter =
-        height * 0.55 + Math.sin(time * 0.1) * height * 0.03;
-      const bandHalf = height * 0.28;
-      const amp = height * 0.09; // generous amplitude → rolling silk
+      // Pre-compute all screen positions for this frame.
+      const pos = dots.map(d => dotPosition(d, t, width, height));
 
-      // Far strands first so near strands overlap them (depth layering).
-      const order = strands
-        .map((s, i) => ({ s, i }))
-        .sort((a, b) => a.s.depth - b.s.depth);
+      // --- Lines: only between direct grid neighbours (right + below) -------
+      // Draw lines first so dots sit on top.
+      for (let i = 0; i < dots.length; i++) {
+        const d = dots[i];
+        const { x: x1, y: y1, depth: dep1 } = pos[i];
 
-      for (const { s } of order) {
-        const near = s.depth; // 0 far → 1 near
-        const lineAlpha = 0.05 + near * 0.1;
-        const dotAlpha = 0.14 + near * 0.3;
-        const dotSize = 0.9 + near * 1.3;
-
-        // Compute this strand's dot positions.
-        const xs = new Array<number>(samples);
-        const ys = new Array<number>(samples);
-        for (let i = 0; i < samples; i++) {
-          const u = i / (samples - 1);
-          const baseY = bandCenter + (s.baseV - 0.5) * 2 * bandHalf;
-          xs[i] = u * width;
-          ys[i] = baseY + wave(u, s, time) * amp * s.ampMul;
-        }
-
-        // 1) Continuous silk line through the dots (smoothed with quadratic
-        //    midpoint curves — no jagged segments).
-        ctx.strokeStyle = `rgba(${BLUE}, ${lineAlpha})`;
-        ctx.lineWidth = 0.8 + near * 0.5;
-        ctx.beginPath();
-        ctx.moveTo(xs[0], ys[0]);
-        for (let i = 1; i < samples - 1; i++) {
-          const mx = (xs[i] + xs[i + 1]) / 2;
-          const my = (ys[i] + ys[i + 1]) / 2;
-          ctx.quadraticCurveTo(xs[i], ys[i], mx, my);
-        }
-        ctx.lineTo(xs[samples - 1], ys[samples - 1]);
-        ctx.stroke();
-
-        // 2) Dense dots riding the strand.
-        ctx.fillStyle = `rgba(${BLUE}, ${dotAlpha})`;
-        for (let i = 0; i < samples; i++) {
+        // Right neighbour
+        if (d.col < COLS - 1) {
+          const j = i + 1;
+          const { x: x2, y: y2, depth: dep2 } = pos[j];
+          const alpha = fogAlpha((dep1 + dep2) / 2, LINE_ALPHA);
+          ctx.strokeStyle = `rgba(${R},${G},${B},${alpha.toFixed(3)})`;
+          ctx.lineWidth = 0.6;
           ctx.beginPath();
-          ctx.arc(xs[i], ys[i], dotSize * s.dotJitter[i], 0, Math.PI * 2);
-          ctx.fill();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        }
+
+        // Below neighbour
+        if (d.row < ROWS - 1) {
+          const j = i + COLS;
+          const { x: x2, y: y2, depth: dep2 } = pos[j];
+          const alpha = fogAlpha((dep1 + dep2) / 2, LINE_ALPHA);
+          ctx.strokeStyle = `rgba(${R},${G},${B},${alpha.toFixed(3)})`;
+          ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
         }
       }
 
+      // --- Dots -------------------------------------------------------------
+      for (let i = 0; i < dots.length; i++) {
+        const d = dots[i];
+        const { x, y, depth } = pos[i];
+        const r   = DOT_MIN_R + d.sizeT * (DOT_MAX_R - DOT_MIN_R);
+        // Near dots slightly larger due to perspective.
+        const rScaled = r * (0.6 + 0.4 * depth);
+        const alpha   = fogAlpha(depth, DOT_ALPHA);
+
+        ctx.fillStyle = `rgba(${R},${G},${B},${alpha.toFixed(3)})`;
+        ctx.beginPath();
+        ctx.arc(x, y, rScaled, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       if (!prefersReducedMotion) {
-        animationId = requestAnimationFrame(draw);
+        animId = requestAnimationFrame(draw);
       }
     };
 
@@ -177,7 +228,7 @@ export default function NetworkBackground() {
     window.addEventListener("resize", resize);
     return () => {
       window.removeEventListener("resize", resize);
-      cancelAnimationFrame(animationId);
+      cancelAnimationFrame(animId);
     };
   }, []);
 
