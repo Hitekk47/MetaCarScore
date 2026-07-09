@@ -2,27 +2,14 @@
 
 import { useEffect, useRef } from "react";
 
-type Point = {
-  // Base drift position (updated each frame by velocity).
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  // Wave parameters — each point oscillates independently.
-  waveAmpX: number;   // horizontal wave amplitude in px
-  waveAmpY: number;   // vertical wave amplitude in px
-  waveFreqX: number;  // horizontal angular frequency
-  waveFreqY: number;  // vertical angular frequency
-  wavePhaseX: number; // per-point phase offset so they don't all sync
-  wavePhaseY: number;
-  // Visual variation.
-  radius: number;     // dot size (px, varied per point)
-};
-
 /**
- * Animated "data network" background.
- * Points drift and undulate in waves, connected by straight lines.
- * Sits fixed behind all page content.
+ * Animated 3D "digital terrain" background.
+ *
+ * Dots are laid out on a structured grid (parallel rows and columns) and
+ * connected only to their immediate neighbours, forming a clean mesh — not a
+ * sparse plexus. A layered sine height-field displaces each node vertically,
+ * and a simple perspective projection makes the surface undulate and flow like
+ * 3D terrain / digital waves. Sits fixed behind all page content.
  */
 export default function NetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,39 +24,38 @@ export default function NetworkBackground() {
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
+    // Brand palette (matches #2563eb).
+    const BLUE = "37, 99, 235";
+
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let points: Point[] = [];
+    let cols = 0;
+    let rows = 0;
     let animationId = 0;
-    let t = 0; // global time accumulator (increments each frame)
+    let startTime = performance.now();
 
-    // Brand palette (matches #2563eb) in rgb for alpha blending.
-    const POINT_COLOR = "37, 99, 235";
-    const LINE_COLOR = "37, 99, 235";
-    const CONNECT_DISTANCE = 150;
+    // Per-node static data (size jitter) indexed [j * cols + i].
+    let sizeJitter: number[] = [];
 
-    const rand = (min: number, max: number) =>
-      min + Math.random() * (max - min);
+    // Reused per-frame projection buffers.
+    let sx: number[] = [];
+    let sy: number[] = [];
+    let sScale: number[] = [];
 
-    const buildPoints = () => {
-      const area = width * height;
-      const count = Math.min(90, Math.max(28, Math.round(area / 22000)));
-      points = Array.from({ length: count }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: (Math.random() - 0.5) * 0.25,
-        // Wave: amplitude 8-28 px, slow frequency, random phase.
-        waveAmpX: rand(8, 28),
-        waveAmpY: rand(8, 28),
-        waveFreqX: rand(0.004, 0.010),
-        waveFreqY: rand(0.003, 0.009),
-        wavePhaseX: rand(0, Math.PI * 2),
-        wavePhaseY: rand(0, Math.PI * 2),
-        // Dot radius: small range so variation is noticeable but subtle.
-        radius: rand(1.2, 3.8),
-      }));
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+    const buildGrid = () => {
+      // Density scales with viewport, capped for performance.
+      cols = Math.min(64, Math.max(26, Math.round(width / 26)));
+      rows = 34;
+      sizeJitter = new Array(cols * rows);
+      for (let n = 0; n < cols * rows; n++) {
+        sizeJitter[n] = 0.7 + Math.random() * 0.8; // 0.7 - 1.5
+      }
+      sx = new Array(cols * rows);
+      sy = new Array(cols * rows);
+      sScale = new Array(cols * rows);
     };
 
     const resize = () => {
@@ -81,79 +67,101 @@ export default function NetworkBackground() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildPoints();
+      buildGrid();
+    };
+
+    // Layered sine height-field → the terrain "waves".
+    const terrain = (u: number, v: number, time: number) => {
+      const px = u * Math.PI * 4; // ~2 wave crests across the width
+      const pz = v * Math.PI * 3; // depth-wise variation
+      return (
+        Math.sin(px * 1.0 + time * 0.6 + pz * 0.8) +
+        0.6 * Math.sin(px * 1.7 - time * 0.9 + pz * 1.3) +
+        0.4 * Math.sin(px * 0.5 + time * 0.4 - pz * 2.1)
+      );
     };
 
     const draw = () => {
+      const time = prefersReducedMotion
+        ? 0
+        : (performance.now() - startTime) / 1000;
+
       ctx.clearRect(0, 0, width, height);
-      t += 1;
 
-      // Update base position via drift velocity.
-      for (const p of points) {
-        p.x += p.vx;
-        p.y += p.vy;
+      // Projection tunables (all derived from viewport for responsiveness).
+      const overscan = 1.3; // near-edge grid spans 130% of width
+      const halfSpan = (width * overscan) / 2;
+      const scaleNear = 1.0;
+      const scaleFar = 0.5;
+      const bandBottom = height * 0.98; // near row baseline (bottom)
+      const bandTop = height * 0.16; // far row baseline (near horizon)
+      const amp = height * 0.06; // wave amplitude in px
+      const cx = width / 2;
 
-        // Wrap around edges with a soft margin.
-        if (p.x < -40) p.x = width + 40;
-        if (p.x > width + 40) p.x = -40;
-        if (p.y < -40) p.y = height + 40;
-        if (p.y > height + 40) p.y = -40;
+      // 1) Project every node into screen space.
+      for (let j = 0; j < rows; j++) {
+        const v = j / (rows - 1); // 0 near → 1 far
+        const eased = Math.pow(v, 1.7); // perspective compression toward horizon
+        const scale = lerp(scaleNear, scaleFar, v);
+        const baseY = lerp(bandBottom, bandTop, eased);
+        for (let i = 0; i < cols; i++) {
+          const u = i / (cols - 1); // 0 → 1 across
+          const gx = (u - 0.5) * 2 * halfSpan; // centered world x
+          const h = terrain(u, v, time) * amp;
+          const idx = j * cols + i;
+          sx[idx] = cx + gx * scale;
+          sy[idx] = baseY - h * scale;
+          sScale[idx] = scale;
+        }
       }
 
-      // Compute rendered positions (base drift + wave offset).
-      const rx = points.map(
-        (p) => p.x + p.waveAmpX * Math.sin(t * p.waveFreqX + p.wavePhaseX)
-      );
-      const ry = points.map(
-        (p) => p.y + p.waveAmpY * Math.cos(t * p.waveFreqY + p.wavePhaseY)
-      );
-
-      // Draw connecting lines using rendered positions.
-      for (let i = 0; i < points.length; i++) {
-        for (let j = i + 1; j < points.length; j++) {
-          const dx = rx[i] - rx[j];
-          const dy = ry[i] - ry[j];
-          const dist = Math.hypot(dx, dy);
-          if (dist < CONNECT_DISTANCE) {
-            const alpha = (1 - dist / CONNECT_DISTANCE) * 0.18;
-            ctx.strokeStyle = `rgba(${LINE_COLOR}, ${alpha})`;
-            ctx.lineWidth = 0.8;
+      // 2) Draw neighbour connections (rows + columns) → grid mesh.
+      ctx.lineWidth = 0.8;
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < cols; i++) {
+          const idx = j * cols + i;
+          const fade = lerp(0.16, 0.03, j / (rows - 1)); // depth fog
+          // Horizontal segment → right neighbour.
+          if (i < cols - 1) {
+            const r = idx + 1;
+            ctx.strokeStyle = `rgba(${BLUE}, ${fade})`;
             ctx.beginPath();
-            ctx.moveTo(rx[i], ry[i]);
-            ctx.lineTo(rx[j], ry[j]);
+            ctx.moveTo(sx[idx], sy[idx]);
+            ctx.lineTo(sx[r], sy[r]);
+            ctx.stroke();
+          }
+          // Vertical segment → row behind.
+          if (j < rows - 1) {
+            const d = idx + cols;
+            ctx.strokeStyle = `rgba(${BLUE}, ${fade})`;
+            ctx.beginPath();
+            ctx.moveTo(sx[idx], sy[idx]);
+            ctx.lineTo(sx[d], sy[d]);
             ctx.stroke();
           }
         }
       }
 
-      // Draw dots with per-point radius and a slight alpha variation by size.
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i];
-        // Larger dots are slightly more opaque so big ones pop gently.
-        const alpha = 0.22 + (p.radius / 3.8) * 0.2;
-        ctx.fillStyle = `rgba(${POINT_COLOR}, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(rx[i], ry[i], p.radius, 0, Math.PI * 2);
-        ctx.fill();
+      // 3) Draw dots with depth-scaled size and fog alpha.
+      for (let j = 0; j < rows; j++) {
+        const dotFade = lerp(0.55, 0.12, j / (rows - 1));
+        for (let i = 0; i < cols; i++) {
+          const idx = j * cols + i;
+          const radius = (1.1 + sizeJitter[idx]) * sScale[idx];
+          ctx.fillStyle = `rgba(${BLUE}, ${dotFade})`;
+          ctx.beginPath();
+          ctx.arc(sx[idx], sy[idx], radius, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
 
-      animationId = requestAnimationFrame(draw);
+      if (!prefersReducedMotion) {
+        animationId = requestAnimationFrame(draw);
+      }
     };
 
     resize();
-
-    if (prefersReducedMotion) {
-      for (const p of points) {
-        p.vx = 0;
-        p.vy = 0;
-        p.waveAmpX = 0;
-        p.waveAmpY = 0;
-      }
-      draw();
-      cancelAnimationFrame(animationId);
-    } else {
-      draw();
-    }
+    draw();
 
     window.addEventListener("resize", resize);
     return () => {
