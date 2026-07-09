@@ -2,63 +2,78 @@
 
 import { useEffect, useRef } from "react";
 
-export default function ParticleWaveBackground() {
+type Point = {
+  // Base drift position (updated each frame by velocity).
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  // Wave parameters — each point oscillates independently.
+  waveAmpX: number;   // horizontal wave amplitude in px
+  waveAmpY: number;   // vertical wave amplitude in px
+  waveFreqX: number;  // horizontal angular frequency
+  waveFreqY: number;  // vertical angular frequency
+  wavePhaseX: number; // per-point phase offset so they don't all sync
+  wavePhaseY: number;
+  // Visual variation.
+  radius: number;     // dot size (px, varied per point)
+};
+
+/**
+ * Animated "data network" background.
+ * Points drift and undulate in waves, connected by straight lines.
+ * Sits fixed behind all page content.
+ */
+export default function NetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d", { alpha: false });
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    // Brand Colors
-    const R = 37, G = 99, B = 235;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
 
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let animId = 0;
-    let time = 0;
+    let points: Point[] = [];
+    let animationId = 0;
+    let t = 0; // global time accumulator (increments each frame)
 
-    // --- Particle Topography Settings ---
-    const ROWS = 35;        // Depth of the grid
-    const COLS = 80;        // Width of the grid
-    const WAVE_SPEED = 0.015;
-    const JITTER = 0.4;     // The "Chaos" factor - breaks the rigid grid look
+    // Brand palette (matches #2563eb) in rgb for alpha blending.
+    const POINT_COLOR = "37, 99, 235";
+    const LINE_COLOR = "37, 99, 235";
+    const CONNECT_DISTANCE = 150;
 
-    type Particle = {
-      x: number;
-      z: number;
-      sizeOffset: number;
-    };
+    const rand = (min: number, max: number) =>
+      min + Math.random() * (max - min);
 
-    let particles: Particle[] = [];
-
-    const initParticles = () => {
-      particles = [];
-      for (let z = 0; z < ROWS; z++) {
-        for (let x = 0; x < COLS; x++) {
-          // Base grid position (0 to 1)
-          const baseX = x / (COLS - 1);
-          const baseZ = z / (ROWS - 1);
-
-          // Add random "chaos" to break up the perfect squares
-          const jitterX = (Math.random() - 0.5) * (JITTER / COLS);
-          const jitterZ = (Math.random() - 0.5) * (JITTER / ROWS);
-
-          particles.push({
-            x: baseX + jitterX,
-            z: baseZ + jitterZ,
-            sizeOffset: Math.random(), // For twinkling/size variation
-          });
-        }
-      }
+    const buildPoints = () => {
+      const area = width * height;
+      const count = Math.min(90, Math.max(28, Math.round(area / 22000)));
+      points = Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        // Wave: amplitude 8-28 px, slow frequency, random phase.
+        waveAmpX: rand(8, 28),
+        waveAmpY: rand(8, 28),
+        waveFreqX: rand(0.004, 0.010),
+        waveFreqY: rand(0.003, 0.009),
+        wavePhaseX: rand(0, Math.PI * 2),
+        wavePhaseY: rand(0, Math.PI * 2),
+        // Dot radius: small range so variation is noticeable but subtle.
+        radius: rand(1.2, 3.8),
+      }));
     };
 
     const resize = () => {
-      dpr = window.devicePixelRatio || 1;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
       height = window.innerHeight;
       canvas.width = width * dpr;
@@ -66,75 +81,84 @@ export default function ParticleWaveBackground() {
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      initParticles();
+      buildPoints();
     };
 
     const draw = () => {
-      // Fast manual clear
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, width, height);
+      ctx.clearRect(0, 0, width, height);
+      t += 1;
 
-      time += WAVE_SPEED;
-      if (prefersReducedMotion) time = 0;
+      // Update base position via drift velocity.
+      for (const p of points) {
+        p.x += p.vx;
+        p.y += p.vy;
 
-      const centerY = height * 0.6; // Vertical center of the terrain
-      const fov = 350; // Camera field of view
+        // Wrap around edges with a soft margin.
+        if (p.x < -40) p.x = width + 40;
+        if (p.x > width + 40) p.x = -40;
+        if (p.y < -40) p.y = height + 40;
+        if (p.y > height + 40) p.y = -40;
+      }
 
-      ctx.fillStyle = `rgb(${R}, ${G}, ${B})`;
+      // Compute rendered positions (base drift + wave offset).
+      const rx = points.map(
+        (p) => p.x + p.waveAmpX * Math.sin(t * p.waveFreqX + p.wavePhaseX)
+      );
+      const ry = points.map(
+        (p) => p.y + p.waveAmpY * Math.cos(t * p.waveFreqY + p.wavePhaseY)
+      );
 
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
+      // Draw connecting lines using rendered positions.
+      for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
+          const dx = rx[i] - rx[j];
+          const dy = ry[i] - ry[j];
+          const dist = Math.hypot(dx, dy);
+          if (dist < CONNECT_DISTANCE) {
+            const alpha = (1 - dist / CONNECT_DISTANCE) * 0.18;
+            ctx.strokeStyle = `rgba(${LINE_COLOR}, ${alpha})`;
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(rx[i], ry[i]);
+            ctx.lineTo(rx[j], ry[j]);
+            ctx.stroke();
+          }
+        }
+      }
 
-        // --- The "Chaos" Wave Math ---
-        // Overlapping sine waves create an unpredictable, organic ocean-like swell
-        let y = Math.sin(p.x * 12 + time) * 0.15;
-        y += Math.sin(p.z * 8 - time * 0.8) * 0.15;
-        y += Math.sin((p.x + p.z) * 5 + time * 1.2) * 0.1;
-
-        // --- 3D Projection ---
-        // Center X around 0 for projection
-        const centeredX = (p.x - 0.5) * width * 1.5;
-
-        // Z depth (1 is close, higher is further back)
-        const zDepth = 1 + p.z * 4.5;
-        const scale = fov / (fov + zDepth * 100);
-
-        const screenX = (width / 2) + centeredX * scale;
-        const screenY = centerY + (y * height * 0.6) * scale + (p.z * height * 0.3);
-
-        // --- Rendering ---
-        // Fade out dots that are further back, keep near dots crisp
-        const opacity = Math.max(0, 0.9 - p.z * 0.8);
-
-        // Skip rendering if practically invisible (huge performance boost)
-        if (opacity < 0.05) continue;
-
-        // Size decreases with depth, plus a little random twinkle
-        const dotSize = (1.5 + p.sizeOffset * 1.5) * scale;
-
-        ctx.globalAlpha = opacity;
-
-        // Draw the particle
+      // Draw dots with per-point radius and a slight alpha variation by size.
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        // Larger dots are slightly more opaque so big ones pop gently.
+        const alpha = 0.22 + (p.radius / 3.8) * 0.2;
+        ctx.fillStyle = `rgba(${POINT_COLOR}, ${alpha})`;
         ctx.beginPath();
-        // Using arc for pure dots since we don't have lines dragging down performance
-        ctx.arc(screenX, screenY, dotSize, 0, Math.PI * 2);
+        ctx.arc(rx[i], ry[i], p.radius, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      ctx.globalAlpha = 1; // Reset alpha
-
-      if (!prefersReducedMotion) {
-        animId = requestAnimationFrame(draw);
-      }
+      animationId = requestAnimationFrame(draw);
     };
 
     resize();
-    draw();
+
+    if (prefersReducedMotion) {
+      for (const p of points) {
+        p.vx = 0;
+        p.vy = 0;
+        p.waveAmpX = 0;
+        p.waveAmpY = 0;
+      }
+      draw();
+      cancelAnimationFrame(animationId);
+    } else {
+      draw();
+    }
 
     window.addEventListener("resize", resize);
     return () => {
       window.removeEventListener("resize", resize);
-      cancelAnimationFrame(animId);
+      cancelAnimationFrame(animationId);
     };
   }, []);
 
@@ -142,7 +166,7 @@ export default function ParticleWaveBackground() {
     <canvas
       ref={canvasRef}
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 -z-10 h-full w-full bg-white"
+      className="pointer-events-none fixed inset-0 -z-10 h-full w-full"
     />
   );
 }
