@@ -2,17 +2,27 @@
 
 import { useEffect, useRef } from "react";
 
+type Point = {
+  // Base drift position (updated each frame by velocity).
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  // Wave parameters — each point oscillates independently.
+  waveAmpX: number;   // horizontal wave amplitude in px
+  waveAmpY: number;   // vertical wave amplitude in px
+  waveFreqX: number;  // horizontal angular frequency
+  waveFreqY: number;  // vertical angular frequency
+  wavePhaseX: number; // per-point phase offset so they don't all sync
+  wavePhaseY: number;
+  // Visual variation.
+  radius: number;     // dot size (px, varied per point)
+};
+
 /**
- * Animated ribbon-wave background.
- *
- * Several horizontal rows of evenly-spaced dots travel across the screen.
- * Each row is a flowing ribbon: dot Y-positions are displaced by a large-
- * amplitude travelling sine wave so the whole ribbon rises and falls
- * dramatically. Dots in the same row are connected by horizontal lines;
- * adjacent rows connect vertically — giving a clear mesh structure that
- * ripples like the reference image.
- *
- * No diagonal connections, no polygon artefacts.
+ * Animated "data network" background.
+ * Points drift and undulate in waves, connected by straight lines.
+ * Sits fixed behind all page content.
  */
 export default function NetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,174 +37,128 @@ export default function NetworkBackground() {
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    const COLOR = "37, 99, 235"; // brand blue r,g,b
-
-    // ── Layout ─────────────────────────────────────────────────────────────
-    const COL_SPACING = 55;   // px between dots horizontally
-    const ROW_COUNT   = 9;    // number of ribbon rows
-    const ROW_BAND    = 80;   // vertical px between ribbon centre-lines at rest
-
-    // ── Wave ───────────────────────────────────────────────────────────────
-    // Primary wave — large amplitude, travels left → right.
-    const AMP1   = 70;    // px — large so the ribbon really rises and falls
-    const FREQ1  = 0.038; // spatial frequency (radians per column-step)
-    const SPD1   = 0.018; // temporal speed (radians per frame)
-
-    // Secondary wave — adds complexity, slightly different freq/speed.
-    const AMP2   = 30;
-    const FREQ2  = 0.065;
-    const SPD2   = 0.011;
-
-    // Each row has its own phase offset so they look independent.
-    const ROW_PHASE_STEP = 0.55; // radians — shift between successive rows
-
-    // ── Dots ───────────────────────────────────────────────────────────────
-    const BASE_R = 1.3;
-    const VAR_R  = 1.6; // random extra radius per dot, fixed at build time
-
-    type Dot = {
-      col: number;
-      row: number;
-      bx: number; // base x (changes only on resize)
-      by: number; // base y (rest-position of the row centre-line)
-      r: number;  // dot radius
-    };
-
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let cols = 0;
-    let dots: Dot[] = [];
-    // grid[row][col] → index in dots[]
-    let grid: number[][] = [];
-    let t = 0;
-    let animId = 0;
+    let points: Point[] = [];
+    let animationId = 0;
+    let t = 0; // global time accumulator (increments each frame)
 
-    // ── Build dots ─────────────────────────────────────────────────────────
-    const buildDots = () => {
-      dots = [];
-      grid = [];
+    // Brand palette (matches #2563eb) in rgb for alpha blending.
+    const POINT_COLOR = "37, 99, 235";
+    const LINE_COLOR = "37, 99, 235";
+    const CONNECT_DISTANCE = 150;
 
-      cols = Math.ceil(width / COL_SPACING) + 3;
+    const rand = (min: number, max: number) =>
+      min + Math.random() * (max - min);
 
-      // Spread rows evenly across the full canvas height, with one row above
-      // and one below the visible area so the wave never shows a bare edge.
-      const totalBand = ROW_COUNT * ROW_BAND;
-      const yStart = (height - totalBand) / 2;
-
-      for (let row = 0; row < ROW_COUNT; row++) {
-        grid.push([]);
-        const by = yStart + row * ROW_BAND;
-        for (let col = 0; col < cols; col++) {
-          grid[row].push(dots.length);
-          dots.push({
-            col,
-            row,
-            bx: (col - 1) * COL_SPACING,
-            by,
-            r: BASE_R + Math.random() * VAR_R,
-          });
-        }
-      }
+    const buildPoints = () => {
+      const area = width * height;
+      const count = Math.min(90, Math.max(28, Math.round(area / 22000)));
+      points = Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        // Wave: amplitude 8-28 px, slow frequency, random phase.
+        waveAmpX: rand(8, 28),
+        waveAmpY: rand(8, 28),
+        waveFreqX: rand(0.004, 0.010),
+        waveFreqY: rand(0.003, 0.009),
+        wavePhaseX: rand(0, Math.PI * 2),
+        wavePhaseY: rand(0, Math.PI * 2),
+        // Dot radius: small range so variation is noticeable but subtle.
+        radius: rand(1.2, 3.8),
+      }));
     };
 
-    // ── Resize ─────────────────────────────────────────────────────────────
     const resize = () => {
-      dpr   = Math.min(window.devicePixelRatio || 1, 2);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = window.innerWidth;
       height = window.innerHeight;
-      canvas.width  = width  * dpr;
+      canvas.width = width * dpr;
       canvas.height = height * dpr;
-      canvas.style.width  = `${width}px`;
+      canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildDots();
+      buildPoints();
     };
 
-    // ── Displaced position of a dot ────────────────────────────────────────
-    // Phase is driven by column index (spatial) and t (temporal) so the wave
-    // travels horizontally. A per-row phase offset makes each ribbon
-    // independent.
-    const getPos = (d: Dot): [number, number] => {
-      const rowPhase = d.row * ROW_PHASE_STEP;
-      const phase1   = d.col * FREQ1 - t * SPD1 + rowPhase;
-      const phase2   = d.col * FREQ2 - t * SPD2 + rowPhase * 1.3;
-
-      const dy = AMP1 * Math.sin(phase1) + AMP2 * Math.sin(phase2);
-      // Tiny horizontal wobble so lines don't look perfectly mechanical.
-      const dx = 4 * Math.cos(phase1 * 0.7);
-
-      return [d.bx + dx, d.by + dy];
-    };
-
-    // ── Draw ───────────────────────────────────────────────────────────────
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
       t += 1;
 
-      const pos = dots.map(getPos);
+      // Update base position via drift velocity.
+      for (const p of points) {
+        p.x += p.vx;
+        p.y += p.vy;
 
-      ctx.lineWidth = 0.7;
+        // Wrap around edges with a soft margin.
+        if (p.x < -40) p.x = width + 40;
+        if (p.x > width + 40) p.x = -40;
+        if (p.y < -40) p.y = height + 40;
+        if (p.y > height + 40) p.y = -40;
+      }
 
-      for (let row = 0; row < ROW_COUNT; row++) {
-        for (let col = 0; col < cols; col++) {
-          const i  = grid[row][col];
-          const [ax, ay] = pos[i];
+      // Compute rendered positions (base drift + wave offset).
+      const rx = points.map(
+        (p) => p.x + p.waveAmpX * Math.sin(t * p.waveFreqX + p.wavePhaseX)
+      );
+      const ry = points.map(
+        (p) => p.y + p.waveAmpY * Math.cos(t * p.waveFreqY + p.wavePhaseY)
+      );
 
-          // Horizontal line → right neighbour (within same ribbon row).
-          if (col + 1 < cols) {
-            const j = grid[row][col + 1];
-            const [bx, by] = pos[j];
-            // Alpha based on natural rest distance so stretched segments fade.
-            const stretch = Math.hypot(bx - ax, by - ay) / COL_SPACING;
-            const alpha   = Math.max(0, 0.22 - (stretch - 1) * 0.18);
-            ctx.strokeStyle = `rgba(${COLOR}, ${alpha})`;
+      // Draw connecting lines using rendered positions.
+      for (let i = 0; i < points.length; i++) {
+        for (let j = i + 1; j < points.length; j++) {
+          const dx = rx[i] - rx[j];
+          const dy = ry[i] - ry[j];
+          const dist = Math.hypot(dx, dy);
+          if (dist < CONNECT_DISTANCE) {
+            const alpha = (1 - dist / CONNECT_DISTANCE) * 0.18;
+            ctx.strokeStyle = `rgba(${LINE_COLOR}, ${alpha})`;
+            ctx.lineWidth = 0.8;
             ctx.beginPath();
-            ctx.moveTo(ax, ay);
-            ctx.lineTo(bx, by);
-            ctx.stroke();
-          }
-
-          // Vertical line ↓ down neighbour (connects adjacent ribbons).
-          if (row + 1 < ROW_COUNT) {
-            const j = grid[row + 1][col];
-            const [bx, by] = pos[j];
-            const stretch = Math.hypot(bx - ax, by - ay) / ROW_BAND;
-            const alpha   = Math.max(0, 0.14 - (stretch - 1) * 0.14);
-            ctx.strokeStyle = `rgba(${COLOR}, ${alpha})`;
-            ctx.beginPath();
-            ctx.moveTo(ax, ay);
-            ctx.lineTo(bx, by);
+            ctx.moveTo(rx[i], ry[i]);
+            ctx.lineTo(rx[j], ry[j]);
             ctx.stroke();
           }
         }
       }
 
-      // Dots on top.
-      for (let i = 0; i < dots.length; i++) {
-        const [x, y] = pos[i];
-        const d = dots[i];
-        const alpha = 0.25 + (d.r - BASE_R) / VAR_R * 0.25;
-        ctx.fillStyle = `rgba(${COLOR}, ${alpha})`;
+      // Draw dots with per-point radius and a slight alpha variation by size.
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        // Larger dots are slightly more opaque so big ones pop gently.
+        const alpha = 0.22 + (p.radius / 3.8) * 0.2;
+        ctx.fillStyle = `rgba(${POINT_COLOR}, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(x, y, d.r, 0, Math.PI * 2);
+        ctx.arc(rx[i], ry[i], p.radius, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      animId = requestAnimationFrame(draw);
+      animationId = requestAnimationFrame(draw);
     };
 
     resize();
-    draw();
 
     if (prefersReducedMotion) {
-      cancelAnimationFrame(animId);
+      for (const p of points) {
+        p.vx = 0;
+        p.vy = 0;
+        p.waveAmpX = 0;
+        p.waveAmpY = 0;
+      }
+      draw();
+      cancelAnimationFrame(animationId);
+    } else {
+      draw();
     }
 
     window.addEventListener("resize", resize);
     return () => {
       window.removeEventListener("resize", resize);
-      cancelAnimationFrame(animId);
+      cancelAnimationFrame(animationId);
     };
   }, []);
 
