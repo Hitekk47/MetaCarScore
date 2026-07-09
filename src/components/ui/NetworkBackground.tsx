@@ -8,15 +8,15 @@ export default function NetworkBackground() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false }); // Minor perf boost if background is solid, but left as default transparent below
     if (!ctx) return;
 
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    // Brand blue
-    const R = 37, G = 99, B = 235;
+    // Brand blue (stored as strings for faster rendering)
+    const COLOR_RGB = "37,99,235";
 
     let width = 0;
     let height = 0;
@@ -24,44 +24,33 @@ export default function NetworkBackground() {
     let animId = 0;
     const t0 = performance.now();
 
-    // ---- Dot count ---------------------------------------------------------
-    const DOT_COUNT = 280; // sparse enough to stay minimal
-
-    // ---- 3-D surface params ------------------------------------------------
-    const TILT       = 0.45;
-    const WAVE_AMP   = 0.06;
-    const WAVE_FREQ  = 1.8;
+    // ---- Parameters --------------------------------------------------------
+    const DOT_COUNT = 280;
+    const TILT = 0.45;
+    const WAVE_AMP = 0.06;
+    const WAVE_FREQ = 1.8;
     const WAVE_SPEED = 0.18;
-
-    // ---- Depth fog ---------------------------------------------------------
     const FOG_NEAR = 0.90;
-    const FOG_FAR  = 0.08;
-
-    // ---- Visual style ------------------------------------------------------
-    const DOT_MIN_R  = 0.8;
-    const DOT_MAX_R  = 2.2;
-    const DOT_ALPHA  = 0.55;
+    const FOG_FAR = 0.08;
+    const DOT_MIN_R = 0.8;
+    const DOT_MAX_R = 2.2;
+    const DOT_ALPHA = 0.55;
     const LINE_ALPHA = 0.10;
-    const NEIGHBORS  = 3; // closest neighbors to connect per dot
+    const NEIGHBORS = 3;
 
     type Dot = {
-      surfU: number;  // [0,1] random position along surface X
-      surfV: number;  // [0,1] random position along surface Z (depth)
-      sizeT: number;  // [0,1] random size jitter
+      surfU: number;
+      surfV: number;
+      sizeT: number;
+    };
+
+    type Connection = {
+      a: number;
+      b: number;
     };
 
     let dots: Dot[] = [];
-
-    const buildDots = () => {
-      dots = [];
-      for (let i = 0; i < DOT_COUNT; i++) {
-        dots.push({
-          surfU: Math.random(),
-          surfV: Math.random(),
-          sizeT: Math.random(),
-        });
-      }
-    };
+    let connections: Connection[] = [];
 
     // ---- Project surface UV + wave height to canvas XY --------------------
     const project = (
@@ -74,9 +63,9 @@ export default function NetworkBackground() {
       const padX = w * 0.05;
       const x = padX + surfU * (w - padX * 2);
 
-      const surfTop  = h * 0.18;
+      const surfTop = h * 0.18;
       const surfBase = h * 0.82;
-      const surfH    = surfBase - surfTop;
+      const surfH = surfBase - surfTop;
 
       const perspScale = 0.45 + 0.55 * surfV;
       const baseY = surfTop + surfV * surfH;
@@ -88,8 +77,7 @@ export default function NetworkBackground() {
 
     // ---- Screen position for a dot at time t --------------------------------
     const dotPosition = (d: Dot, t: number, w: number, h: number) => {
-      const phase =
-        d.surfU * Math.PI * 2 * WAVE_FREQ - t * WAVE_SPEED;
+      const phase = d.surfU * Math.PI * 2 * WAVE_FREQ - t * WAVE_SPEED;
       const waveZ =
         Math.sin(phase) * 0.65 +
         Math.sin(
@@ -104,17 +92,64 @@ export default function NetworkBackground() {
     const fogAlpha = (depth: number, base: number) =>
       base * (FOG_FAR + (FOG_NEAR - FOG_FAR) * depth);
 
+    // ---- Initialize --------------------------------------------------------
+    const buildDotsAndConnections = () => {
+      // 1. Generate random dots
+      dots = [];
+      for (let i = 0; i < DOT_COUNT; i++) {
+        dots.push({
+          surfU: Math.random(),
+          surfV: Math.random(),
+          sizeT: Math.random(),
+        });
+      }
+
+      // 2. Pre-calculate connections based on initial positions (t=0)
+      // This happens ONCE per resize, not 60 times a second!
+      const initialPos = dots.map((d) => dotPosition(d, 0, width, height));
+      const connectionSet = new Set<string>();
+
+      for (let i = 0; i < dots.length; i++) {
+        const { x: x1, y: y1 } = initialPos[i];
+        const dists: { j: number; d2: number }[] = [];
+
+        for (let j = 0; j < dots.length; j++) {
+          if (j === i) continue;
+          const dx = initialPos[j].x - x1;
+          const dy = initialPos[j].y - y1;
+          dists.push({ j, d2: dx * dx + dy * dy });
+        }
+
+        // Sort just this once to find neighbors
+        dists.sort((a, b) => a.d2 - b.d2);
+        const nearest = dists.slice(0, NEIGHBORS);
+
+        // Deduplicate lines (so A->B and B->A only generate one line)
+        for (const { j } of nearest) {
+          const min = Math.min(i, j);
+          const max = Math.max(i, j);
+          connectionSet.add(`${min},${max}`);
+        }
+      }
+
+      connections = Array.from(connectionSet).map((str) => {
+        const [a, b] = str.split(",").map(Number);
+        return { a, b };
+      });
+    };
+
     // ---- Resize ------------------------------------------------------------
     const resize = () => {
-      dpr    = Math.min(window.devicePixelRatio || 1, 2);
-      width  = window.innerWidth;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
       height = window.innerHeight;
-      canvas.width  = width  * dpr;
+      canvas.width = width * dpr;
       canvas.height = height * dpr;
-      canvas.style.width  = `${width}px`;
+      canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildDots();
+
+      buildDotsAndConnections(); // Rebuild web on resize
     };
 
     // ---- Draw loop ---------------------------------------------------------
@@ -122,53 +157,46 @@ export default function NetworkBackground() {
       const t = prefersReducedMotion ? 0 : (performance.now() - t0) / 1000;
       ctx.clearRect(0, 0, width, height);
 
-      // Pre-compute all screen positions for this frame
-      const pos = dots.map(d => dotPosition(d, t, width, height));
+      // Calculate positions for this frame
+      const pos = dots.map((d) => dotPosition(d, t, width, height));
 
-      // --- Lines: proximity rule — connect each dot to its NEIGHBORS closest --
-      for (let i = 0; i < dots.length; i++) {
-        const { x: x1, y: y1, depth: dep1 } = pos[i];
+      // --- Draw Pre-calculated Lines ---
+      ctx.lineWidth = 0.6;
+      ctx.strokeStyle = `rgb(${COLOR_RGB})`;
 
-        // Compute squared screen-space distances to all other dots
-        const dists: { j: number; d2: number }[] = [];
-        for (let j = 0; j < dots.length; j++) {
-          if (j === i) continue;
-          const dx = pos[j].x - x1;
-          const dy = pos[j].y - y1;
-          dists.push({ j, d2: dx * dx + dy * dy });
-        }
+      for (let i = 0; i < connections.length; i++) {
+        const { a, b } = connections[i];
+        const p1 = pos[a];
+        const p2 = pos[b];
 
-        // Sort by distance, take the N closest
-        dists.sort((a, b) => a.d2 - b.d2);
-        const nearest = dists.slice(0, NEIGHBORS);
+        const alpha = fogAlpha((p1.depth + p2.depth) / 2, LINE_ALPHA);
 
-        for (const { j } of nearest) {
-          // Only draw each line once (when i < j)
-          if (j <= i) continue;
-          const { x: x2, y: y2, depth: dep2 } = pos[j];
-          const alpha = fogAlpha((dep1 + dep2) / 2, LINE_ALPHA);
-          ctx.strokeStyle = `rgba(${R},${G},${B},${alpha.toFixed(3)})`;
-          ctx.lineWidth = 0.6;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-        }
+        ctx.globalAlpha = alpha; // Faster than recreating RGBA strings per line
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
       }
 
-      // --- Dots -------------------------------------------------------------
+      // --- Draw Dots ---
+      ctx.fillStyle = `rgb(${COLOR_RGB})`;
+
       for (let i = 0; i < dots.length; i++) {
         const d = dots[i];
         const { x, y, depth } = pos[i];
-        const r       = DOT_MIN_R + d.sizeT * (DOT_MAX_R - DOT_MIN_R);
-        const rScaled = r * (0.6 + 0.4 * depth);
-        const alpha   = fogAlpha(depth, DOT_ALPHA);
 
-        ctx.fillStyle = `rgba(${R},${G},${B},${alpha.toFixed(3)})`;
+        const r = DOT_MIN_R + d.sizeT * (DOT_MAX_R - DOT_MIN_R);
+        const rScaled = r * (0.6 + 0.4 * depth);
+        const alpha = fogAlpha(depth, DOT_ALPHA);
+
+        ctx.globalAlpha = alpha;
         ctx.beginPath();
         ctx.arc(x, y, rScaled, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // Reset global alpha just in case
+      ctx.globalAlpha = 1;
 
       if (!prefersReducedMotion) {
         animId = requestAnimationFrame(draw);
