@@ -3,10 +3,10 @@
 import { useEffect, useRef } from "react";
 
 /**
- * Animated grid-wave background.
- * Nodes sit on an evenly-spaced grid and undulate like a cloth surface
- * via a 2-D travelling sinusoidal wave. Neighbours are connected by
- * straight lines. Sits fixed behind all page content.
+ * Animated network background.
+ * Dots drift with a sinusoidal wave motion. Connections are only drawn
+ * between dots that are roughly axis-aligned (horizontal or vertical),
+ * so the links form a loose, flowing grid rather than small polygons.
  */
 export default function NetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -21,61 +21,51 @@ export default function NetworkBackground() {
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    // Brand blue (#2563eb) expressed as r,g,b for alpha compositing.
     const COLOR = "37, 99, 235";
 
-    // Grid spacing in logical pixels.
-    const SPACING = 80;
+    // Grid spacing — dots start on a grid but move freely via wave.
+    const SPACING = 90;
 
-    // Wave parameters — tweak to taste.
-    const WAVE_AMP   = 14;   // max displacement in px
-    const WAVE_FREQ  = 0.016; // spatial frequency (rad / grid-unit)
-    const WAVE_SPEED = 0.018; // how fast the wave travels (rad / frame)
-    // A secondary wave at a slightly different angle/speed adds richness.
-    const WAVE2_AMP   = 8;
-    const WAVE2_FREQ  = 0.022;
-    const WAVE2_SPEED = 0.011;
+    // Wave parameters.
+    const WAVE_AMP   = 18;    // max displacement in px
+    const WAVE_FREQ  = 0.014; // spatial frequency
+    const WAVE_SPEED = 0.016; // temporal speed
 
-    // Visual — dots vary in radius so the grid has subtle texture.
-    const BASE_RADIUS = 1.8;
-    const RADIUS_VAR  = 1.4; // added per-node randomly, stays constant
+    // Connection rules.
+    const MAX_DIST   = SPACING * 1.55; // max distance to attempt a connection
+    // A pair is "axis-aligned" if the angle is within this many degrees of
+    // horizontal or vertical. Tighter = stricter grid look.
+    const ALIGN_DEG  = 28;
+    const ALIGN_RAD  = (ALIGN_DEG * Math.PI) / 180;
 
-    type Node = {
-      // Fixed grid origin.
-      ox: number;
-      oy: number;
-      // Column / row indices drive per-node wave phase.
-      col: number;
-      row: number;
-      // Random size jitter (constant throughout animation).
-      radiusJitter: number;
+    const BASE_RADIUS = 1.6;
+    const RADIUS_VAR  = 1.6;
+
+    type Dot = {
+      ox: number; oy: number; // resting grid position
+      col: number; row: number;
+      r: number; // radius (fixed jitter)
     };
 
-    let width = 0;
-    let height = 0;
-    let dpr = 1;
-    let nodes: Node[] = [];
-    let cols = 0;
-    let rows = 0;
-    let animationId = 0;
+    let width = 0, height = 0, dpr = 1;
+    let dots: Dot[] = [];
     let t = 0;
+    let animationId = 0;
 
-    const buildGrid = () => {
-      nodes = [];
-      // Add half-spacing margin so the grid extends slightly beyond edges.
+    const buildDots = () => {
+      dots = [];
       const marginX = SPACING / 2;
       const marginY = SPACING / 2;
-      cols = Math.ceil((width + SPACING) / SPACING);
-      rows = Math.ceil((height + SPACING) / SPACING);
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          nodes.push({
-            ox: -marginX + c * SPACING,
-            oy: -marginY + r * SPACING,
-            col: c,
-            row: r,
-            radiusJitter: Math.random() * RADIUS_VAR,
+      const cols = Math.ceil((width + SPACING) / SPACING);
+      const rows = Math.ceil((height + SPACING) / SPACING);
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          dots.push({
+            ox: -marginX + col * SPACING,
+            oy: -marginY + row * SPACING,
+            col,
+            row,
+            r: BASE_RADIUS + Math.random() * RADIUS_VAR,
           });
         }
       }
@@ -90,58 +80,48 @@ export default function NetworkBackground() {
       canvas.style.width  = `${width}px`;
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildGrid();
+      buildDots();
     };
 
-    /**
-     * For node (col, row) at time t, return the displaced [x, y] position.
-     * Two overlapping waves travelling in slightly different diagonal
-     * directions produce the undulating cloth effect.
-     */
-    const displaced = (n: Node): [number, number] => {
-      const phase1 = n.col * WAVE_FREQ + n.row * WAVE_FREQ * 0.6 - t * WAVE_SPEED;
-      const phase2 = n.col * WAVE2_FREQ * 0.7 - n.row * WAVE2_FREQ - t * WAVE2_SPEED;
+    /** Compute the wave-displaced position of a dot at time t. */
+    const getPos = (d: Dot): [number, number] => {
+      // Primary wave — travels diagonally.
+      const p1 = d.col * WAVE_FREQ + d.row * WAVE_FREQ * 0.55 - t * WAVE_SPEED;
+      // Secondary wave — perpendicular direction, slower.
+      const p2 = -d.col * WAVE_FREQ * 0.6 + d.row * WAVE_FREQ - t * WAVE_SPEED * 0.65;
 
-      const dx = WAVE_AMP  * Math.sin(phase1) + WAVE2_AMP * Math.cos(phase2);
-      const dy = WAVE_AMP  * Math.cos(phase1) + WAVE2_AMP * Math.sin(phase2);
+      const dx = WAVE_AMP * Math.sin(p1) + (WAVE_AMP * 0.45) * Math.sin(p2 + 1.2);
+      const dy = WAVE_AMP * Math.cos(p1) + (WAVE_AMP * 0.45) * Math.cos(p2 + 0.8);
 
-      return [n.ox + dx, n.oy + dy];
+      return [d.ox + dx, d.oy + dy];
     };
 
     const draw = () => {
       ctx.clearRect(0, 0, width, height);
       t += 1;
 
-      // Pre-compute all displaced positions.
-      const pos: [number, number][] = nodes.map(displaced);
+      const pos = dots.map(getPos);
 
-      // Draw lines only between direct grid neighbours (right + down).
-      ctx.lineWidth = 0.7;
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
-
-        // Right neighbour.
-        if (n.col < cols - 1) {
-          const j = i + 1;
-          const [ax, ay] = pos[i];
+      // Draw axis-aligned connections only.
+      ctx.lineWidth = 0.65;
+      for (let i = 0; i < dots.length; i++) {
+        const [ax, ay] = pos[i];
+        for (let j = i + 1; j < dots.length; j++) {
           const [bx, by] = pos[j];
-          // Fade lines that are stretched far (wave tension feel).
-          const stretch = Math.hypot(bx - ax, by - ay) / SPACING;
-          const alpha = Math.max(0, 0.14 - (stretch - 1) * 0.12);
-          ctx.strokeStyle = `rgba(${COLOR}, ${alpha})`;
-          ctx.beginPath();
-          ctx.moveTo(ax, ay);
-          ctx.lineTo(bx, by);
-          ctx.stroke();
-        }
+          const dx = bx - ax;
+          const dy = by - ay;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > MAX_DIST) continue;
 
-        // Down neighbour.
-        if (n.row < rows - 1) {
-          const j = i + cols;
-          const [ax, ay] = pos[i];
-          const [bx, by] = pos[j];
-          const stretch = Math.hypot(bx - ax, by - ay) / SPACING;
-          const alpha = Math.max(0, 0.14 - (stretch - 1) * 0.12);
+          // Angle of the segment from horizontal.
+          const angle = Math.abs(Math.atan2(dy, dx));
+          // Keep only near-horizontal (≈0 or ≈π) and near-vertical (≈π/2).
+          const isHorizontal = angle <= ALIGN_RAD || angle >= Math.PI - ALIGN_RAD;
+          const isVertical   = Math.abs(angle - Math.PI / 2) <= ALIGN_RAD;
+          if (!isHorizontal && !isVertical) continue;
+
+          // Fade as distance grows.
+          const alpha = 0.13 * (1 - dist / MAX_DIST);
           ctx.strokeStyle = `rgba(${COLOR}, ${alpha})`;
           ctx.beginPath();
           ctx.moveTo(ax, ay);
@@ -150,15 +130,14 @@ export default function NetworkBackground() {
         }
       }
 
-      // Draw dots on top of lines.
-      for (let i = 0; i < nodes.length; i++) {
+      // Draw dots on top.
+      for (let i = 0; i < dots.length; i++) {
         const [x, y] = pos[i];
-        const r = BASE_RADIUS + nodes[i].radiusJitter;
-        // Slightly more opaque for larger dots.
-        const alpha = 0.22 + (nodes[i].radiusJitter / RADIUS_VAR) * 0.18;
+        const d = dots[i];
+        const alpha = 0.20 + (d.r - BASE_RADIUS) / RADIUS_VAR * 0.18;
         ctx.fillStyle = `rgba(${COLOR}, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.arc(x, y, d.r, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -168,7 +147,6 @@ export default function NetworkBackground() {
     resize();
 
     if (prefersReducedMotion) {
-      // Render one static frame with no displacement.
       draw();
       cancelAnimationFrame(animationId);
     } else {
