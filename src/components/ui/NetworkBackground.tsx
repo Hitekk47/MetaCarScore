@@ -70,31 +70,56 @@ export default function NetworkBackground() {
       points = Array.from({ length: count }, () => createPoint());
     };
 
+    // Read the most accurate viewport size when available (visualViewport on mobile)
+    const getViewport = () => {
+      const vv = (window as any).visualViewport;
+      return {
+        width: vv?.width ?? window.innerWidth,
+        height: vv?.height ?? window.innerHeight,
+      };
+    };
+
     const resize = () => {
       const prevWidth = width;
       const prevHeight = height;
 
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = window.innerWidth;
-      height = window.innerHeight;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
+      const vp = getViewport();
+      width = vp.width;
+      height = vp.height;
+
+      // update canvas pixel size (round to avoid fractional pixels)
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.width = `${Math.round(width)}px`;
+      canvas.style.height = `${Math.round(height)}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const area = width * height;
       const desiredCount = Math.min(90, Math.max(28, Math.round(area / 22000)));
 
       if (prevWidth && prevHeight && points.length > 0) {
-        // Preserve existing points: scale positions so the animation doesn't "jump".
-        const scaleX = width / prevWidth;
-        const scaleY = height / prevHeight;
-        for (const p of points) {
-          p.x *= scaleX;
-          p.y *= scaleY;
+        const deltaW = Math.abs(width - prevWidth);
+        const deltaH = Math.abs(height - prevHeight);
+
+        // Threshold: ignore small height-only changes (typical when mobile browser chrome hides/shows).
+        // Use either a fixed px threshold or a percentage of previous height.
+        const heightThreshold = Math.max(120, prevHeight * 0.12); // 120px or 12%
+
+        if (width !== prevWidth || deltaH > heightThreshold) {
+          // Significant change -> scale points positions to match new size.
+          const scaleX = width / prevWidth;
+          const scaleY = height / prevHeight;
+          for (const p of points) {
+            p.x *= scaleX;
+            p.y *= scaleY;
+          }
+        } else {
+          // Small height-only change (likely browser chrome show/hide) -> don't rescale points.
+          // This avoids the visible 'jump' while still resizing the canvas.
         }
-        // If point count changed, add or remove while preserving existing ones.
+
+        // Adjust point count if needed
         if (points.length < desiredCount) {
           const toAdd = desiredCount - points.length;
           for (let i = 0; i < toAdd; i++) points.push(createPoint());
@@ -162,6 +187,7 @@ export default function NetworkBackground() {
       animationId = requestAnimationFrame(draw);
     };
 
+    // Initial resize + start loop
     resize();
 
     if (prefersReducedMotion) {
@@ -177,8 +203,17 @@ export default function NetworkBackground() {
       draw();
     }
 
+    // Listen to visualViewport when available (gives better info on mobile chrome address bar changes)
+    const vv = (window as any).visualViewport;
+    if (vv) {
+      vv.addEventListener("resize", resize);
+      // No-op on scroll: visualViewport.resize will fire appropriately when the visible area changes.
+    }
+    // fallback
     window.addEventListener("resize", resize);
+
     return () => {
+      if (vv) vv.removeEventListener("resize", resize);
       window.removeEventListener("resize", resize);
       cancelAnimationFrame(animationId);
     };
