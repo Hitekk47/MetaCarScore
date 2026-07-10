@@ -32,11 +32,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `${displayMarque} ${displayModele} (${my}) : Avis, Score & Essais`;
   const description = `Quelle note pour la ${displayMarque} ${displayModele} ${my} ? Consultez l'agrégation de tous les essais presse sur MetaCarScore.`;
 
+  // Récupération des reviews pour vérifier le nombre (utile pour robots noindex)
+  const reviews = await getReviews({
+    marque: displayMarque,
+    famille: context.real_famille || '',
+    my: parseInt(my),
+    modele: displayModele
+  });
+
+  const shouldIndex = reviews.length >= 3;
+
   return {
     title,
     description,
     alternates: {
       canonical: `/${marque}/${famille}/${my}/${modele}`,
+    },
+    robots: {
+      index: shouldIndex,
+      follow: true,
     },
     openGraph: {
       title,

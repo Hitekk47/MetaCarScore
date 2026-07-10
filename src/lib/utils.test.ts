@@ -40,10 +40,10 @@ describe("utils", () => {
   });
 
   describe("serializeJsonLd", () => {
-    test("should serialize object and escape <", () => {
+    test("should serialize object and escape < and >", () => {
       const data = { name: "Test <script>" };
       const result = utils.serializeJsonLd(data);
-      expect(result).toBe('{"name":"Test \\u003cscript>"}');
+      expect(result).toBe('{"name":"Test \\u003cscript\\u003e"}');
     });
   });
 });
