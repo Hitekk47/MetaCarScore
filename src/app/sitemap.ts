@@ -12,6 +12,15 @@ interface ReviewRow {
   Modele: string;
 }
 
+// Interface pour la nouvelle fonction RPC optimisée
+interface SitemapGroup {
+  marque: string;
+  famille: string;
+  my: string; // Le RPC retourne MY en string visiblement
+  modele: string;
+  nb_essais: number;
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   
   // 1. Pages Statiques (Priorité 1.0)
@@ -35,15 +44,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: item.priority || 0.9,
   }));
 
-  // 3. Récupération des données brute pour calcul des scores
+  // 3. Récupération des données brute pour calcul des scores globaux (Famille / MY)
   // On récupère toutes les lignes (20k+) pour calculer les counts par groupe
-  // car on ne veut indexer que les pages avec >= 3 essais.
-  const { data: allRows, error } = await supabase
+  // car on ne veut indexer que les pages avec >= 3 essais au total.
+  const { data: allRows, error: fetchError } = await supabase
     .from('reviews')
-    .select('Marque, Famille, MY, Modele');
+    .select('Marque, Famille, MY');
 
-  if (error) {
-    console.error('Error fetching reviews for sitemap:', error.message);
+  if (fetchError) {
+    console.error('Error fetching reviews for sitemap:', fetchError.message);
+  }
+
+  // 4. Récupération des groupes optimisés pour les Modèles (nb_essais >= 3)
+  const { data: modelGroups, error: rpcError } = await supabase.rpc('get_sitemap_groups_filtered');
+
+  if (rpcError) {
+    console.error('Error calling get_sitemap_groups_filtered:', rpcError.message);
   }
 
   // --- CALCUL DES COMPTEURS ET DÉDOUBLONNAGE ---
@@ -51,35 +67,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const brands = new Set<string>();
   const familyCounts = new Map<string, number>();
   const myCounts = new Map<string, number>();
-  const modelCounts = new Map<string, number>();
+  const modelRoutesSet = new Set<string>();
 
+  // On traite les modèles via le RPC filtré (déjà >= 3 essais)
+  if (modelGroups && Array.isArray(modelGroups)) {
+    modelGroups.forEach((row: SitemapGroup) => {
+      const m = toSlug(row.marque);
+      const f = toSlug(row.famille);
+      const y = row.my;
+      const mo = toSlug(row.modele);
+      modelRoutesSet.add(`${BASE_URL}/${m}/${f}/${y}/${mo}`);
+    });
+  }
+
+  // On traite les Familles / MY via les données brutes pour aggrégation large
   if (allRows && Array.isArray(allRows)) {
-    allRows.forEach((row: ReviewRow) => {
-      const m = toSlug(row.Marque);
-      const f = toSlug(row.Famille);
+    allRows.forEach((row: Partial<ReviewRow>) => {
+      const m = toSlug(row.Marque!);
+      const f = toSlug(row.Famille!);
       const y = row.MY;
-      const mo = toSlug(row.Modele);
 
       const brandPath = `${BASE_URL}/${m}`;
       const familyPath = `${BASE_URL}/${m}/${f}`;
       const myPath = `${BASE_URL}/${m}/${f}/${y}`;
-      const modelPath = `${BASE_URL}/${m}/${f}/${y}/${mo}`;
 
-      // Niveau 1 : Marque (Toujours incluse si elle a au moins 1 essai)
       brands.add(brandPath);
-
-      // Niveau 2 : Famille
       familyCounts.set(familyPath, (familyCounts.get(familyPath) || 0) + 1);
-
-      // Niveau 3 : Année (MY)
       myCounts.set(myPath, (myCounts.get(myPath) || 0) + 1);
-
-      // Niveau 4 : Modèle
-      modelCounts.set(modelPath, (modelCounts.get(modelPath) || 0) + 1);
     });
   }
 
-  // --- FILTRAGE ---
+  // --- CONSTRUCTION DES ROUTES FILTRÉES ---
 
   const familyRoutes = Array.from(familyCounts.entries())
     .filter(([_, count]) => count >= 3)
@@ -99,17 +117,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }));
 
-  const modelRoutes = Array.from(modelCounts.entries())
-    .filter(([_, count]) => count >= 3)
-    .map(([url]) => ({
-      url,
-      lastModified: new Date(),
-      changeFrequency: 'monthly' as const,
-      priority: 0.7,
-    }));
+  const modelRoutes = Array.from(modelRoutesSet).map((url) => ({
+    url,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
 
   // --- CONSTRUCTION DES ROUTES MARQUES ---
-  
+
   const brandRoutes = Array.from(brands).map(url => ({
     url,
     lastModified: new Date(),
