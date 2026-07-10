@@ -174,14 +174,15 @@ export default function NetworkBackground() {
         }
       }
 
-      // Draw dots with per-point radius and a slight alpha variation by size.
+      // Draw dots as outlines with per-point radius and a slight alpha variation by size.
+      ctx.lineWidth = 1;
       for (let i = 0; i < points.length; i++) {
         const p = points[i];
         const alpha = 0.22 + (p.radius / 3.8) * 0.2;
-        ctx.fillStyle = `rgba(${POINT_COLOR}, ${alpha})`;
+        ctx.strokeStyle = `rgba(${POINT_COLOR}, ${alpha})`;
         ctx.beginPath();
         ctx.arc(rx[i], ry[i], p.radius, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.stroke();
       }
 
       animationId = requestAnimationFrame(draw);
