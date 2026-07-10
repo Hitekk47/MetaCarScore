@@ -5,11 +5,20 @@ import { TOPS_MENU } from '@/lib/constants';
 
 const BASE_URL = 'https://metacarscore.com';
 
-interface SitemapRow {
+interface ReviewRow {
   Marque: string;
   Famille: string;
   MY: number;
   Modele: string;
+}
+
+// Interface pour la nouvelle fonction RPC optimisée
+interface SitemapGroup {
+  marque: string;
+  famille: string;
+  my: string; // Le RPC retourne MY en string visiblement
+  modele: string;
+  review_count: number;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -35,73 +44,93 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: item.priority || 0.9,
   }));
 
-  // 3. Récupération des données (Optimisée via RPC)
+  // 3. Récupération des données brute pour calcul des scores globaux (Famille / MY)
+  // On récupère toutes les lignes (20k+) pour calculer les counts par groupe
+  // car on ne veut indexer que les pages avec >= 3 essais au total.
+  const { data: allRows, error: fetchError } = await supabase
+    .from('reviews')
+    .select('Marque, Famille, MY');
 
-  // On utilise une fonction RPC pour récupérer uniquement les combinaisons distinctes
-  // ce qui réduit drastiquement la bande passante et l'usage mémoire.
-  const { data: rows, error } = await supabase.rpc('get_sitemap_data');
-
-  if (error) {
-    console.error('Error fetching sitemap data via RPC: An unexpected error occurred');
-    // En cas d'erreur, on retourne uniquement les routes statiques
+  if (fetchError) {
+    console.error('Error fetching reviews for sitemap:', fetchError.message);
   }
 
-  // --- DÉDOUBLONNAGE INTELLIGENT ---
+  // 4. Récupération des groupes optimisés pour les Modèles (review_count >= 3)
+  const { data: modelGroups, error: rpcError } = await supabase.rpc('get_sitemap_groups_filtered');
+
+  if (rpcError) {
+    console.error('Error calling get_sitemap_groups_filtered:', rpcError.message);
+  }
+
+  // --- CALCUL DES COMPTEURS ET DÉDOUBLONNAGE ---
 
   const brands = new Set<string>();
-  const families = new Set<string>();
-  const mys = new Set<string>();
-  const models = new Set<string>();
+  const familyCounts = new Map<string, number>();
+  const myCounts = new Map<string, number>();
+  const modelRoutesSet = new Set<string>();
 
-  if (rows && Array.isArray(rows)) {
-    rows.forEach((row: SitemapRow) => {
-      const m = toSlug(row.Marque);
-      const f = toSlug(row.Famille);
-      const y = row.MY;
-      const mo = toSlug(row.Modele);
-
-      // Niveau 1 : Marque
-      brands.add(`${BASE_URL}/${m}`);
-
-      // Niveau 2 : Famille
-      families.add(`${BASE_URL}/${m}/${f}`);
-
-      // Niveau 3 : Année (MY)
-      mys.add(`${BASE_URL}/${m}/${f}/${y}`);
-
-      // Niveau 4 : Modèle
-      models.add(`${BASE_URL}/${m}/${f}/${y}/${mo}`);
+  // On traite les modèles via le RPC filtré (déjà >= 3 essais)
+  if (modelGroups && Array.isArray(modelGroups)) {
+    modelGroups.forEach((row: SitemapGroup) => {
+      const m = toSlug(row.marque);
+      const f = toSlug(row.famille);
+      const y = row.my;
+      const mo = toSlug(row.modele);
+      modelRoutesSet.add(`${BASE_URL}/${m}/${f}/${y}/${mo}`);
     });
   }
 
-  // --- CONSTRUCTION DES ROUTES ---
-  
+  // On traite les Familles / MY via les données brutes pour aggrégation large
+  if (allRows && Array.isArray(allRows)) {
+    allRows.forEach((row: Partial<ReviewRow>) => {
+      const m = toSlug(row.Marque!);
+      const f = toSlug(row.Famille!);
+      const y = row.MY;
+
+      const brandPath = `${BASE_URL}/${m}`;
+      const familyPath = `${BASE_URL}/${m}/${f}`;
+      const myPath = `${BASE_URL}/${m}/${f}/${y}`;
+
+      brands.add(brandPath);
+      familyCounts.set(familyPath, (familyCounts.get(familyPath) || 0) + 1);
+      myCounts.set(myPath, (myCounts.get(myPath) || 0) + 1);
+    });
+  }
+
+  // --- CONSTRUCTION DES ROUTES FILTRÉES ---
+
+  const familyRoutes = Array.from(familyCounts.entries())
+    .filter(([_, count]) => count >= 3)
+    .map(([url]) => ({
+      url,
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.9,
+    }));
+
+  const myRoutes = Array.from(myCounts.entries())
+    .filter(([_, count]) => count >= 3)
+    .map(([url]) => ({
+      url,
+      lastModified: new Date(),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    }));
+
+  const modelRoutes = Array.from(modelRoutesSet).map((url) => ({
+    url,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }));
+
+  // --- CONSTRUCTION DES ROUTES MARQUES ---
+
   const brandRoutes = Array.from(brands).map(url => ({
     url,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
-  }));
-
-  const familyRoutes = Array.from(families).map(url => ({
-    url,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.9,
-  }));
-
-  const myRoutes = Array.from(mys).map(url => ({
-    url,
-    lastModified: new Date(),
-    changeFrequency: 'monthly' as const,
-    priority: 0.6,
-  }));
-
-  const modelRoutes = Array.from(models).map(url => ({
-    url,
-    lastModified: new Date(),
-    changeFrequency: 'monthly' as const,
-    priority: 0.7,
   }));
 
   return [

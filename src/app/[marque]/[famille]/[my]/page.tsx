@@ -30,11 +30,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `${displayMarque} ${displayFamille} (${my}) : Avis, Score & Essais`;
   const description = `Découvrez la gamme ${displayMarque} ${displayFamille} de ${my}. Consultez le comparatif des versions et l'agrégation de tous les essais presse sur MetaCarScore.`;
 
+  // Récupération des reviews pour vérifier le nombre (utile pour robots noindex)
+  const reviews = await getReviews({
+    marque: displayMarque,
+    famille: displayFamille,
+    my: parseInt(my)
+  });
+
+  const shouldIndex = reviews.length >= 3;
+
   return {
     title,
     description,
     alternates: {
       canonical: `/${marque}/${famille}/${my}`,
+    },
+    robots: {
+      index: shouldIndex,
+      follow: true,
     },
     openGraph: {
       title,
