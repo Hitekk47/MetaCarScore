@@ -18,7 +18,7 @@ interface SitemapGroup {
   famille: string;
   my: string; // Le RPC retourne MY en string visiblement
   modele: string;
-  nb_essais: number;
+  review_count: number;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -55,7 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error fetching reviews for sitemap:', fetchError.message);
   }
 
-  // 4. Récupération des groupes optimisés pour les Modèles (nb_essais >= 3)
+  // 4. Récupération des groupes optimisés pour les Modèles (review_count >= 3)
   const { data: modelGroups, error: rpcError } = await supabase.rpc('get_sitemap_groups_filtered');
 
   if (rpcError) {
