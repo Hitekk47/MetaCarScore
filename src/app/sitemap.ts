@@ -36,32 +36,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   // 3. Récupération des données brute pour calcul des scores
-  // On récupère toutes les lignes (20k+) par vagues pour calculer les counts par groupe
+  // On récupère toutes les lignes (20k+) pour calculer les counts par groupe
   // car on ne veut indexer que les pages avec >= 3 essais.
-  // PostgREST limite souvent à 1000 lignes par requête.
-  const allRows: ReviewRow[] = [];
-  let from = 0;
-  const step = 5000;
-  let hasMore = true;
+  const { data: allRows, error } = await supabase
+    .from('reviews')
+    .select('Marque, Famille, MY, Modele');
 
-  while (hasMore) {
-    const { data, error } = await supabase
-      .from('reviews')
-      .select('Marque, Famille, MY, Modele')
-      .range(from, from + step - 1);
-
-    if (error) {
-      console.error('Error fetching reviews for sitemap:', error.message);
-      break;
-    }
-
-    if (data && data.length > 0) {
-      allRows.push(...(data as ReviewRow[]));
-      from += step;
-      if (data.length < step) hasMore = false;
-    } else {
-      hasMore = false;
-    }
+  if (error) {
+    console.error('Error fetching reviews for sitemap:', error.message);
   }
 
   // --- CALCUL DES COMPTEURS ET DÉDOUBLONNAGE ---
@@ -71,7 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const myCounts = new Map<string, number>();
   const modelCounts = new Map<string, number>();
 
-  if (allRows.length > 0) {
+  if (allRows && Array.isArray(allRows)) {
     allRows.forEach((row: ReviewRow) => {
       const m = toSlug(row.Marque);
       const f = toSlug(row.Famille);
