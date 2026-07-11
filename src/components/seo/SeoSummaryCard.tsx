@@ -234,7 +234,7 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
 
           <div className="flex-grow space-y-2">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Analyse Sémantique</span>
+              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Ce qu’en pense la presse</span>
               <span className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" />
             </div>
             <div className="text-slate-300 text-sm md:text-base leading-relaxed font-medium italic">
