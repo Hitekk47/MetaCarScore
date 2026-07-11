@@ -56,11 +56,13 @@ export const TOPS_MENU = [
 
 ];
 
+export type GrammaticalGender = "masculine" | "feminine";
 export type SegmentDef = { code: string; label: string };
 
-export const MACRO_CONFIG: { label: string; segments: SegmentDef[] }[] = [
+export const MACRO_CONFIG: { label: string; segments: SegmentDef[]; gender: GrammaticalGender }[] = [
   {
     label: "Berline / Hatch",
+    gender: "feminine",
     segments: [
       { code: "A", label: "Micro-Citadines" },  // Twingo, Panda
       { code: "B", label: "Citadines" },        // Clio, 208
@@ -72,6 +74,7 @@ export const MACRO_CONFIG: { label: string; segments: SegmentDef[] }[] = [
   },
   {
     label: "SUV / Crossover",
+    gender: "masculine",
     segments: [
       { code: "A", label: "Micro-SUV" },     // Ignis
       { code: "B", label: "SUV Urbains" },   // 2008, Captur
@@ -83,6 +86,7 @@ export const MACRO_CONFIG: { label: string; segments: SegmentDef[] }[] = [
   },
   {
     label: "Sport / Coupé / Cab",
+    gender: "feminine",
     segments: [
       { code: "SPORT", label: "Sportives Light" }, // MX-5, Alpine
       { code: "GT", label: "Grand Tourisme" },     // 911, AMG GT
@@ -91,6 +95,7 @@ export const MACRO_CONFIG: { label: string; segments: SegmentDef[] }[] = [
   },
   {
     label: "Familiale / Van",
+    gender: "masculine",
     segments: [
       { code: "B", label: "Ludospaces" },          // Kangoo, Berlingo
       { code: "C", label: "Monospaces Compacts" }, // Scénic, Touran
@@ -100,6 +105,7 @@ export const MACRO_CONFIG: { label: string; segments: SegmentDef[] }[] = [
   },
   {
     label: "Utilitaire / Pickup",
+    gender: "masculine",
     segments: [
       { code: "C", label: "Compact / City" },    // Kangoo, Caddy
       { code: "D", label: "Moyen / 1 Tonne" },     // Ranger, Hilux, Amarok, Trafic

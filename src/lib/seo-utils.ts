@@ -1,4 +1,4 @@
-import { MACRO_CONFIG } from "./constants";
+import { MACRO_CONFIG, GrammaticalGender } from "./constants";
 
 export interface SeoStats {
   review_count: number;
@@ -32,11 +32,63 @@ export function resolveSegmentLabel(macro: string, size: string): string {
   return segment ? segment.label : size;
 }
 
+export function getSegmentGender(macro: string): GrammaticalGender {
+  const macroEntry = MACRO_CONFIG.find(m => m.label === macro);
+  return macroEntry?.gender ?? "masculine";
+}
+
+function formatSegmentPhrasing(segments: { macro: string; size: string }[], level: string): string {
+  if (segments.length === 0) return "";
+
+  const resolved = segments.map(s => {
+    const macroEntry = MACRO_CONFIG.find(m => m.label === s.macro);
+    if (!macroEntry) return null;
+    const segment = macroEntry.segments.find(seg => seg.code === s.size);
+    if (!segment) return null;
+    return { label: segment.label, macro: s.macro, size: s.size };
+  });
+
+  if (resolved.some(r => r === null)) return "";
+
+  const validResolved = resolved as { label: string; macro: string; size: string }[];
+
+  if (level === 'my' || level === 'family') {
+    if (validResolved.length === 1) {
+      const { label, macro, size } = validResolved[0];
+      const des = (macro === "Sport / Coupé / Cab" && size === "GT") ? "" : "des ";
+      return `couvre le segment ${des}${label}`;
+    }
+    const labels = validResolved.map(r => r.label);
+    const last = labels.pop();
+    return `couvre les segments ${labels.join(', ')} et ${last}`;
+  }
+
+  // Model/Powertrain level
+  if (validResolved.length === 1) {
+    const { label, macro, size } = validResolved[0];
+    if (macro === "Sport / Coupé / Cab" && size === "GT") {
+      return `appartient à la catégorie ${label}`;
+    }
+    if (macro === "Utilitaire / Pickup") {
+      return `appartient à la catégorie des utilitaires / pickups ${label}`;
+    }
+    return `s'inscrit dans le segment des ${label}`;
+  }
+
+  const labels = validResolved.map(r => r.label);
+  const last = labels.pop();
+  return `couvre les segments ${labels.join(', ')} et ${last}`;
+}
+
 export function generateSeoText(
   data: SeoStats,
   context: { marque: string; famille: string; my?: string; modele?: string; level: 'family' | 'my' | 'modele' | 'powertrain' }
 ): string {
   const { marque, famille, my, modele, level } = context;
+
+  if (!data.is_reliable) {
+    return "";
+  }
 
   // Casting explicit pour s'assurer des calculs numériques corrects (le SQL peut renvoyer des strings pour les aggrégats)
   const rank = data.rank ? Number(data.rank) : null;
@@ -44,31 +96,60 @@ export function generateSeoText(
   const avg = data.segment_avg ? Math.round(Number(data.segment_avg)) : null;
   const score = Number(data.metacarscore);
 
-  const consensusIntro = data.consensus_label === 'consensus' ? "d'un consensus" : (data.consensus_label === 'certaines nuances' ? 'de certaines nuances' : "d'une forte division");
+  const gender = data.segments.length > 0 ? getSegmentGender(data.segments[0].macro) : "masculine";
+  const vehicleArticle = gender === "feminine" ? "La" : "Le";
+  const vehiclePronoun = gender === "feminine" ? "elle" : "il";
+  const vehicleDeArticle = gender === "feminine" ? "de la" : "du";
 
-  if (!data.is_reliable) {
-    return "";
+  const pronounToUse = (level === 'my' || level === 'family') ? "elle" : vehiclePronoun;
+  const subject = (level === 'my') ? "cette année-modèle" : (level === 'family' ? "cette gamme" : "ce véhicule");
+
+  let consensusSentence = "";
+  if (data.consensus_label === 'consensus') {
+    consensusSentence = `La presse affiche un [[iqr:consensus|large consensus]] autour de ${subject}.`;
+  } else if (data.consensus_label === 'certaines nuances') {
+    consensusSentence = `Les critiques de la presse restent globalement convergents, malgré quelques [[iqr:nuance|divergences d’appréciation]] autour de ${subject}.`;
+  } else {
+    consensusSentence = `La presse est [[iqr:division|fortement divisée]] au sujet de ${subject}.`;
   }
 
-  const segmentLabels = data.segments.map(s => resolveSegmentLabel(s.macro, s.size));
-  const segmentText = segmentLabels.length > 0
-    ? (segmentLabels.length === 1 ? `le segment des ${segmentLabels[0]}` : `les segments ${segmentLabels.join(', ')}`)
-    : "son segment de marché";
+  const segmentPhrasing = formatSegmentPhrasing(data.segments, level);
 
   const comparisonText = (rank !== null && total !== null && avg !== null)
-    ? `Il se classe actuellement ${formatOrdinal(rank)}/${total} de sa catégorie, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne du segment qui est de ${avg}.`
+    ? `${pronounToUse.charAt(0).toUpperCase() + pronounToUse.slice(1)} se classe actuellement ${formatOrdinal(rank)}/${total} de sa catégorie, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne de la catégorie qui est de ${avg}.`
     : "";
 
+  const distributionText = `Les avis sont majoritairement ${getDistributionPhrasing(data.distribution)}.`;
+
   if (level === 'modele' || level === 'powertrain') {
-    return `Le ${marque} ${modele} s'inscrit dans ${segmentText}. Sur la base de ${data.review_count} essais, il obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} autour de ce véhicule. Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
+    if (!segmentPhrasing) {
+      return `Sur la base de ${data.review_count} essais, ${vehicleArticle} ${marque} ${modele} obtient le MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`.trim();
+    }
+    return `${vehicleArticle} ${marque} ${modele} ${segmentPhrasing}. Sur la base de ${data.review_count} essais, ${vehiclePronoun} obtient le MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`.trim();
   }
 
   if (level === 'my') {
-    return `L'année-modèle ${my} de la ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais, elle obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro}. Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
+    const intro = segmentPhrasing
+      ? `L'année-modèle ${my} ${vehicleDeArticle} ${marque} ${famille} ${segmentPhrasing}.`
+      : `Sur la base de ${data.review_count} essais, l'année-modèle ${my} ${vehicleDeArticle} ${marque} ${famille} obtient le MetaCarScore de ${score}.`;
+
+    const rest = segmentPhrasing
+      ? ` Sur la base de ${data.review_count} essais, elle obtient le MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`
+      : ` ${consensusSentence} ${distributionText} ${comparisonText}`;
+
+    return (intro + rest).trim().replace(/\s+/g, ' ');
   }
 
   // Family level
-  return `La gamme ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais cumulés, elle obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} sur l'ensemble de la gamme. Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
+  const intro = segmentPhrasing
+    ? `La gamme ${marque} ${famille} ${segmentPhrasing}.`
+    : `Sur la base de ${data.review_count} essais cumulés, la gamme ${marque} ${famille} obtient le MetaCarScore de ${score}.`;
+
+  const rest = segmentPhrasing
+    ? ` Sur la base de ${data.review_count} essais cumulés, elle obtient le MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`
+    : ` ${consensusSentence} ${distributionText} ${comparisonText}`;
+
+  return (intro + rest).trim().replace(/\s+/g, ' ');
 }
 
 function getDistributionPhrasing(dist: SeoStats['distribution']): string {
