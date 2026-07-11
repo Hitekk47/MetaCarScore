@@ -30,8 +30,8 @@ describe("generateSeoText", () => {
       level: "modele"
     });
 
-    expect(text).toContain("La Porsche 911 GT3 appartient à la catégorie Grand Tourisme.");
-    expect(text).toContain("elle obtient le MetaCarScore de 92.");
+    expect(text).toContain("La Porsche 911 GT3 appartient au segment Grand Tourisme.");
+    expect(text).toContain("elle obtient un MetaCarScore de 92.");
     expect(text).toContain("divergences d’appréciation");
     expect(text).toContain("Elle se classe actuellement 12e/88");
   });
@@ -49,7 +49,7 @@ describe("generateSeoText", () => {
     });
 
     expect(text).toContain("Le Peugeot 3008 s'inscrit dans le segment des SUV Compacts.");
-    expect(text).toContain("il obtient le MetaCarScore de 92.");
+    expect(text).toContain("il obtient un MetaCarScore de 92.");
     expect(text).toContain("Il se classe actuellement 12e/88");
   });
 
@@ -65,7 +65,7 @@ describe("generateSeoText", () => {
       level: "modele"
     });
 
-    expect(text).toContain("Le Ford Ranger appartient à la catégorie des utilitaires / pickups Moyen / 1 Tonne.");
+    expect(text).toContain("Le Ford Ranger appartient au segment des utilitaires / pickups Moyen / 1 Tonne.");
   });
 
   test("MY Level (Feminine context for 'année-modèle')", () => {
@@ -116,8 +116,8 @@ describe("generateSeoText", () => {
       marque: "X", famille: "Y", modele: "Z", level: "modele"
     });
     expect(text).not.toContain("segment");
-    expect(text).toContain("Sur la base de 19 essais, Le X Z obtient le MetaCarScore de 92.");
-    expect(text).toContain("moyenne de la catégorie");
+    expect(text).toContain("Sur la base de 19 essais, Le X Z obtient un MetaCarScore de 92.");
+    expect(text).toContain("moyenne du segment");
   });
 
   test("Multi-segments phrasing", () => {

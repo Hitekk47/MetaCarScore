@@ -67,12 +67,12 @@ function formatSegmentPhrasing(segments: { macro: string; size: string }[], leve
   if (validResolved.length === 1) {
     const { label, macro, size } = validResolved[0];
     if (macro === "Sport / Coupé / Cab" && size === "GT") {
-      return `appartient à la catégorie ${label}`;
+      return `appartient au segment ${label}`;
     }
     if (macro === "Utilitaire / Pickup") {
-      return `appartient à la catégorie des utilitaires / pickups ${label}`;
+      return `appartient au segment des utilitaires / pickups ${label}`;
     }
-    return `s'inscrit dans le segment des ${label}`;
+    return `appartient au segment des ${label}`;
   }
 
   const labels = validResolved.map(r => r.label);
@@ -108,7 +108,7 @@ export function generateSeoText(
   if (data.consensus_label === 'consensus') {
     consensusSentence = `La presse affiche un [[iqr:consensus|large consensus]] autour de ${subject}.`;
   } else if (data.consensus_label === 'certaines nuances') {
-    consensusSentence = `Les critiques de la presse restent globalement convergents, malgré quelques [[iqr:nuance|divergences d’appréciation]] autour de ${subject}.`;
+    consensusSentence = `Les critiques de la presse restent globalement convergentes, malgré quelques [[iqr:nuance|divergences d’appréciation]] autour de ${subject}.`;
   } else {
     consensusSentence = `La presse est [[iqr:division|fortement divisée]] au sujet de ${subject}.`;
   }
@@ -116,25 +116,25 @@ export function generateSeoText(
   const segmentPhrasing = formatSegmentPhrasing(data.segments, level);
 
   const comparisonText = (rank !== null && total !== null && avg !== null)
-    ? `${pronounToUse.charAt(0).toUpperCase() + pronounToUse.slice(1)} se classe actuellement ${formatOrdinal(rank)}/${total} de sa catégorie, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne de la catégorie qui est de ${avg}.`
+    ? `${pronounToUse.charAt(0).toUpperCase() + pronounToUse.slice(1)} se classe actuellement ${formatOrdinal(rank)}/${total} de sa catégorie, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne du segment qui est de ${avg}.`
     : "";
 
   const distributionText = `Les avis sont majoritairement ${getDistributionPhrasing(data.distribution)}.`;
 
   if (level === 'modele' || level === 'powertrain') {
     if (!segmentPhrasing) {
-      return `Sur la base de ${data.review_count} essais, ${vehicleArticle} ${marque} ${modele} obtient le MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`.trim();
+      return `Sur la base de ${data.review_count} essais, ${vehicleArticle} ${marque} ${modele} obtient un MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`.trim();
     }
-    return `${vehicleArticle} ${marque} ${modele} ${segmentPhrasing}. Sur la base de ${data.review_count} essais, ${vehiclePronoun} obtient le MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`.trim();
+    return `${vehicleArticle} ${marque} ${modele} ${segmentPhrasing}. Sur la base de ${data.review_count} essais, ${vehiclePronoun} obtient un MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`.trim();
   }
 
   if (level === 'my') {
     const intro = segmentPhrasing
       ? `L'année-modèle ${my} ${vehicleDeArticle} ${marque} ${famille} ${segmentPhrasing}.`
-      : `Sur la base de ${data.review_count} essais, l'année-modèle ${my} ${vehicleDeArticle} ${marque} ${famille} obtient le MetaCarScore de ${score}.`;
+      : `Sur la base de ${data.review_count} essais, l'année-modèle ${my} ${vehicleDeArticle} ${marque} ${famille} obtient un MetaCarScore de ${score}.`;
 
     const rest = segmentPhrasing
-      ? ` Sur la base de ${data.review_count} essais, elle obtient le MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`
+      ? ` Sur la base de ${data.review_count} essais, elle obtient un MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`
       : ` ${consensusSentence} ${distributionText} ${comparisonText}`;
 
     return (intro + rest).trim().replace(/\s+/g, ' ');
@@ -143,10 +143,10 @@ export function generateSeoText(
   // Family level
   const intro = segmentPhrasing
     ? `La gamme ${marque} ${famille} ${segmentPhrasing}.`
-    : `Sur la base de ${data.review_count} essais cumulés, la gamme ${marque} ${famille} obtient le MetaCarScore de ${score}.`;
+    : `Sur la base de ${data.review_count} essais cumulés, la gamme ${marque} ${famille} obtient un MetaCarScore de ${score}.`;
 
   const rest = segmentPhrasing
-    ? ` Sur la base de ${data.review_count} essais cumulés, elle obtient le MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`
+    ? ` Sur la base de ${data.review_count} essais cumulés, elle obtient un MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`
     : ` ${consensusSentence} ${distributionText} ${comparisonText}`;
 
   return (intro + rest).trim().replace(/\s+/g, ' ');
