@@ -66,8 +66,12 @@ BEGIN
   v_is_reliable := (v_entity_reviews_count >= 3);
   v_iqr := COALESCE(v_q3 - v_q1, 0);
 
-  -- Seuil IQR <= 10 déterminé par l'analyse
-  v_consensus_label := CASE WHEN v_iqr <= 10 THEN 'consensus' ELSE 'forte division' END;
+  -- Nouveaux seuils : ≤8 (consensus), 8-15 (nuance), >15 (forte division)
+  v_consensus_label := CASE
+    WHEN v_iqr <= 8 THEN 'consensus'
+    WHEN v_iqr <= 15 THEN 'certaines nuances'
+    ELSE 'forte division'
+  END;
 
   -- 2. Identification des segments couverts via model_segments
   SELECT jsonb_agg(DISTINCT jsonb_build_object('macro', ms."Macro_Category", 'size', ms."Segment_Size"))
@@ -79,7 +83,7 @@ BEGIN
     AND (p_my IS NULL OR r."MY" = p_my)
     AND (p_modele IS NULL OR r."Modele" = p_modele);
 
-  -- 3. Calcul du rang dans le segment (Benchmarking sur les 5 dernières années)
+  -- 3. Calcul du rang et de la moyenne dans le segment (Benchmarking sur les 5 dernières années)
   IF v_segments IS NOT NULL AND jsonb_array_length(v_segments) > 0 THEN
     WITH target_segments AS (
       SELECT macro, size FROM jsonb_to_recordset(v_segments) as es(macro text, size text)
@@ -87,7 +91,8 @@ BEGIN
     segment_vehicles AS (
       SELECT
         r."Marque", r."Modele", r."MY",
-        avg(r."Score") as vehicle_avg
+        avg(r."Score") as vehicle_avg,
+        count(*) as vehicle_review_count
       FROM reviews r
       JOIN model_segments ms ON r."Marque" = ms."Marque" AND r."Modele" = ms."Modele" AND r."MY" = ms."MY"
       JOIN target_segments ts ON ms."Macro_Category" = ts.macro AND ms."Segment_Size" = ts.size
@@ -100,17 +105,21 @@ BEGIN
         )
       GROUP BY r."Marque", r."Modele", r."MY"
     ),
-    all_scores AS (
-      SELECT vehicle_avg FROM segment_vehicles
-      UNION ALL
-      SELECT v_entity_avg_score
+    all_for_avg AS (
+       SELECT vehicle_avg FROM segment_vehicles
+       UNION ALL
+       SELECT v_entity_avg_score
+    ),
+    ranked_pool AS (
+       SELECT vehicle_avg FROM segment_vehicles WHERE vehicle_review_count >= 3
+       UNION ALL
+       SELECT v_entity_avg_score WHERE v_is_reliable
     )
     SELECT
-      (SELECT count(*) + 1 FROM segment_vehicles WHERE vehicle_avg > v_entity_avg_score),
-      count(*),
-      avg(vehicle_avg)
-    INTO v_rank, v_total_in_segment, v_segment_avg
-    FROM all_scores;
+      CASE WHEN v_is_reliable THEN (SELECT count(*) + 1 FROM ranked_pool WHERE vehicle_avg > v_entity_avg_score) ELSE NULL END,
+      (SELECT count(*) FROM ranked_pool),
+      (SELECT avg(vehicle_avg) FROM all_for_avg)
+    INTO v_rank, v_total_in_segment, v_segment_avg;
   END IF;
 
   -- 4. Assemblage du résultat final
