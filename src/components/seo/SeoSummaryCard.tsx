@@ -5,20 +5,26 @@ import { Info } from "lucide-react";
 
 type Props = {
   text: string;
+  iqr?: number;
 };
 
-export default function SeoSummaryCard({ text }: Props) {
+export default function SeoSummaryCard({ text, iqr }: Props) {
   if (!text) return null;
 
-  // Fonction pour mettre en évidence certains mots-clés (optionnel, mais recommandé par le brief)
   const formatText = (rawText: string) => {
-    // Liste de mots clés à mettre en gras ou couleur (ex: MetaCarScore, segments, consensus, rang)
-    // On peut utiliser des regex simples pour entourer certains motifs
     const highlighted = rawText
-        .replace(/(\d+\/\d+)/g, '<span class="text-blue-600 font-semibold">$1</span>')
+        .replace(/(\d+(er|e)\/\d+)/g, '<span class="text-blue-600 font-semibold">$1</span>')
         .replace(/(MetaCarScore de \d+)/g, '<span class="text-blue-600 font-bold">$1</span>')
-        .replace(/(consensus|forte division)/g, '<span class="text-blue-500 font-medium">$1</span>')
-        .replace(/(Écart interquartile : [\d.]+)/g, '<span class="text-slate-500 text-xs">$1</span>');
+        .replace(/(consensus|certaines nuances|forte division)/g, (match) => {
+            return `<span class="text-blue-500 font-medium group/tooltip relative cursor-help border-b border-dotted border-blue-500/50">
+                ${match}
+                ${iqr !== undefined ? `
+                <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[10px] rounded shadow-xl opacity-0 group-hover/tooltip:opacity-100 transition-opacity whitespace-nowrap z-50 border border-slate-700">
+                    Écart interquartile : ${iqr}
+                </span>
+                ` : ''}
+            </span>`;
+        });
 
     return <div dangerouslySetInnerHTML={{ __html: highlighted }} />;
   };
@@ -28,10 +34,9 @@ export default function SeoSummaryCard({ text }: Props) {
       initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
       animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
       transition={{ duration: 1.2, ease: "easeOut" }}
-      className="w-full mt-8"
+      className="w-full"
     >
       <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5 md:p-6 shadow-xl relative overflow-hidden group">
-        {/* Effet de brillance "calcul en temps réel" */}
         <motion.div
             className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent -translate-x-full"
             animate={{ translateX: ["100%", "-100%"] }}

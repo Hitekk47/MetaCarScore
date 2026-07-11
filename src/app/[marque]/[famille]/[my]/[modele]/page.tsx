@@ -156,6 +156,7 @@ export default async function ModelePage({ params }: PageProps) {
         modele={realModele}
         level="modele" 
         seoText={seoText}
+        iqr={seoStats?.iqr}
       />
     </>
   );

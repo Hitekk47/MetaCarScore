@@ -131,6 +131,7 @@ export default async function MYPage({ params }: PageProps) {
         my={my}
         level="my"
         seoText={seoText}
+        iqr={seoStats?.iqr}
       />
     </>
   );

@@ -123,6 +123,7 @@ export default async function FamilyPage({ params }: PageProps) {
         famille={realFamille}
         level="family"
         seoText={seoText}
+        iqr={seoStats?.iqr}
       />
     </>
   );

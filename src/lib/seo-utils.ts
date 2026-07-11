@@ -41,14 +41,14 @@ export function generateSeoText(
   // Casting explicit pour s'assurer des calculs numériques corrects (le SQL peut renvoyer des strings pour les aggrégats)
   const rank = data.rank ? Number(data.rank) : null;
   const total = data.total_in_segment ? Number(data.total_in_segment) : null;
-  const avg = data.segment_avg ? Number(data.segment_avg) : null;
+  const avg = data.segment_avg ? Math.round(Number(data.segment_avg)) : null;
   const score = Number(data.metacarscore);
 
   const consensusIntro = data.consensus_label === 'consensus' ? "d'un consensus" : (data.consensus_label === 'certaines nuances' ? 'de certaines nuances' : "d'une forte division");
 
   if (!data.is_reliable) {
     const name = (level === 'modele' || level === 'powertrain') ? `${marque} ${modele}` : (level === 'my' ? `${my} ${famille}` : famille);
-    return `Sur la base de ${data.review_count} essai${data.review_count > 1 ? 's' : ''}, le ${name} ne dispose pas encore d'un MetaCarScore consolidé. La presse fait état ${consensusIntro} autour de ce véhicule (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}.`;
+    return `Sur la base de ${data.review_count} essai${data.review_count > 1 ? 's' : ''}, le ${name} ne dispose pas encore d'un MetaCarScore consolidé. La presse fait état ${consensusIntro} autour de ce véhicule. Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}.`;
   }
 
   const segmentLabels = data.segments.map(s => resolveSegmentLabel(s.macro, s.size));
@@ -57,19 +57,19 @@ export function generateSeoText(
     : "son segment de marché";
 
   const comparisonText = (rank !== null && total !== null && avg !== null)
-    ? `Il se classe actuellement ${formatOrdinal(rank)}/${total} de sa catégorie, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne du segment qui est de ${avg.toLocaleString('fr-FR')}.`
+    ? `Il se classe actuellement ${formatOrdinal(rank)}/${total} de sa catégorie, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne du segment qui est de ${avg}.`
     : "";
 
   if (level === 'modele' || level === 'powertrain') {
-    return `Le ${marque} ${modele} s'inscrit dans ${segmentText}. Sur la base de ${data.review_count} essais, il obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} autour de ce véhicule (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
+    return `Le ${marque} ${modele} s'inscrit dans ${segmentText}. Sur la base de ${data.review_count} essais, il obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} autour de ce véhicule. Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
   }
 
   if (level === 'my') {
-    return `L'année-modèle ${my} de la ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais, elle obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
+    return `L'année-modèle ${my} de la ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais, elle obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro}. Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
   }
 
   // Family level
-  return `La gamme ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais cumulés, elle obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} sur l'ensemble de la gamme (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
+  return `La gamme ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais cumulés, elle obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} sur l'ensemble de la gamme. Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
 }
 
 function getDistributionPhrasing(dist: SeoStats['distribution']): string {

@@ -168,6 +168,7 @@ export default async function PowertrainPage({ params }: PageProps) {
         powertrainName={realType}
         level="powertrain"
         seoText={seoText}
+        iqr={seoStats?.iqr}
       />
     </>
   );

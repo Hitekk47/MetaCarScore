@@ -27,9 +27,10 @@ type Props = {
   powertrainName?: string;
   level: PageLevel;
   seoText?: string;
+  iqr?: number;
 };
 
-export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, seoText }: Props) {
+export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, seoText, iqr }: Props) {
 
   // --- FILTRES ---
   const [query, setQuery] = useState("");
@@ -177,11 +178,19 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                             </div>
                         </motion.div>
 
-                        {/* SEO SUMMARY CARD */}
-                        <SeoSummaryCard text={seoText || ""} />
+                        {/* SEO SUMMARY CARD (Mobile) */}
+                        <div className="mt-8 md:hidden">
+                           <SeoSummaryCard text={seoText || ""} iqr={iqr} />
+                        </div>
 
                     </div>
                 </div>
+
+                {/* SEO SUMMARY CARD (Desktop) */}
+                <div className="hidden md:block mt-8">
+                   <SeoSummaryCard text={seoText || ""} iqr={iqr} />
+                </div>
+
             </div>
         </section>
 
