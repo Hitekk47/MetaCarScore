@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Review } from '@/lib/types';
+import { Review, VehicleSeoStats } from '@/lib/types';
 
 // Types for RPC responses
 export interface BrandContext {
@@ -34,7 +34,7 @@ export const getBrandContext = cache(async (slug: string) => {
   });
 
   if (error) {
-    console.error('Error fetching brand context: An unexpected error occurred');
+    console.error('Error fetching brand context:', error);
     return null;
   }
 
@@ -46,7 +46,7 @@ export const getFullContext = cache(async (params: FullContextParams) => {
   const { data, error } = await supabase.rpc('get_full_context_by_slugs', params);
 
   if (error) {
-    console.error('Error fetching full context: An unexpected error occurred');
+    console.error('Error fetching full context:', error);
     return null;
   }
 
@@ -60,7 +60,7 @@ export const getFamilies = cache(async (brandName: string) => {
   });
 
   if (error) {
-    console.error('Error fetching families: An unexpected error occurred');
+    console.error('Error fetching families:', error);
     return [];
   }
 
@@ -113,9 +113,35 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching reviews: An unexpected error occurred');
+    console.error('Error fetching reviews:', error);
     return [];
   }
 
   return (data as Review[]) || [];
+});
+
+export const getVehicleSeoStats = cache(async (params: {
+  marque: string;
+  famille: string;
+  my?: number;
+  modele?: string;
+}) => {
+  const { data, error } = await supabase.rpc('get_vehicle_seo_stats', {
+    p_marque: params.marque,
+    p_famille: params.famille,
+    p_my: params.my,
+    p_modele: params.modele
+  });
+
+  if (error) {
+    console.error('Error fetching vehicle SEO stats:', error);
+    return null;
+  }
+
+  // Return the first item if it's an array, or the object itself
+  if (Array.isArray(data)) {
+    return data[0] as VehicleSeoStats;
+  }
+
+  return data as VehicleSeoStats;
 });

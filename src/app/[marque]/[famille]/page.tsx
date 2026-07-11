@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
-import { getFullContext, getReviews } from "@/lib/queries";
+import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
+import { generateSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
 
@@ -79,6 +80,17 @@ export default async function FamilyPage({ params }: PageProps) {
 
   if (!reviews || reviews.length === 0) notFound();
 
+  // 3.5. SEO Stats & Text Generation
+  const seoStats = await getVehicleSeoStats({
+    marque: realMarque,
+    famille: realFamille
+  });
+
+  const seoText = seoStats ? generateSeoText(seoStats, 'family', {
+    marque: realMarque,
+    famille: realFamille
+  }) : undefined;
+
   // 4. Calcul Score & JSON-LD
   const totalScore = reviews.reduce((acc, r) => acc + r.Score, 0);
   const avgScore = Math.round(totalScore / reviews.length);
@@ -109,6 +121,7 @@ export default async function FamilyPage({ params }: PageProps) {
         marque={realMarque}
         famille={realFamille}
         level="family"
+        seoText={seoText}
       />
     </>
   );
