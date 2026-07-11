@@ -41,19 +41,19 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
   };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClose = (event: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
     if (isOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      document.addEventListener("touchstart", handleClickOutside as any);
+      document.addEventListener("mousedown", handleClose);
+      document.addEventListener("touchstart", handleClose);
     }
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("touchstart", handleClickOutside as any);
+      document.removeEventListener("mousedown", handleClose);
+      document.removeEventListener("touchstart", handleClose);
     };
   }, [isOpen]);
 
@@ -63,22 +63,23 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
     }
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
+      // For keyboard, we center it on the button
+      const rect = e.currentTarget.getBoundingClientRect();
+      setCoords({ x: rect.left + rect.width / 2, y: rect.top });
       setIsOpen(!isOpen);
     }
   };
 
-  const updateCoords = (e: React.MouseEvent | React.TouchEvent) => {
+  const updateCoords = (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     let x = 0;
     let y = 0;
 
-    if ('touches' in e) {
-      if (e.touches.length > 0) {
-        x = e.touches[0].clientX;
-        y = e.touches[0].clientY;
-      }
+    if ('touches' in e && e.touches.length > 0) {
+      x = e.touches[0].clientX;
+      y = e.touches[0].clientY;
     } else {
-      x = e.clientX;
-      y = e.clientY;
+      x = (e as React.MouseEvent).clientX;
+      y = (e as React.MouseEvent).clientY;
     }
 
     if (x !== 0 || y !== 0) {
@@ -86,9 +87,21 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
     }
   };
 
-  const handleTrigger = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerEnter = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
     updateCoords(e);
-    setIsOpen(!isOpen);
+    setIsOpen(true);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && isOpen) {
+      updateCoords(e);
+    }
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    updateCoords(e);
+    setIsOpen((prev) => !prev);
   };
 
   return (
@@ -96,19 +109,10 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
       <button
         type="button"
         tabIndex={-1}
-        onClick={handleTrigger}
-        onMouseEnter={(e) => {
-          if (!isOpen) {
-            updateCoords(e);
-            setIsOpen(true);
-          }
-        }}
-        onMouseLeave={() => setIsOpen(false)}
-        onFocus={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          setCoords({ x: rect.left + rect.width / 2, y: rect.top });
-          setIsOpen(true);
-        }}
+        onClick={handleClick}
+        onPointerEnter={handlePointerEnter}
+        onPointerMove={handlePointerMove}
+        onPointerLeave={(e) => e.pointerType === 'mouse' && setIsOpen(false)}
         onBlur={() => setIsOpen(false)}
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
@@ -131,7 +135,7 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
                 left: coords.x,
                 top: coords.y,
                 transform: 'translate(-50%, -100%)',
-                marginTop: '-12px'
+                marginTop: '-16px'
               }}
               className="px-3 py-2 bg-slate-900 text-white text-[11px] md:text-xs rounded-lg shadow-2xl border border-slate-700 z-[9999] min-w-[200px] max-w-[280px] text-center leading-snug pointer-events-none"
             >
