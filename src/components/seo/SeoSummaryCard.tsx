@@ -1,8 +1,9 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, X } from "lucide-react";
+import { Info } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 type Props = {
   text: string;
@@ -17,7 +18,13 @@ type TooltipProps = {
 
 function Tooltip({ type, label, iqr }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const getTooltipText = () => {
     if (iqr === undefined) return "";
@@ -42,9 +49,11 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside as any);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside as any);
     };
   }, [isOpen]);
 
@@ -58,15 +67,48 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
     }
   };
 
+  const updateCoords = (e: React.MouseEvent | React.TouchEvent) => {
+    let x = 0;
+    let y = 0;
+
+    if ('touches' in e) {
+      if (e.touches.length > 0) {
+        x = e.touches[0].clientX;
+        y = e.touches[0].clientY;
+      }
+    } else {
+      x = e.clientX;
+      y = e.clientY;
+    }
+
+    if (x !== 0 || y !== 0) {
+      setCoords({ x, y });
+    }
+  };
+
+  const handleTrigger = (e: React.MouseEvent | React.TouchEvent) => {
+    updateCoords(e);
+    setIsOpen(!isOpen);
+  };
+
   return (
     <span className="relative inline-block" ref={containerRef}>
       <button
         type="button"
         tabIndex={-1}
-        onClick={() => setIsOpen(!isOpen)}
-        onMouseEnter={() => !isOpen && setIsOpen(true)}
+        onClick={handleTrigger}
+        onMouseEnter={(e) => {
+          if (!isOpen) {
+            updateCoords(e);
+            setIsOpen(true);
+          }
+        }}
         onMouseLeave={() => setIsOpen(false)}
-        onFocus={() => setIsOpen(true)}
+        onFocus={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setCoords({ x: rect.left + rect.width / 2, y: rect.top });
+          setIsOpen(true);
+        }}
         onBlur={() => setIsOpen(false)}
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
@@ -76,28 +118,32 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
         {label}
       </button>
 
-      <AnimatePresence>
-        {isOpen && iqr !== undefined && (
-          <motion.span
-            initial={{ opacity: 0, y: 5, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 5, scale: 0.95 }}
-            role="tooltip"
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-[11px] md:text-xs rounded-lg shadow-2xl border border-slate-700 z-50 min-w-[200px] text-center leading-snug"
-          >
-            <span className="relative flex items-center justify-center gap-2">
-              {getTooltipText()}
-              <button
-                onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
-                className="md:hidden p-1 hover:bg-slate-800 rounded"
-              >
-                <X size={12} />
-              </button>
-            </span>
-            <span className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
-          </motion.span>
-        )}
-      </AnimatePresence>
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isOpen && iqr !== undefined && (
+            <motion.span
+              initial={{ opacity: 0, y: 5, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 5, scale: 0.95 }}
+              role="tooltip"
+              style={{
+                position: 'fixed',
+                left: coords.x,
+                top: coords.y,
+                transform: 'translate(-50%, -100%)',
+                marginTop: '-12px'
+              }}
+              className="px-3 py-2 bg-slate-900 text-white text-[11px] md:text-xs rounded-lg shadow-2xl border border-slate-700 z-[9999] min-w-[200px] max-w-[280px] text-center leading-snug pointer-events-none"
+            >
+              <span className="relative flex items-center justify-center gap-2">
+                {getTooltipText()}
+              </span>
+              <span className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
+            </motion.span>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </span>
   );
 }
@@ -106,25 +152,21 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
   if (!text) return null;
 
   const parseText = (rawText: string) => {
-    // Regex to find ordinal ranks like 12e/88 or 1er/88
     const parts = rawText.split(/(\[\[iqr:[^\]]+\]\]|\d+(?:er|e)\/\d+|MetaCarScore de \d+)/g);
 
     return parts.map((part, index) => {
       if (!part) return null;
 
-      // Handle [[iqr:type|label]]
       const iqrMatch = part.match(/\[\[iqr:(consensus|nuance|division)\|([^\]]+)\]\]/);
       if (iqrMatch) {
         const [, type, label] = iqrMatch;
         return <Tooltip key={index} type={type as any} label={label} iqr={iqr} />;
       }
 
-      // Handle ordinal ranks
       if (part.match(/\d+(?:er|e)\/\d+/)) {
         return <span key={index} className="text-blue-600 font-semibold">{part}</span>;
       }
 
-      // Handle MetaCarScore
       if (part.match(/MetaCarScore de \d+/)) {
         return <span key={index} className="text-blue-600 font-bold">{part}</span>;
       }
