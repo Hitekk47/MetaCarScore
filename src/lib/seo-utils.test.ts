@@ -30,7 +30,7 @@ describe("generateSeoText", () => {
       level: "modele"
     });
 
-    expect(text).toContain("La Porsche 911 GT3 appartient au segment Grand Tourisme.");
+    expect(text).toContain("La Porsche 911 GT3 appartient au segment [[segment:Sport / Coupé / Cab:GT|Grand Tourisme]].");
     expect(text).toContain("elle obtient un MetaCarScore de 92.");
     expect(text).toContain("divergences d’appréciation");
     expect(text).toContain("Elle se classe actuellement 12e/88");
@@ -48,7 +48,7 @@ describe("generateSeoText", () => {
       level: "modele"
     });
 
-    expect(text).toContain("Le Peugeot 3008 appartient au segment des SUV Compacts.");
+    expect(text).toContain("Le Peugeot 3008 appartient au segment des [[segment:SUV / Crossover:C|SUV Compacts]].");
     expect(text).toContain("il obtient un MetaCarScore de 92.");
     expect(text).toContain("Il se classe actuellement 12e/88");
   });
@@ -65,7 +65,7 @@ describe("generateSeoText", () => {
       level: "modele"
     });
 
-    expect(text).toContain("Le Ford Ranger appartient au segment des utilitaires / pickups Moyen / 1 Tonne.");
+    expect(text).toContain("Le Ford Ranger appartient au segment des utilitaires / pickups [[segment:Utilitaire / Pickup:D|Moyen / 1 Tonne]].");
   });
 
   test("MY Level (Feminine context for 'année-modèle')", () => {
@@ -76,7 +76,7 @@ describe("generateSeoText", () => {
       level: "my"
     });
 
-    expect(text).toContain("L'année-modèle 2025 de la Porsche 911 couvre le segment Grand Tourisme.");
+    expect(text).toContain("L'année-modèle 2025 de la Porsche 911 couvre le segment [[segment:Sport / Coupé / Cab:GT|Grand Tourisme]].");
     expect(text).toContain("Sur la base de 19 essais, elle obtient");
     expect(text).toContain("autour de cette année-modèle");
     expect(text).toContain("Elle se classe actuellement");
@@ -89,7 +89,7 @@ describe("generateSeoText", () => {
       level: "family"
     });
 
-    expect(text).toContain("La gamme Porsche 911 couvre le segment Grand Tourisme.");
+    expect(text).toContain("La gamme Porsche 911 couvre le segment [[segment:Sport / Coupé / Cab:GT|Grand Tourisme]].");
     expect(text).toContain("Sur la base de 19 essais cumulés, elle obtient");
     expect(text).toContain("autour de cette gamme");
   });
@@ -139,7 +139,7 @@ describe("generateSeoText", () => {
     const text = generateSeoText(multiStats, {
       marque: "X", famille: "Y", modele: "Z", level: "modele"
     });
-    expect(text).toContain("couvre les segments SUV Compacts et Compactes.");
+    expect(text).toContain("couvre les segments [[segment:SUV / Crossover:C|SUV Compacts]] et [[segment:Berline / Hatch:C|Compactes]].");
   });
 
   test("Strong positive majority with division (Case A)", () => {

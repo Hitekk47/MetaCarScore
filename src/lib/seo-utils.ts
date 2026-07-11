@@ -61,13 +61,15 @@ function formatSegmentPhrasing(segments: { macro: string; size: string }[], leve
 
   const validResolved = resolved as { label: string; macro: string; size: string }[];
 
+  const wrap = (r: { label: string; macro: string; size: string }) => `[[segment:${r.macro}:${r.size}|${r.label}]]`;
+
   if (level === 'my' || level === 'family') {
     if (validResolved.length === 1) {
       const { label, macro, size } = validResolved[0];
       const des = (macro === "Sport / Coupé / Cab" && size === "GT") ? "" : "des ";
-      return `couvre le segment ${des}${label}`;
+      return `couvre le segment ${des}${wrap(validResolved[0])}`;
     }
-    const labels = validResolved.map(r => r.label);
+    const labels = validResolved.map(r => wrap(r));
     const last = labels.pop();
     return `couvre les segments ${labels.join(', ')} et ${last}`;
   }
@@ -76,15 +78,15 @@ function formatSegmentPhrasing(segments: { macro: string; size: string }[], leve
   if (validResolved.length === 1) {
     const { label, macro, size } = validResolved[0];
     if (macro === "Sport / Coupé / Cab" && size === "GT") {
-      return `appartient au segment ${label}`;
+      return `appartient au segment ${wrap(validResolved[0])}`;
     }
     if (macro === "Utilitaire / Pickup") {
-      return `appartient au segment des utilitaires / pickups ${label}`;
+      return `appartient au segment des utilitaires / pickups ${wrap(validResolved[0])}`;
     }
-    return `appartient au segment des ${label}`;
+    return `appartient au segment des ${wrap(validResolved[0])}`;
   }
 
-  const labels = validResolved.map(r => r.label);
+  const labels = validResolved.map(r => wrap(r));
   const last = labels.pop();
   return `couvre les segments ${labels.join(', ')} et ${last}`;
 }

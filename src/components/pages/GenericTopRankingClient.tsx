@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Header from "@/components/Header";
 import ScoreBadge from "@/components/ui/ScoreBadge";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Trophy, Loader2, Search, Zap, Leaf, Fuel, Cog, Luggage, Sun, Info } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { toSlug } from "@/lib/slugify";
 import { ModelRankingItem } from "@/lib/types";
 import ModelPodiumStep from "@/components/ranking/ModelPodiumStep";
@@ -47,15 +48,16 @@ const themeClasses = {
   orange: "bg-orange-100 text-orange-600",
 };
 
-export default function GenericTopRankingClient({ 
-  title, 
-  subtitle, 
-  iconType, 
-  colorTheme, 
-  filterCategory, 
+function RankingContent({
+  title,
+  subtitle,
+  iconType,
+  colorTheme,
+  filterCategory,
   filterTransmission,
   customRpcName
 }: Props) {
+  const searchParams = useSearchParams();
   
   // --- STATE ---
   const [timeRange, setTimeRange] = useState<TimeRange>('5y');
@@ -63,8 +65,8 @@ export default function GenericTopRankingClient({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [activeMacro, setActiveMacro] = useState<string | null>(null);
-  const [activeSegment, setActiveSegment] = useState<string | null>(null);
+  const [activeMacro, setActiveMacro] = useState<string | null>(searchParams.get("macro"));
+  const [activeSegment, setActiveSegment] = useState<string | null>(searchParams.get("segment") || searchParams.get("seg"));
 
   const icons = {
     trophy: Trophy, zap: Zap, leaf: Leaf, fuel: Fuel, diesel: Fuel, 
@@ -146,7 +148,6 @@ export default function GenericTopRankingClient({
   const list = showPodium ? filteredData.slice(3) : filteredData;
   return (
     <div className="min-h-screen text-slate-900 font-sans pb-20">
-      <Header />
 
       <main className="max-w-4xl mx-auto px-4 py-8 md:py-12">
         
@@ -350,5 +351,20 @@ export default function GenericTopRankingClient({
         </div>
       </main>
     </div>
+  );
+}
+
+export default function GenericTopRankingClient(props: Props) {
+  return (
+    <>
+      <Header />
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="animate-spin text-slate-900" size={48} />
+        </div>
+      }>
+        <RankingContent {...props} />
+      </Suspense>
+    </>
   );
 }
