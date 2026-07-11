@@ -7,6 +7,7 @@ import ScoreDistribution from "@/components/dataviz/ScoreDistribution";
 import PodiumWidget from "@/components/dataviz/PodiumWidget";
 import ReviewsTableCompact from "@/components/tables/ReviewsTableCompact";
 import SmartBreadcrumb from "@/components/ui/SmartBreadcrumb";
+import SeoSummaryCard from "@/components/seo/SeoSummaryCard";
 import { Review } from "@/lib/types";
 import { CalendarRange, Gauge, Search, SlidersHorizontal, X, ChevronRight, Swords } from "lucide-react"; // Ajout ChevronRight
 import { cn, calculatePageStats } from "@/lib/utils";
@@ -25,9 +26,10 @@ type Props = {
   powertrain?: string;
   powertrainName?: string;
   level: PageLevel;
+  seoText?: string;
 };
 
-export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level }: Props) {
+export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, seoText }: Props) {
 
   // --- FILTRES ---
   const [query, setQuery] = useState("");
@@ -174,6 +176,13 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                                 </motion.div>
                             </div>
                         </motion.div>
+
+                        {/* SEO DATA STORYTELLING */}
+                        {seoText && (
+                            <div className="mt-8 max-w-2xl">
+                                <SeoSummaryCard text={seoText} />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -1,3 +1,5 @@
+import { calculateDistribution } from "@/lib/utils";
+
 type Props = {
   scores: number[];
 };
@@ -6,15 +8,7 @@ export default function ScoreDistribution({ scores }: Props) {
   const total = scores.length;
   if (total === 0) return null;
 
-  // Calcul des segments
-  const positive = scores.filter(s => s >= 75).length;
-  const mixed = scores.filter(s => s >= 50 && s < 75).length;
-  const negative = scores.filter(s => s < 50).length;
-
-  // Calcul des pourcentages (arrondis pour affichage)
-  const pPos = Math.round((positive / total) * 100);
-  const pMix = Math.round((mixed / total) * 100);
-  const pNeg = Math.round((negative / total) * 100);
+  const { positive, mixed, negative, pPos, pMix, pNeg } = calculateDistribution(scores);
 
   return (
     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">

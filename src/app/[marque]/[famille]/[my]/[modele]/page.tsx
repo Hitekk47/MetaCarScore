@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from "next";
 import { serializeJsonLd } from "@/lib/utils";
-import { getFullContext, getReviews } from "@/lib/queries";
+import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
+import { generateSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
 
@@ -92,6 +93,21 @@ export default async function ModelePage({ params }: PageProps) {
     notFound();
   }
 
+  // 3.5. SEO Stats & Text Generation
+  const seoStats = await getVehicleSeoStats({
+    marque: realMarque,
+    famille: realFamille,
+    my: parseInt(my),
+    modele: realModele
+  });
+
+  const seoText = seoStats ? generateSeoText(seoStats, 'modele', {
+    marque: realMarque,
+    famille: realFamille,
+    my,
+    modele: realModele
+  }) : undefined;
+
   // On calcule la moyenne côté serveur pour Google
   const totalScore = reviews.reduce((acc, r) => acc + r.Score, 0);
   const avgScore = Math.round(totalScore / reviews.length);
@@ -138,6 +154,7 @@ export default async function ModelePage({ params }: PageProps) {
         my={my}
         modele={realModele}
         level="modele" 
+        seoText={seoText}
       />
     </>
   );

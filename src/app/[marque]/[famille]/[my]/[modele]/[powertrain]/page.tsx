@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
-import { getFullContext, getReviews } from "@/lib/queries";
+import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
+import { generateSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
 
@@ -109,6 +110,21 @@ export default async function PowertrainPage({ params }: PageProps) {
 
   if (!reviews || reviews.length === 0) notFound();
 
+  // 4.5. SEO Stats & Text Generation
+  const seoStats = await getVehicleSeoStats({
+    marque: realMarque,
+    famille: realFamille,
+    my: parseInt(my),
+    modele: realModele
+  });
+
+  const seoText = seoStats ? generateSeoText(seoStats, 'powertrain', {
+    marque: realMarque,
+    famille: realFamille,
+    my,
+    modele: realModele
+  }) : undefined;
+
   // 5. Calcul Score & JSON-LD
   const totalScore = reviews.reduce((acc, r) => acc + r.Score, 0);
   const avgScore = Math.round(totalScore / reviews.length);
@@ -150,6 +166,7 @@ export default async function PowertrainPage({ params }: PageProps) {
         powertrain={sPowertrain} // On passe le slug original
         powertrainName={realType}
         level="powertrain"
+        seoText={seoText}
       />
     </>
   );

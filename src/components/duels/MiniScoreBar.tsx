@@ -2,19 +2,12 @@ type MiniScoreBarProps = {
   scores: number[];
 };
 
+import { calculateDistribution } from "@/lib/utils";
+
 export default function MiniScoreBar({ scores }: MiniScoreBarProps) {
     if (!scores || scores.length === 0) return null;
     const total = scores.length;
-    let positive = 0;
-    let mixed = 0;
-    let negative = 0;
-
-    for (let i = 0; i < total; i++) {
-        const s = scores[i];
-        if (s >= 75) positive++;
-        else if (s >= 50 && s < 75) mixed++;
-        else if (s < 50) negative++;
-    }
+    const { positive, mixed, negative } = calculateDistribution(scores);
 
     return (
         <div className="flex h-1.5 w-16 md:w-24 rounded-full overflow-hidden bg-white/50 border border-slate-200 transition-all duration-300">

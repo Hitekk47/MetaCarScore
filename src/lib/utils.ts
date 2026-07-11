@@ -6,9 +6,18 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export type ScoreCategory = 'positive' | 'mixed' | 'negative';
+
+export const getScoreCategory = (score: number): ScoreCategory => {
+  if (score >= 75) return 'positive';
+  if (score >= 50) return 'mixed';
+  return 'negative';
+};
+
 export const getScoreColor = (score: number) => {
-  // > 75 : VERT
-  if (score >= 75) {
+  const category = getScoreCategory(score);
+
+  if (category === 'positive') {
     return { 
       bg: "bg-score-good", 
       text: "text-black", 
@@ -17,8 +26,7 @@ export const getScoreColor = (score: number) => {
     };
   }
   
-  // > 50 : JAUNE
-  if (score >= 50) {
+  if (category === 'mixed') {
     return { 
       bg: "bg-score-mixed", 
       text: "text-black", 
@@ -27,7 +35,6 @@ export const getScoreColor = (score: number) => {
     };
   }
 
-  // < 50 : ROUGE
   return { 
     bg: "bg-score-bad", 
     text: "text-white", 
@@ -61,6 +68,31 @@ export function serializeJsonLd(data: unknown) {
     .replace(/&/g, '\\u0026')
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
+}
+
+export function calculateDistribution(scores: number[]) {
+  const total = scores.length;
+  if (total === 0) return { positive: 0, mixed: 0, negative: 0, pPos: 0, pMix: 0, pNeg: 0 };
+
+  let positive = 0;
+  let mixed = 0;
+  let negative = 0;
+
+  for (const s of scores) {
+    const cat = getScoreCategory(s);
+    if (cat === 'positive') positive++;
+    else if (cat === 'mixed') mixed++;
+    else negative++;
+  }
+
+  return {
+    positive,
+    mixed,
+    negative,
+    pPos: Math.round((positive / total) * 100),
+    pMix: Math.round((mixed / total) * 100),
+    pNeg: Math.round((negative / total) * 100),
+  };
 }
 
 export function aggregateReviews(reviews: Review[]): Record<string, AggregatedSource> {

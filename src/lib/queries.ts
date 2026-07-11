@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Review } from '@/lib/types';
+import { Review, VehicleSeoStats } from '@/lib/types';
 
 // Types for RPC responses
 export interface BrandContext {
@@ -118,4 +118,25 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
   }
 
   return (data as Review[]) || [];
+});
+
+export const getVehicleSeoStats = cache(async (params: {
+  marque: string;
+  famille: string;
+  my?: number;
+  modele?: string;
+}) => {
+  const { data, error } = await supabase.rpc('get_vehicle_seo_stats', {
+    p_marque: params.marque,
+    p_famille: params.famille,
+    p_my: params.my,
+    p_modele: params.modele
+  });
+
+  if (error) {
+    console.error('Error fetching vehicle SEO stats:', error);
+    return null;
+  }
+
+  return data as VehicleSeoStats;
 });

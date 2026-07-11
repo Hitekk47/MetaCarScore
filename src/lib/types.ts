@@ -73,3 +73,16 @@ export type CarouselItem = {
   MaxPower: number;
   FirstTestDate: string;
 };
+
+export type VehicleSeoStats = {
+  total_essais: number;
+  metacarscore: number;
+  stddev: number;
+  pos_count: number;
+  mix_count: number;
+  neg_count: number;
+  segments: string[];
+  avg_segment_score: number;
+  rank: number | null;
+  total_in_segment: number | null;
+};
