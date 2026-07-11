@@ -48,7 +48,7 @@ describe("generateSeoText", () => {
       level: "modele"
     });
 
-    expect(text).toContain("Le Peugeot 3008 s'inscrit dans le segment des SUV Compacts.");
+    expect(text).toContain("Le Peugeot 3008 appartient au segment des SUV Compacts.");
     expect(text).toContain("il obtient un MetaCarScore de 92.");
     expect(text).toContain("Il se classe actuellement 12e/88");
   });
@@ -95,7 +95,11 @@ describe("generateSeoText", () => {
   });
 
   test("Consensus phrasing", () => {
-    const consensusStats = { ...baseStats, consensus_label: 'consensus' };
+    const consensusStats = {
+      ...baseStats,
+      consensus_label: 'consensus',
+      distribution: { ...baseStats.distribution, positive: { count: 10, percentage: 50 } }
+    };
     const text = generateSeoText(consensusStats, {
       marque: "X", famille: "Y", modele: "Z", level: "modele"
     });
@@ -103,7 +107,11 @@ describe("generateSeoText", () => {
   });
 
   test("Division phrasing", () => {
-    const divisionStats = { ...baseStats, consensus_label: 'division' };
+    const divisionStats = {
+      ...baseStats,
+      consensus_label: 'division',
+      distribution: { ...baseStats.distribution, positive: { count: 10, percentage: 50 } }
+    };
     const text = generateSeoText(divisionStats, {
       marque: "X", famille: "Y", modele: "Z", level: "modele"
     });
@@ -115,7 +123,7 @@ describe("generateSeoText", () => {
     const text = generateSeoText(noSegmentStats, {
       marque: "X", famille: "Y", modele: "Z", level: "modele"
     });
-    expect(text).not.toContain("segment");
+    // On ne vérifie plus "not.toContain('segment')" car la comparaison l'utilise
     expect(text).toContain("Sur la base de 19 essais, Le X Z obtient un MetaCarScore de 92.");
     expect(text).toContain("moyenne du segment");
   });
@@ -132,5 +140,87 @@ describe("generateSeoText", () => {
       marque: "X", famille: "Y", modele: "Z", level: "modele"
     });
     expect(text).toContain("couvre les segments SUV Compacts et Compactes.");
+  });
+
+  test("Strong positive majority with division (Case A)", () => {
+    const stats: SeoStats = {
+      ...baseStats,
+      consensus_label: 'division',
+      distribution: {
+        positive: { count: 80, percentage: 80 },
+        mixed: { count: 10, percentage: 10 },
+        negative: { count: 10, percentage: 10 }
+      }
+    };
+    const text = generateSeoText(stats, {
+      marque: "X", famille: "Y", modele: "Z", level: "modele"
+    });
+    expect(text).toContain("La presse se montre très favorable dans l’ensemble (80 % d’avis positifs), même si les [[iqr:division|appréciations restent contrastées]].");
+    expect(text).not.toContain("Les avis sont majoritairement");
+  });
+
+  test("Strong negative majority with division (Case B)", () => {
+    const stats: SeoStats = {
+      ...baseStats,
+      consensus_label: 'division',
+      distribution: {
+        positive: { count: 10, percentage: 10 },
+        mixed: { count: 10, percentage: 10 },
+        negative: { count: 80, percentage: 80 }
+      }
+    };
+    const text = generateSeoText(stats, {
+      marque: "X", famille: "Y", modele: "Z", level: "modele"
+    });
+    expect(text).toContain("La presse se montre très critique dans l’ensemble (80 % d’avis négatifs), même si les [[iqr:division|appréciations restent contrastées]].");
+    expect(text).not.toContain("Les avis sont majoritairement");
+  });
+
+  test("Strong positive majority with consensus (Case D)", () => {
+    const stats: SeoStats = {
+      ...baseStats,
+      consensus_label: 'consensus',
+      distribution: {
+        positive: { count: 90, percentage: 90 },
+        mixed: { count: 10, percentage: 10 },
+        negative: { count: 0, percentage: 0 }
+      }
+    };
+    const text = generateSeoText(stats, {
+      marque: "X", famille: "Y", modele: "Z", level: "modele"
+    });
+    expect(text).toContain("La presse se montre [[iqr:consensus|unanimement favorable]], avec 90 % d’avis positifs.");
+    expect(text).not.toContain("Les avis sont majoritairement");
+  });
+
+  test("Strong negative majority with consensus (Case E)", () => {
+    const stats: SeoStats = {
+      ...baseStats,
+      consensus_label: 'consensus',
+      distribution: {
+        positive: { count: 0, percentage: 0 },
+        mixed: { count: 10, percentage: 10 },
+        negative: { count: 90, percentage: 90 }
+      }
+    };
+    const text = generateSeoText(stats, {
+      marque: "X", famille: "Y", modele: "Z", level: "modele"
+    });
+    expect(text).toContain("La presse se montre [[iqr:consensus|unanimement critique]], avec 90 % d’avis négatifs.");
+    expect(text).not.toContain("Les avis sont majoritairement");
+  });
+
+  test("Plural segments comparison", () => {
+    const stats: SeoStats = {
+      ...baseStats,
+      segments: [
+        { macro: "SUV / Crossover", size: "C" },
+        { macro: "Berline / Hatch", size: "C" }
+      ]
+    };
+    const text = generateSeoText(stats, {
+      marque: "X", famille: "Y", modele: "Z", level: "modele"
+    });
+    expect(text).toContain("se classe actuellement 12e/88 de ses catégories, au-dessus de la moyenne des segments qui est de 82.");
   });
 });

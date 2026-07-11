@@ -104,52 +104,81 @@ export function generateSeoText(
   const pronounToUse = (level === 'my' || level === 'family') ? "elle" : vehiclePronoun;
   const subject = (level === 'my') ? "cette année-modèle" : (level === 'family' ? "cette gamme" : "ce véhicule");
 
+  const STRONG_MAJORITY_THRESHOLD = 75;
+  const posPercent = data.distribution.positive.percentage;
+  const negPercent = data.distribution.negative.percentage;
+
   let consensusSentence = "";
+  let skipDistribution = false;
+
   if (data.consensus_label === 'consensus') {
-    consensusSentence = `La presse affiche un [[iqr:consensus|large consensus]] autour de ${subject}.`;
+    if (posPercent >= STRONG_MAJORITY_THRESHOLD) {
+      consensusSentence = `La presse se montre [[iqr:consensus|unanimement favorable]], avec ${posPercent} % d’avis positifs.`;
+      skipDistribution = true;
+    } else if (negPercent >= STRONG_MAJORITY_THRESHOLD) {
+      consensusSentence = `La presse se montre [[iqr:consensus|unanimement critique]], avec ${negPercent} % d’avis négatifs.`;
+      skipDistribution = true;
+    } else {
+      consensusSentence = `La presse affiche un [[iqr:consensus|large consensus]] autour de ${subject}.`;
+    }
   } else if (data.consensus_label === 'certaines nuances') {
     consensusSentence = `Les critiques de la presse restent globalement convergentes, malgré quelques [[iqr:nuance|divergences d’appréciation]] autour de ${subject}.`;
   } else {
-    consensusSentence = `La presse est [[iqr:division|fortement divisée]] au sujet de ${subject}.`;
+    // Cas de forte division (ou autre label non couvert au-dessus)
+    if (posPercent >= STRONG_MAJORITY_THRESHOLD) {
+      consensusSentence = `La presse se montre très favorable dans l’ensemble (${posPercent} % d’avis positifs), même si les [[iqr:division|appréciations restent contrastées]].`;
+      skipDistribution = true;
+    } else if (negPercent >= STRONG_MAJORITY_THRESHOLD) {
+      consensusSentence = `La presse se montre très critique dans l’ensemble (${negPercent} % d’avis négatifs), même si les [[iqr:division|appréciations restent contrastées]].`;
+      skipDistribution = true;
+    } else {
+      consensusSentence = `La presse est [[iqr:division|fortement divisée]] au sujet de ${subject}.`;
+    }
   }
 
   const segmentPhrasing = formatSegmentPhrasing(data.segments, level);
 
+  const isMultiSegment = data.segments.length > 1;
   const comparisonText = (rank !== null && total !== null && avg !== null)
-    ? `${pronounToUse.charAt(0).toUpperCase() + pronounToUse.slice(1)} se classe actuellement ${formatOrdinal(rank)}/${total} de sa catégorie, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne du segment qui est de ${avg}.`
+    ? `${pronounToUse.charAt(0).toUpperCase() + pronounToUse.slice(1)} se classe actuellement ${formatOrdinal(rank)}/${total} ${isMultiSegment ? 'de ses catégories' : 'de sa catégorie'}, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne ${isMultiSegment ? 'des segments' : 'du segment'} qui est de ${avg}.`
     : "";
 
-  const distributionText = `Les avis sont majoritairement ${getDistributionPhrasing(data.distribution)}.`;
+  const distributionText = skipDistribution ? "" : `Les avis sont majoritairement ${getDistributionPhrasing(data.distribution)}.`;
 
   if (level === 'modele' || level === 'powertrain') {
-    if (!segmentPhrasing) {
-      return `Sur la base de ${data.review_count} essais, ${vehicleArticle} ${marque} ${modele} obtient un MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`.trim();
-    }
-    return `${vehicleArticle} ${marque} ${modele} ${segmentPhrasing}. Sur la base de ${data.review_count} essais, ${vehiclePronoun} obtient un MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`.trim();
+    const parts = [
+      segmentPhrasing
+        ? `${vehicleArticle} ${marque} ${modele} ${segmentPhrasing}. Sur la base de ${data.review_count} essais, ${vehiclePronoun} obtient un MetaCarScore de ${score}.`
+        : `Sur la base de ${data.review_count} essais, ${vehicleArticle} ${marque} ${modele} obtient un MetaCarScore de ${score}.`,
+      consensusSentence,
+      distributionText,
+      comparisonText
+    ];
+    return parts.filter(Boolean).join(" ").trim().replace(/\s+/g, ' ');
   }
 
   if (level === 'my') {
-    const intro = segmentPhrasing
-      ? `L'année-modèle ${my} ${vehicleDeArticle} ${marque} ${famille} ${segmentPhrasing}.`
-      : `Sur la base de ${data.review_count} essais, l'année-modèle ${my} ${vehicleDeArticle} ${marque} ${famille} obtient un MetaCarScore de ${score}.`;
-
-    const rest = segmentPhrasing
-      ? ` Sur la base de ${data.review_count} essais, elle obtient un MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`
-      : ` ${consensusSentence} ${distributionText} ${comparisonText}`;
-
-    return (intro + rest).trim().replace(/\s+/g, ' ');
+    const parts = [
+      segmentPhrasing
+        ? `L'année-modèle ${my} ${vehicleDeArticle} ${marque} ${famille} ${segmentPhrasing}. Sur la base de ${data.review_count} essais, elle obtient un MetaCarScore de ${score}.`
+        : `Sur la base de ${data.review_count} essais, l'année-modèle ${my} ${vehicleDeArticle} ${marque} ${famille} obtient un MetaCarScore de ${score}.`,
+      consensusSentence,
+      distributionText,
+      comparisonText
+    ];
+    return parts.filter(Boolean).join(" ").trim().replace(/\s+/g, ' ');
   }
 
   // Family level
-  const intro = segmentPhrasing
-    ? `La gamme ${marque} ${famille} ${segmentPhrasing}.`
-    : `Sur la base de ${data.review_count} essais cumulés, la gamme ${marque} ${famille} obtient un MetaCarScore de ${score}.`;
-
-  const rest = segmentPhrasing
-    ? ` Sur la base de ${data.review_count} essais cumulés, elle obtient un MetaCarScore de ${score}. ${consensusSentence} ${distributionText} ${comparisonText}`
-    : ` ${consensusSentence} ${distributionText} ${comparisonText}`;
-
-  return (intro + rest).trim().replace(/\s+/g, ' ');
+  const parts = [
+    segmentPhrasing
+      ? `La gamme ${marque} ${famille} ${segmentPhrasing}. Sur la base de ${data.review_count} essais cumulés, elle obtient un MetaCarScore de ${score}.`
+      : `Sur la base de ${data.review_count} essais cumulés, la gamme ${marque} ${famille} obtient un MetaCarScore de ${score}.`,
+    consensusSentence,
+    distributionText,
+    comparisonText
+  ];
+  return parts.filter(Boolean).join(" ").trim().replace(/\s+/g, ' ');
 }
 
 function getDistributionPhrasing(dist: SeoStats['distribution']): string {

@@ -138,7 +138,7 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
         onKeyDown={handleKeyDown}
         aria-expanded={isOpen}
         aria-haspopup="true"
-        className="text-blue-500 font-medium cursor-help border-b border-dotted border-blue-500/50 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm"
+        className="text-blue-400 font-medium cursor-help border-b border-dotted border-blue-400/50 outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm"
       >
         {label}
       </button>
@@ -191,11 +191,11 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
       }
 
       if (part.match(/\d+(?:er|e)\/\d+/)) {
-        return <span key={index} className="text-blue-600 font-semibold">{part}</span>;
+        return <span key={index} className="text-blue-400 font-semibold">{part}</span>;
       }
 
       if (part.match(/MetaCarScore de \d+/)) {
-        return <span key={index} className="text-blue-600 font-bold">{part}</span>;
+        return <span key={index} className="text-blue-400 font-bold">{part}</span>;
       }
 
       return part;
