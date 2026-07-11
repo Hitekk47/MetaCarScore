@@ -19,12 +19,33 @@ type TooltipProps = {
 function Tooltip({ type, label, iqr }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState({ x: 0, y: 0 });
+  const [offset, setOffset] = useState(0);
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLSpanElement>(null);
+  const tooltipRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isOpen && tooltipRef.current) {
+      const rect = tooltipRef.current.getBoundingClientRect();
+      const padding = 12;
+      const width = rect.width;
+      const halfWidth = width / 2;
+
+      let newOffset = 0;
+      if (coords.x - halfWidth < padding) {
+        newOffset = padding - (coords.x - halfWidth);
+      } else if (coords.x + halfWidth > window.innerWidth - padding) {
+        newOffset = window.innerWidth - padding - (coords.x + halfWidth);
+      }
+      setOffset(newOffset);
+    } else {
+      setOffset(0);
+    }
+  }, [isOpen, coords.x]);
 
   const getTooltipText = () => {
     if (iqr === undefined) return "";
@@ -126,9 +147,10 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
         <AnimatePresence>
           {isOpen && iqr !== undefined && (
             <motion.span
-              initial={{ opacity: 0, x: "-50%", y: "-100%", scale: 0.95, marginTop: -8 }}
-              animate={{ opacity: 1, x: "-50%", y: "-100%", scale: 1, marginTop: -16 }}
-              exit={{ opacity: 0, x: "-50%", y: "-100%", scale: 0.95, marginTop: -8 }}
+              ref={tooltipRef}
+              initial={{ opacity: 0, x: `calc(-50% + ${offset}px)`, y: "-100%", scale: 0.95, marginTop: -8 }}
+              animate={{ opacity: 1, x: `calc(-50% + ${offset}px)`, y: "-100%", scale: 1, marginTop: -16 }}
+              exit={{ opacity: 0, x: `calc(-50% + ${offset}px)`, y: "-100%", scale: 0.95, marginTop: -8 }}
               role="tooltip"
               style={{
                 position: 'fixed',
@@ -140,7 +162,10 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
               <span className="relative flex items-center justify-center gap-2">
                 {getTooltipText()}
               </span>
-              <span className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
+              <span
+                className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900"
+                style={{ marginLeft: -offset }}
+              />
             </motion.span>
           )}
         </AnimatePresence>,
