@@ -47,8 +47,7 @@ export function generateSeoText(
   const consensusIntro = data.consensus_label === 'consensus' ? "d'un consensus" : (data.consensus_label === 'certaines nuances' ? 'de certaines nuances' : "d'une forte division");
 
   if (!data.is_reliable) {
-    const name = (level === 'modele' || level === 'powertrain') ? `${marque} ${modele}` : (level === 'my' ? `${my} ${famille}` : famille);
-    return `Sur la base de ${data.review_count} essai${data.review_count > 1 ? 's' : ''}, le ${name} ne dispose pas encore d'un MetaCarScore consolidé. La presse fait état ${consensusIntro} autour de ce véhicule. Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}.`;
+    return "";
   }
 
   const segmentLabels = data.segments.map(s => resolveSegmentLabel(s.macro, s.size));
