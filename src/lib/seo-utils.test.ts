@@ -1,5 +1,5 @@
 import { expect, test, describe } from "bun:test";
-import { generateSeoText, SeoStats } from "./seo-utils";
+import { generateSeoText, SeoStats, cleanSeoText } from "./seo-utils";
 
 const baseStats: SeoStats = {
   review_count: 19,
@@ -222,5 +222,31 @@ describe("generateSeoText", () => {
       marque: "X", famille: "Y", modele: "Z", level: "modele"
     });
     expect(text).toContain("se classe actuellement 12e/88 de ses catégories, au-dessus de la moyenne des segments qui est de 82.");
+  });
+});
+
+describe("cleanSeoText", () => {
+  test("removes iqr markers", () => {
+    const input = "La presse affiche un [[iqr:consensus|large consensus]] autour de ce véhicule.";
+    expect(cleanSeoText(input)).toBe("La presse affiche un large consensus autour de ce véhicule.");
+  });
+
+  test("removes multiple markers", () => {
+    const input = "[[iqr:nuance|Quelques nuances]] malgré un [[iqr:consensus|large consensus]].";
+    expect(cleanSeoText(input)).toBe("Quelques nuances malgré un large consensus.");
+  });
+
+  test("removes custom markers", () => {
+    const input = "Texte avec [[custom:type|label personnalisé]].";
+    expect(cleanSeoText(input)).toBe("Texte avec label personnalisé.");
+  });
+
+  test("handles empty string", () => {
+    expect(cleanSeoText("")).toBe("");
+  });
+
+  test("handles string without markers", () => {
+    const input = "Texte normal sans balises.";
+    expect(cleanSeoText(input)).toBe(input);
   });
 });

@@ -179,15 +179,24 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
   if (!text) return null;
 
   const parseText = (rawText: string) => {
-    const parts = rawText.split(/(\[\[iqr:[^\]]+\]\]|\d+(?:er|e)\/\d+|MetaCarScore de \d+)/g);
+    // Regex robuste pour capturer [[category:type|label]]
+    // On capture aussi les patterns de classement et de score pour la mise en forme
+    const parts = rawText.split(/(\[\[.*?:.*?\|.*?\]\]|\d+(?:er|e)\/\d+|MetaCarScore de \d+)/g);
 
     return parts.map((part, index) => {
       if (!part) return null;
 
-      const iqrMatch = part.match(/\[\[iqr:(consensus|nuance|division)\|([^\]]+)\]\]/);
-      if (iqrMatch) {
-        const [, type, label] = iqrMatch;
-        return <Tooltip key={index} type={type as any} label={label} iqr={iqr} />;
+      const markerMatch = part.match(/\[\[(.*?):(.*?)\|(.*?)\]\]/);
+      if (markerMatch) {
+        const [, category, type, label] = markerMatch;
+
+        // Si c'est un marqueur iqr et qu'on a la donnée iqr, on affiche le tooltip
+        if (category === 'iqr' && iqr !== undefined) {
+          return <Tooltip key={index} type={type as any} label={label} iqr={iqr} />;
+        }
+
+        // Sinon (autre catégorie ou iqr manquant), on affiche juste le label net
+        return label;
       }
 
       if (part.match(/\d+(?:er|e)\/\d+/)) {
@@ -225,7 +234,7 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
 
           <div className="flex-grow space-y-2">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Analyse Sémantique</span>
+              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em]">Ce qu’en pense la presse</span>
               <span className="h-1 w-1 rounded-full bg-blue-500 animate-pulse" />
             </div>
             <div className="text-slate-300 text-sm md:text-base leading-relaxed font-medium italic">
