@@ -1,8 +1,8 @@
+import { calculateDistribution } from "@/lib/utils";
+
 type MiniScoreBarProps = {
   scores: number[];
 };
-
-import { calculateDistribution } from "@/lib/utils";
 
 export default function MiniScoreBar({ scores }: MiniScoreBarProps) {
     if (!scores || scores.length === 0) return null;

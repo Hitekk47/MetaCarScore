@@ -20,11 +20,16 @@ export interface SeoStats {
   is_reliable: boolean;
 }
 
+export function formatOrdinal(n: number): string {
+  if (n === 1) return "1er";
+  return `${n}e`;
+}
+
 export function resolveSegmentLabel(macro: string, size: string): string {
   const macroEntry = MACRO_CONFIG.find(m => m.label === macro);
   if (!macroEntry) return `${macro} ${size}`;
   const segment = macroEntry.segments.find(s => s.code === size);
-  return segment ? segment.label : `${macro} ${size}`;
+  return segment ? `${macro} ${segment.label}` : `${macro} ${size}`;
 }
 
 export function generateSeoText(
@@ -32,6 +37,12 @@ export function generateSeoText(
   context: { marque: string; famille: string; my?: string; modele?: string; level: 'family' | 'my' | 'modele' | 'powertrain' }
 ): string {
   const { marque, famille, my, modele, level } = context;
+
+  // Casting explicit pour s'assurer des calculs numériques corrects (le SQL peut renvoyer des strings pour les aggrégats)
+  const rank = data.rank ? Number(data.rank) : null;
+  const total = data.total_in_segment ? Number(data.total_in_segment) : null;
+  const avg = data.segment_avg ? Number(data.segment_avg) : null;
+  const score = Number(data.metacarscore);
 
   const consensusIntro = data.consensus_label === 'consensus' ? "d'un consensus" : (data.consensus_label === 'certaines nuances' ? 'de certaines nuances' : "d'une forte division");
 
@@ -45,20 +56,20 @@ export function generateSeoText(
     ? (segmentLabels.length === 1 ? `le segment des ${segmentLabels[0]}` : `les segments ${segmentLabels.join(', ')}`)
     : "son segment de marché";
 
-  const comparisonText = data.rank && data.total_in_segment && data.segment_avg
-    ? `Il se classe actuellement ${data.rank}/${data.total_in_segment} de sa catégorie, ${data.metacarscore >= data.segment_avg ? 'au-dessus' : 'en-dessous'} de la moyenne du segment qui est de ${data.segment_avg}.`
+  const comparisonText = (rank !== null && total !== null && avg !== null)
+    ? `Il se classe actuellement ${formatOrdinal(rank)}/${total} de sa catégorie, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne du segment qui est de ${avg.toLocaleString('fr-FR')}.`
     : "";
 
   if (level === 'modele' || level === 'powertrain') {
-    return `Le ${marque} ${modele} s'inscrit dans ${segmentText}. Sur la base de ${data.review_count} essais, il obtient le MetaCarScore de ${data.metacarscore}. La presse fait état ${consensusIntro} autour de ce véhicule (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
+    return `Le ${marque} ${modele} s'inscrit dans ${segmentText}. Sur la base de ${data.review_count} essais, il obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} autour de ce véhicule (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
   }
 
   if (level === 'my') {
-    return `L'année-modèle ${my} de la ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais, elle obtient le MetaCarScore de ${data.metacarscore}. La presse fait état ${consensusIntro} (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
+    return `L'année-modèle ${my} de la ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais, elle obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
   }
 
   // Family level
-  return `La gamme ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais cumulés, elle obtient le MetaCarScore de ${data.metacarscore}. La presse fait état ${consensusIntro} sur l'ensemble de la gamme (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
+  return `La gamme ${marque} ${famille} couvre ${segmentText}. Sur la base de ${data.review_count} essais cumulés, elle obtient le MetaCarScore de ${score}. La presse fait état ${consensusIntro} sur l'ensemble de la gamme (Écart interquartile : ${data.iqr}). Les avis sont répartis majoritairement ${getDistributionPhrasing(data.distribution)}. ${comparisonText}`;
 }
 
 function getDistributionPhrasing(dist: SeoStats['distribution']): string {
