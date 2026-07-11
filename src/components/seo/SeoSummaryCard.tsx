@@ -126,16 +126,14 @@ function Tooltip({ type, label, iqr }: TooltipProps) {
         <AnimatePresence>
           {isOpen && iqr !== undefined && (
             <motion.span
-              initial={{ opacity: 0, y: 5, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 5, scale: 0.95 }}
+              initial={{ opacity: 0, x: "-50%", y: "-100%", scale: 0.95, marginTop: -8 }}
+              animate={{ opacity: 1, x: "-50%", y: "-100%", scale: 1, marginTop: -16 }}
+              exit={{ opacity: 0, x: "-50%", y: "-100%", scale: 0.95, marginTop: -8 }}
               role="tooltip"
               style={{
                 position: 'fixed',
                 left: coords.x,
                 top: coords.y,
-                transform: 'translate(-50%, -100%)',
-                marginTop: '-16px'
               }}
               className="px-3 py-2 bg-slate-900 text-white text-[11px] md:text-xs rounded-lg shadow-2xl border border-slate-700 z-[9999] min-w-[200px] max-w-[280px] text-center leading-snug pointer-events-none"
             >
