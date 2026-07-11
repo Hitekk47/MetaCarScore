@@ -9,18 +9,40 @@ export interface SeoContext {
   modele?: string;
 }
 
-export function generateSeoText(data: VehicleSeoStats, level: SeoPageLevel, context: SeoContext): string {
-  // Resilience against string types from BigInt/Numeric in PostgreSQL
-  const totalEssais = Number(data.total_essais);
-  const metaScore = Number(data.metacarscore);
-  const stdDev = Number(data.stddev);
-  const posCount = Number(data.pos_count);
-  const mixCount = Number(data.mix_count);
-  const negCount = Number(data.neg_count);
-  const avgSegmentScore = Number(data.avg_segment_score);
-  const rankVal = data.rank ? Number(data.rank) : null;
-  const totalInSegment = data.total_in_segment ? Number(data.total_in_segment) : null;
-  const segmentsList = data.segments || [];
+export function generateSeoText(data: any, level: SeoPageLevel, context: SeoContext): string {
+  if (!data) return "";
+
+  // Universal property access (handles camelCase, snake_case, PascalCase)
+  const getProp = (keys: string[]) => {
+    for (const key of keys) {
+      if (data[key] !== undefined && data[key] !== null) return data[key];
+    }
+    return null;
+  };
+
+  const totalEssais = Number(getProp(['total_essais', 'totalEssais', 'Total_Essais', 'total']));
+  const metaScore = Number(getProp(['metacarscore', 'metaCarScore', 'MetaCarScore', 'mcs']));
+  const stdDev = Number(getProp(['stddev', 'stdDev', 'StdDev', 'sd']));
+  const posCount = Number(getProp(['pos_count', 'posCount', 'PosCount', 'pos']));
+  const mixCount = Number(getProp(['mix_count', 'mixCount', 'MixCount', 'mix']));
+  const negCount = Number(getProp(['neg_count', 'negCount', 'NegCount', 'neg']));
+  const avgSegmentScore = Number(getProp(['avg_segment_score', 'avgSegmentScore', 'AvgSegmentScore', 'avg_val', 'm']));
+  const rankVal = getProp(['rank', 'Rank', 'rang', 'rank_val', 'r']) !== null ? Number(getProp(['rank', 'Rank', 'rang', 'rank_val', 'r'])) : null;
+  const totalInSegment = getProp(['total_in_segment', 'totalInSegment', 'TotalInSegment', 'total_val', 't']) !== null ? Number(getProp(['total_in_segment', 'totalInSegment', 'TotalInSegment', 'total_val', 't'])) : null;
+
+  // Robust parsing for Postgres segments
+  let segmentsList: string[] = [];
+  const rawSegments = getProp(['segments', 'Segments']);
+  if (Array.isArray(rawSegments)) {
+    segmentsList = rawSegments.filter(s => typeof s === 'string');
+  } else if (typeof rawSegments === 'string' && rawSegments) {
+    // Handle "{val1,val2}" Postgres array format
+    segmentsList = (rawSegments as string)
+      .replace(/[{}]/g, '')
+      .split(',')
+      .map(s => s.trim().replace(/^"|"$/g, ''))
+      .filter(Boolean);
+  }
 
   if (!totalEssais || totalEssais === 0) return "";
 
@@ -99,7 +121,6 @@ export function generateSeoText(data: VehicleSeoStats, level: SeoPageLevel, cont
         rankingText = `Il se classe globalement ${comparison} de la moyenne des segments couverts qui est de ${avgSegmentScore}/100.`;
     }
   } else if (totalEssais >= 3) {
-    // Fallback si pas de données de segment mais assez d'avis
     rankingText = `Il se positionne comme une alternative intéressante au sein de sa catégorie.`;
   }
 

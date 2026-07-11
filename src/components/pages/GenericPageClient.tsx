@@ -154,7 +154,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                         {/* S'affiche uniquement si on est au niveau powertrain */}
                         {getPowertrainSubtitle()}
                         
-                        <div className="flex flex-col xl:flex-row xl:items-start gap-8 mt-8">
+                        <div className="flex flex-col lg:flex-row lg:items-start gap-8 mt-8">
                             {/* TAGS (Marge top ajustée si sous-titre présent ou non) */}
                             <motion.div layout className="flex flex-wrap gap-6 text-sm font-medium text-slate-300 shrink-0 pt-2 lg:max-w-md xl:max-w-none">
 
