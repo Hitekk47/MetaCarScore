@@ -27,9 +27,9 @@ export function formatOrdinal(n: number): string {
 
 export function resolveSegmentLabel(macro: string, size: string): string {
   const macroEntry = MACRO_CONFIG.find(m => m.label === macro);
-  if (!macroEntry) return `${macro} ${size}`;
+  if (!macroEntry) return size;
   const segment = macroEntry.segments.find(s => s.code === size);
-  return segment ? `${macro} ${segment.label}` : `${macro} ${size}`;
+  return segment ? segment.label : size;
 }
 
 export function generateSeoText(
