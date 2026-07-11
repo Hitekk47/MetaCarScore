@@ -131,15 +131,10 @@ export const getVehicleSeoStats = cache(async (params: {
     p_famille: params.famille,
     p_my: params.my,
     p_modele: params.modele
-  });
+  }).maybeSingle();
 
   if (error) {
     console.error('Error fetching vehicle SEO stats:', error);
-    return null;
-  }
-
-  if (data && (data as any).error) {
-    console.error('RPC Error in get_vehicle_seo_stats:', (data as any).error);
     return null;
   }
 

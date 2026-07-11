@@ -33,8 +33,8 @@ export function generateSeoText(data: VehicleSeoStats, level: SeoPageLevel, cont
   // 1. Segment & Introduction
   let intro = "";
   if (level === 'modele' || level === 'powertrain') {
-    const segmentStr = segmentsList.length > 0 ? `des ${segmentsList[0]}` : "de son segment";
-    intro = `Le ${marqueName} ${name} s'inscrit dans le segment ${segmentStr}. `;
+    const segmentStr = segmentsList.length > 0 ? `du segment ${segmentsList[0]}` : "de son segment de marché";
+    intro = `Le ${marqueName} ${name} s'inscrit au sein ${segmentStr}. `;
   } else {
     if (segmentsList.length > 0) {
         const segmentLabel = segmentsList.length > 1 ? "les segments" : "le segment";
