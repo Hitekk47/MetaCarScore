@@ -35,6 +35,45 @@ export const getScoreColor = (score: number) => {
     light: "bg-score-bad/10" 
   };
 };
+
+export type ScoreCategory = 'positive' | 'mixed' | 'negative';
+
+export function getScoreCategory(score: number): ScoreCategory {
+  if (score >= 75) return 'positive';
+  if (score >= 50) return 'mixed';
+  return 'negative';
+}
+
+export function calculateDistribution(scores: number[]) {
+  const total = scores.length;
+  if (total === 0) {
+    return {
+      positive: { count: 0, percentage: 0 },
+      mixed: { count: 0, percentage: 0 },
+      negative: { count: 0, percentage: 0 },
+      total: 0
+    };
+  }
+
+  let positive = 0;
+  let mixed = 0;
+  let negative = 0;
+
+  for (let i = 0; i < total; i++) {
+    const s = scores[i];
+    const cat = getScoreCategory(s);
+    if (cat === 'positive') positive++;
+    else if (cat === 'mixed') mixed++;
+    else negative++;
+  }
+
+  return {
+    positive: { count: positive, percentage: Math.round((positive / total) * 100) },
+    mixed: { count: mixed, percentage: Math.round((mixed / total) * 100) },
+    negative: { count: negative, percentage: Math.round((negative / total) * 100) },
+    total
+  };
+}
 export const formatReviewDate = (dateString: string) => {
   if (!dateString) return "";
   const date = new Date(dateString);

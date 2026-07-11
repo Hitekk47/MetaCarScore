@@ -1,20 +1,12 @@
+import { calculateDistribution } from "@/lib/utils";
+
 type Props = {
   scores: number[];
 };
 
 export default function ScoreDistribution({ scores }: Props) {
-  const total = scores.length;
+  const { positive, mixed, negative, total } = calculateDistribution(scores);
   if (total === 0) return null;
-
-  // Calcul des segments
-  const positive = scores.filter(s => s >= 75).length;
-  const mixed = scores.filter(s => s >= 50 && s < 75).length;
-  const negative = scores.filter(s => s < 50).length;
-
-  // Calcul des pourcentages (arrondis pour affichage)
-  const pPos = Math.round((positive / total) * 100);
-  const pMix = Math.round((mixed / total) * 100);
-  const pNeg = Math.round((negative / total) * 100);
 
   return (
     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -25,11 +17,11 @@ export default function ScoreDistribution({ scores }: Props) {
       {/* LA BARRE VISUELLE */}
       <div className="flex h-4 w-full rounded-full overflow-hidden mb-4">
         {/* Segment Positif */}
-        <div style={{ width: `${(positive / total) * 100}%` }} className="bg-score-good transition-all duration-1000"></div>
+        <div style={{ width: `${(positive.count / total) * 100}%` }} className="bg-score-good transition-all duration-1000"></div>
         {/* Segment Mitigé */}
-        <div style={{ width: `${(mixed / total) * 100}%` }} className="bg-score-mixed transition-all duration-1000"></div>
+        <div style={{ width: `${(mixed.count / total) * 100}%` }} className="bg-score-mixed transition-all duration-1000"></div>
         {/* Segment Négatif */}
-        <div style={{ width: `${(negative / total) * 100}%` }} className="bg-score-bad transition-all duration-1000"></div>
+        <div style={{ width: `${(negative.count / total) * 100}%` }} className="bg-score-bad transition-all duration-1000"></div>
       </div>
 
       {/* LÉGENDE DÉTAILLÉE */}
@@ -41,8 +33,8 @@ export default function ScoreDistribution({ scores }: Props) {
             <span className="font-bold text-slate-700">Positifs</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-slate-400 text-xs">{positive} avis</span>
-            <span className="font-bold text-slate-900 w-8 text-right">{pPos}%</span>
+            <span className="font-mono text-slate-400 text-xs">{positive.count} avis</span>
+            <span className="font-bold text-slate-900 w-8 text-right">{positive.percentage}%</span>
           </div>
         </div>
 
@@ -52,8 +44,8 @@ export default function ScoreDistribution({ scores }: Props) {
             <span className="font-bold text-slate-700">Mitigés</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-slate-400 text-xs">{mixed} avis</span>
-            <span className="font-bold text-slate-900 w-8 text-right">{pMix}%</span>
+            <span className="font-mono text-slate-400 text-xs">{mixed.count} avis</span>
+            <span className="font-bold text-slate-900 w-8 text-right">{mixed.percentage}%</span>
           </div>
         </div>
 
@@ -63,8 +55,8 @@ export default function ScoreDistribution({ scores }: Props) {
             <span className="font-bold text-slate-700">Négatifs</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-slate-400 text-xs">{negative} avis</span>
-            <span className="font-bold text-slate-900 w-8 text-right">{pNeg}%</span>
+            <span className="font-mono text-slate-400 text-xs">{negative.count} avis</span>
+            <span className="font-bold text-slate-900 w-8 text-right">{negative.percentage}%</span>
           </div>
         </div>
 
