@@ -154,35 +154,37 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                         {/* S'affiche uniquement si on est au niveau powertrain */}
                         {getPowertrainSubtitle()}
                         
-                        {/* TAGS (Marge top ajustée si sous-titre présent ou non) */}
-                        <motion.div layout className={cn("flex flex-wrap gap-6 text-sm font-medium text-slate-300", level === 'powertrain' ? "mt-6" : "mt-6")}>
-                            
-                            {/* BLOC ANNÉES */}
-                            <div className={cn("flex items-center gap-2", level !== 'family' && "invisible")}>
-                                <CalendarRange className="text-slate-500" size={18} />
-                                <span className="text-slate-300">{minYear === maxYear ? minYear : `${minYear} - ${maxYear}`}</span>
-                            </div>
+                        <div className="flex flex-col lg:flex-row lg:items-start gap-8 mt-8">
+                            {/* TAGS (Marge top ajustée si sous-titre présent ou non) */}
+                            <motion.div layout className="flex flex-wrap gap-6 text-sm font-medium text-slate-300 shrink-0 pt-2">
 
-                            {/* BLOC PUISSANCE */}
-                            <div className="flex items-center gap-2">
-                                <Gauge className="text-slate-500" size={18} />
-                                <span className="text-slate-300">{minPowerStat === maxPowerStat ? `${minPowerStat} ch` : `${minPowerStat} - ${maxPowerStat} ch`}</span>
-                            </div>
+                                {/* BLOC ANNÉES */}
+                                <div className={cn("flex items-center gap-2", level !== 'family' && "invisible")}>
+                                    <CalendarRange className="text-slate-500" size={18} />
+                                    <span className="text-slate-300">{minYear === maxYear ? minYear : `${minYear} - ${maxYear}`}</span>
+                                </div>
 
-                            {/* BLOC ESSAIS */}
-                            <div className="flex items-center gap-2">
-                                <motion.div key={filteredReviews.length} initial={{ scale: 1.2 }} animate={{ scale: 1 }} className={cn("px-2 py-0.5 rounded text-xs font-bold uppercase border transition-colors duration-300", isFiltered ? "bg-slate-900 text-orange-500 border-orange-500" : "bg-slate-800 text-slate-400 border-slate-700")}>
-                                    {filteredReviews.length} Essai{filteredReviews.length > 1 ? 's' : ''}
-                                </motion.div>
-                            </div>
-                        </motion.div>
+                                {/* BLOC PUISSANCE */}
+                                <div className="flex items-center gap-2">
+                                    <Gauge className="text-slate-500" size={18} />
+                                    <span className="text-slate-300">{minPowerStat === maxPowerStat ? `${minPowerStat} ch` : `${minPowerStat} - ${maxPowerStat} ch`}</span>
+                                </div>
 
-                        {/* SEO DATA STORYTELLING */}
-                        {seoText && (
-                            <div className="mt-8 max-w-2xl">
-                                <SeoSummaryCard text={seoText} />
-                            </div>
-                        )}
+                                {/* BLOC ESSAIS */}
+                                <div className="flex items-center gap-2">
+                                    <motion.div key={filteredReviews.length} initial={{ scale: 1.2 }} animate={{ scale: 1 }} className={cn("px-2 py-0.5 rounded text-xs font-bold uppercase border transition-colors duration-300", isFiltered ? "bg-slate-900 text-orange-500 border-orange-500" : "bg-slate-800 text-slate-400 border-slate-700")}>
+                                        {filteredReviews.length} Essai{filteredReviews.length > 1 ? 's' : ''}
+                                    </motion.div>
+                                </div>
+                            </motion.div>
+
+                            {/* SEO DATA STORYTELLING */}
+                            {seoText && (
+                                <div className="max-w-4xl flex-grow">
+                                    <SeoSummaryCard text={seoText} />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

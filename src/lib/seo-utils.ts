@@ -33,12 +33,15 @@ export function generateSeoText(data: VehicleSeoStats, level: SeoPageLevel, cont
   // 1. Segment & Introduction
   let intro = "";
   if (level === 'modele' || level === 'powertrain') {
-    const segmentStr = segmentsList.length > 0 ? segmentsList[0] : "son segment";
-    intro = `Le ${marqueName} ${name} s'inscrit dans le segment des ${segmentStr}. `;
+    const segmentStr = segmentsList.length > 0 ? `des ${segmentsList[0]}` : "de son segment";
+    intro = `Le ${marqueName} ${name} s'inscrit dans le segment ${segmentStr}. `;
   } else {
-    const segmentLabel = segmentsList.length > 1 ? "les segments" : "le segment";
-    const segmentListStr = segmentsList.length > 0 ? segmentsList.join(', ') : "son segment";
-    intro = `${level === 'family' ? 'La gamme' : "L'année-modèle"} ${marqueName} ${name} couvre ${segmentLabel} ${segmentListStr}. `;
+    if (segmentsList.length > 0) {
+        const segmentLabel = segmentsList.length > 1 ? "les segments" : "le segment";
+        intro = `${level === 'family' ? 'La gamme' : "L'année-modèle"} ${marqueName} ${name} couvre ${segmentLabel} ${segmentsList.join(', ')}. `;
+    } else {
+        intro = `${level === 'family' ? 'La gamme' : "L'année-modèle"} ${marqueName} ${name} couvre son segment de marché. `;
+    }
   }
 
   // 2. Score et essais
@@ -91,10 +94,13 @@ export function generateSeoText(data: VehicleSeoStats, level: SeoPageLevel, cont
     const comparison = metaScore >= avgSegmentScore ? "au-dessus" : "en-dessous";
 
     if (level === 'modele' || level === 'powertrain' || (level === 'my' && segmentsList.length === 1)) {
-        rankingText = `Il se classe actuellement ${position} sur ${totalInSegment} de sa catégorie, ${comparison} de la moyenne du segment qui est de ${avgSegmentScore}.`;
+        rankingText = `Il se classe actuellement ${position} sur ${totalInSegment} de sa catégorie, ${comparison} de la moyenne du segment qui est de ${avgSegmentScore}/100.`;
     } else {
-        rankingText = `Il se classe globalement ${comparison} de la moyenne des segments couverts qui est de ${avgSegmentScore}.`;
+        rankingText = `Il se classe globalement ${comparison} de la moyenne des segments couverts qui est de ${avgSegmentScore}/100.`;
     }
+  } else if (totalEssais >= 3) {
+    // Fallback si pas de données de segment mais assez d'avis
+    rankingText = `Il se positionne comme une alternative intéressante au sein de sa catégorie.`;
   }
 
   return `${intro}${scoreText}${consensusText}${distributionText}${rankingText}`.trim();
