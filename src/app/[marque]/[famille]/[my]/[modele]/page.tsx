@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from "next";
 import { serializeJsonLd } from "@/lib/utils";
-import { getFullContext, getReviews } from "@/lib/queries";
+import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
+import { generateSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
 
@@ -81,16 +82,32 @@ export default async function ModelePage({ params }: PageProps) {
   const realModele = context.real_modele;
 
   // 3. Récupération des données (avec cache)
-  const reviews = await getReviews({
-    marque: realMarque,
-    famille: realFamille,
-    my: parseInt(my),
-    modele: realModele
-  });
+  const [reviews, seoStats] = await Promise.all([
+    getReviews({
+      marque: realMarque,
+      famille: realFamille,
+      my: parseInt(my),
+      modele: realModele
+    }),
+    getVehicleSeoStats({
+      p_marque: realMarque,
+      p_famille: realFamille,
+      p_my: parseInt(my),
+      p_modele: realModele
+    })
+  ]);
 
   if (!reviews || reviews.length === 0) {
     notFound();
   }
+
+  const seoText = seoStats ? generateSeoText(seoStats, {
+    marque: realMarque,
+    famille: realFamille,
+    my,
+    modele: realModele,
+    level: "modele"
+  }) : "";
 
   // On calcule la moyenne côté serveur pour Google
   const totalScore = reviews.reduce((acc, r) => acc + r.Score, 0);
@@ -138,6 +155,8 @@ export default async function ModelePage({ params }: PageProps) {
         my={my}
         modele={realModele}
         level="modele" 
+        seoText={seoText}
+        iqr={seoStats?.iqr}
       />
     </>
   );

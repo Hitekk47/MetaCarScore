@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
-import { getFullContext, getReviews } from "@/lib/queries";
+import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
+import { generateSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
 
@@ -75,13 +76,27 @@ export default async function MYPage({ params }: PageProps) {
 
 
   // 3. Chargement Data (avec cache)
-  const reviews = await getReviews({
-    marque: realMarque,
-    famille: realFamille,
-    my: parseInt(my)
-  });
+  const [reviews, seoStats] = await Promise.all([
+    getReviews({
+      marque: realMarque,
+      famille: realFamille,
+      my: parseInt(my)
+    }),
+    getVehicleSeoStats({
+      p_marque: realMarque,
+      p_famille: realFamille,
+      p_my: parseInt(my)
+    })
+  ]);
 
   if (!reviews || reviews.length === 0) notFound();
+
+  const seoText = seoStats ? generateSeoText(seoStats, {
+    marque: realMarque,
+    famille: realFamille,
+    my,
+    level: "my"
+  }) : "";
 
   // 4. Calcul Score & JSON-LD
   const totalScore = reviews.reduce((acc, r) => acc + r.Score, 0);
@@ -115,6 +130,8 @@ export default async function MYPage({ params }: PageProps) {
         famille={realFamille}
         my={my}
         level="my"
+        seoText={seoText}
+        iqr={seoStats?.iqr}
       />
     </>
   );

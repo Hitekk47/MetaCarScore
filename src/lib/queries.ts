@@ -119,3 +119,14 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
 
   return (data as Review[]) || [];
 });
+
+export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_famille: string; p_my?: number; p_modele?: string }) => {
+  const { data, error } = await supabase.rpc('get_vehicle_seo_stats', params);
+
+  if (error) {
+    console.error('Error fetching vehicle SEO stats:', error);
+    return null;
+  }
+
+  return data as any;
+});

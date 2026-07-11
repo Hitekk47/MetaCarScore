@@ -12,6 +12,7 @@ import { CalendarRange, Gauge, Search, SlidersHorizontal, X, ChevronRight, Sword
 import { cn, calculatePageStats } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import SeoSummaryCard from "@/components/seo/SeoSummaryCard";
 import { toSlug } from "@/lib/slugify";
 
 type PageLevel = 'family' | 'my' | 'modele' | 'powertrain';
@@ -25,9 +26,11 @@ type Props = {
   powertrain?: string;
   powertrainName?: string;
   level: PageLevel;
+  seoText?: string;
+  iqr?: number;
 };
 
-export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level }: Props) {
+export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, seoText, iqr }: Props) {
 
   // --- FILTRES ---
   const [query, setQuery] = useState("");
@@ -174,8 +177,20 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                                 </motion.div>
                             </div>
                         </motion.div>
+
+                        {/* SEO SUMMARY CARD (Mobile) */}
+                        <div className="mt-8 md:hidden">
+                           <SeoSummaryCard text={seoText || ""} iqr={iqr} />
+                        </div>
+
                     </div>
                 </div>
+
+                {/* SEO SUMMARY CARD (Desktop) */}
+                <div className="hidden md:block mt-8">
+                   <SeoSummaryCard text={seoText || ""} iqr={iqr} />
+                </div>
+
             </div>
         </section>
 
