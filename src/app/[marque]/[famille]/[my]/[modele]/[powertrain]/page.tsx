@@ -3,7 +3,7 @@ import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
 import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
-import { generateSeoText } from "@/lib/seo-utils";
+import { generateSeoText, cleanSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
 
@@ -52,17 +52,37 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Logique de formattage du powertrain pour le titre
   const displayPowertrain = powertrain.replace(/[-_]/g, ' ').split(' ').map((w, i, a) => i === a.length - 2 ? w + " ch" : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-  const title = `${displayMarque} ${displayModele} (${my}) en ${powertrain}: Avis, Score & Essais`;
+  // 1b. Data pour le SEO
+  const seoStats = await getVehicleSeoStats({
+    p_marque: displayMarque,
+    p_famille: context.real_famille || '',
+    p_my: parseInt(my, 10),
+    p_modele: displayModele
+  });
+
+  const seoText = seoStats ? generateSeoText(seoStats, {
+    marque: displayMarque,
+    famille: context.real_famille || '',
+    my,
+    modele: displayModele,
+    level: "powertrain"
+  }) : "";
+
+  const description = seoText ? cleanSeoText(seoText) : undefined;
 
   return {
     // TITRE PROPRE POUR L'UTILISATEUR (ONGLET)
     title: `${displayMarque} ${displayModele} (${my}) - ${displayPowertrain}`,
+    description,
     
     // SEO : BLOCAGE TOTAL
     robots: {
       index: false, 
       follow: true, 
     },
+    openGraph: {
+      description
+    }
   };
 }
 

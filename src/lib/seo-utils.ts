@@ -37,6 +37,15 @@ export function getSegmentGender(macro: string): GrammaticalGender {
   return macroEntry?.gender ?? "masculine";
 }
 
+/**
+ * Nettoie les balises internes de template du texte SEO (ex: [[iqr:type|label]])
+ * pour ne garder que le texte brut, utilisable dans les métadonnées.
+ */
+export function cleanSeoText(text: string): string {
+  if (!text) return "";
+  return text.replace(/\[\[(.*?):(.*?)\|(.*?)\]\]/g, '$3');
+}
+
 function formatSegmentPhrasing(segments: { macro: string; size: string }[], level: string): string {
   if (segments.length === 0) return "";
 

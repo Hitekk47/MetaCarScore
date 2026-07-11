@@ -3,7 +3,7 @@ import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
 import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
-import { generateSeoText } from "@/lib/seo-utils";
+import { generateSeoText, cleanSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
 
@@ -29,13 +29,28 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const displayFamille = context.real_famille;
 
   const title = `${displayMarque} ${displayFamille} : Avis, Score & Essais`;
-  const description = `Découvrez l'historique de la gamme ${displayMarque} ${displayFamille}. Consultez l'historique des générations, le comparatif des versions et l'agrégation de tous les essais presse sur MetaCarScore.`;
 
-  // Récupération des reviews pour vérifier le nombre (utile pour robots noindex)
-  const reviews = await getReviews({
+  // 1b. Data pour le SEO
+  const [reviews, seoStats] = await Promise.all([
+    getReviews({
+      marque: displayMarque,
+      famille: displayFamille
+    }),
+    getVehicleSeoStats({
+      p_marque: displayMarque,
+      p_famille: displayFamille
+    })
+  ]);
+
+  const seoText = seoStats ? generateSeoText(seoStats, {
     marque: displayMarque,
-    famille: displayFamille
-  });
+    famille: displayFamille,
+    level: "family"
+  }) : "";
+
+  const description = seoText
+    ? cleanSeoText(seoText)
+    : `Découvrez l'historique de la gamme ${displayMarque} ${displayFamille}. Consultez l'historique des générations, le comparatif des versions et l'agrégation de tous les essais presse sur MetaCarScore.`;
 
   const shouldIndex = reviews.length >= 3;
 

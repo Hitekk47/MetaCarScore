@@ -3,7 +3,7 @@ import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
 import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
-import { generateSeoText } from "@/lib/seo-utils";
+import { generateSeoText, cleanSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
 
@@ -29,14 +29,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const displayFamille = context.real_famille; // Ici c'est bien la famille, pas le modèle
 
   const title = `${displayMarque} ${displayFamille} (${my}) : Avis, Score & Essais`;
-  const description = `Découvrez la gamme ${displayMarque} ${displayFamille} de ${my}. Consultez le comparatif des versions et l'agrégation de tous les essais presse sur MetaCarScore.`;
 
-  // Récupération des reviews pour vérifier le nombre (utile pour robots noindex)
-  const reviews = await getReviews({
+  // 1b. Data pour le SEO
+  const [reviews, seoStats] = await Promise.all([
+    getReviews({
+      marque: displayMarque,
+      famille: displayFamille,
+      my: parseInt(my)
+    }),
+    getVehicleSeoStats({
+      p_marque: displayMarque,
+      p_famille: displayFamille,
+      p_my: parseInt(my)
+    })
+  ]);
+
+  const seoText = seoStats ? generateSeoText(seoStats, {
     marque: displayMarque,
     famille: displayFamille,
-    my: parseInt(my)
-  });
+    my,
+    level: "my"
+  }) : "";
+
+  const description = seoText
+    ? cleanSeoText(seoText)
+    : `Découvrez la gamme ${displayMarque} ${displayFamille} de ${my}. Consultez le comparatif des versions et l'agrégation de tous les essais presse sur MetaCarScore.`;
 
   const shouldIndex = reviews.length >= 3;
 
