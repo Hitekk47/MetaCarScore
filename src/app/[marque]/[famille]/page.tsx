@@ -116,13 +116,16 @@ export default async function FamilyPage({ params }: PageProps) {
     '@type': 'ProductGroup', // Une famille de produits
     name: `${realMarque} ${realFamille}`, // ex: Porsche 911
     brand: { '@type': 'Brand', name: realMarque },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: avgScore,
-      bestRating: "100",
-      worstRating: "0",
-      reviewCount: reviews.length, // 'reviewCount' car ProductGroup
-    }
+    ...(seoText ? {
+      description: cleanSeoText(seoText),
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: avgScore,
+        bestRating: "100",
+        worstRating: "0",
+        reviewCount: reviews.length, // 'reviewCount' car ProductGroup
+      }
+    } : {})
   };
 
   // 5. Rendu

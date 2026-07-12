@@ -125,13 +125,16 @@ export default async function MYPage({ params }: PageProps) {
     name: `${realMarque} ${realFamille} (${my})`,
     brand: { '@type': 'Brand', name: realMarque },
     productionDate: my,
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: avgScore,
-      bestRating: "100",
-      worstRating: "0",
-      ratingCount: reviews.length,
-    }
+    ...(seoText ? {
+      description: cleanSeoText(seoText),
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: avgScore,
+        bestRating: "100",
+        worstRating: "0",
+        ratingCount: reviews.length,
+      }
+    } : {})
   };
 
   // 5. Rendu

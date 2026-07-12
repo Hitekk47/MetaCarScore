@@ -162,13 +162,16 @@ export default async function PowertrainPage({ params }: PageProps) {
         name: `${powerStr} ch ${realType}`
     },
     vehicleTransmission: slugTrans.toUpperCase(), // ex: "7A"
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: avgScore,
-      bestRating: "100",
-      worstRating: "0",
-      ratingCount: reviews.length,
-    }
+    ...(seoText ? {
+      description: cleanSeoText(seoText),
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: avgScore,
+        bestRating: "100",
+        worstRating: "0",
+        ratingCount: reviews.length,
+      }
+    } : {})
   };
 
   // 6. Rendu
