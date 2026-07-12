@@ -1,9 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Info } from "lucide-react";
+import { Info, ExternalLink } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 
 type Props = {
   text: string;
@@ -188,11 +189,26 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
 
       const markerMatch = part.match(/\[\[(.*?):(.*?)\|(.*?)\]\]/);
       if (markerMatch) {
-        const [, category, type, label] = markerMatch;
+        const [, category, data, label] = markerMatch;
 
         // Si c'est un marqueur iqr et qu'on a la donnée iqr, on affiche le tooltip
         if (category === 'iqr' && iqr !== undefined) {
-          return <Tooltip key={index} type={type as any} label={label} iqr={iqr} />;
+          return <Tooltip key={index} type={data as any} label={label} iqr={iqr} />;
+        }
+
+        if (category === 'segment') {
+          // Format attendu pour data : MACRO:CODE
+          const [macro, code] = data.split(':');
+          return (
+            <Link
+              key={index}
+              href={`/tops/modeles?macro=${encodeURIComponent(macro)}&segment=${encodeURIComponent(code)}`}
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-md transition-colors mx-0.5 align-baseline"
+            >
+              {label}
+              <ExternalLink size={10} className="opacity-50" />
+            </Link>
+          );
         }
 
         // Sinon (autre catégorie ou iqr manquant), on affiche juste le label net
