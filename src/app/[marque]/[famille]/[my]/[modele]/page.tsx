@@ -145,9 +145,9 @@ export default async function ModelePage({ params }: PageProps) {
     model: realModele,
     productionDate: my,
     ...(seoText ? {
-      description: cleanSeoText(seoText),
       aggregateRating: {
         '@type': 'AggregateRating',
+        description: cleanSeoText(seoText),
         ratingValue: avgScore,
         bestRating: "100",
         worstRating: "0",

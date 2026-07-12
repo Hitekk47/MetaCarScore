@@ -117,9 +117,9 @@ export default async function FamilyPage({ params }: PageProps) {
     name: `${realMarque} ${realFamille}`, // ex: Porsche 911
     brand: { '@type': 'Brand', name: realMarque },
     ...(seoText ? {
-      description: cleanSeoText(seoText),
       aggregateRating: {
         '@type': 'AggregateRating',
+        description: cleanSeoText(seoText),
         ratingValue: avgScore,
         bestRating: "100",
         worstRating: "0",

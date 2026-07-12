@@ -163,9 +163,9 @@ export default async function PowertrainPage({ params }: PageProps) {
     },
     vehicleTransmission: slugTrans.toUpperCase(), // ex: "7A"
     ...(seoText ? {
-      description: cleanSeoText(seoText),
       aggregateRating: {
         '@type': 'AggregateRating',
+        description: cleanSeoText(seoText),
         ratingValue: avgScore,
         bestRating: "100",
         worstRating: "0",

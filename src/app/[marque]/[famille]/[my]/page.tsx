@@ -126,9 +126,9 @@ export default async function MYPage({ params }: PageProps) {
     brand: { '@type': 'Brand', name: realMarque },
     productionDate: my,
     ...(seoText ? {
-      description: cleanSeoText(seoText),
       aggregateRating: {
         '@type': 'AggregateRating',
+        description: cleanSeoText(seoText),
         ratingValue: avgScore,
         bestRating: "100",
         worstRating: "0",
