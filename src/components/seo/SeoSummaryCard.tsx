@@ -203,7 +203,7 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
             <Link
               key={index}
               href={`/tops/modeles?macro=${encodeURIComponent(macro)}&segment=${encodeURIComponent(code)}`}
-              className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-md transition-colors font-semibold mx-0.5 align-baseline"
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-md transition-colors mx-0.5 align-baseline"
             >
               {label}
               <ExternalLink size={10} className="opacity-50" />
