@@ -144,19 +144,22 @@ export default async function ModelePage({ params }: PageProps) {
     },
     model: realModele,
     productionDate: my,
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: avgScore,
-      bestRating: "100",
-      worstRating: "0",
-      ratingCount: reviews.length,
-    },
-    review: reviews.slice(0, 5).map(r => ({
-        '@type': 'Review',
-        author: { '@type': 'Organization', name: r.Testeur },
-        datePublished: r.Test_date,
-        reviewRating: { '@type': 'Rating', ratingValue: r.Score, bestRating: "100", worstRating: "0" },
-    }))
+    ...(seoText ? {
+      description: cleanSeoText(seoText),
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: avgScore,
+        bestRating: "100",
+        worstRating: "0",
+        ratingCount: reviews.length,
+      },
+      review: reviews.slice(0, 5).map(r => ({
+          '@type': 'Review',
+          author: { '@type': 'Organization', name: r.Testeur },
+          datePublished: r.Test_date,
+          reviewRating: { '@type': 'Rating', ratingValue: r.Score, bestRating: "100", worstRating: "0" },
+      }))
+    } : {})
   };
 
   // 5. Rendu
