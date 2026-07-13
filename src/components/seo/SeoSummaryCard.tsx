@@ -5,6 +5,7 @@ import { Info, ExternalLink } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 type Props = {
   text: string;
@@ -211,6 +212,23 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
           );
         }
 
+        if (category === 'stats') {
+          const isAbove = data === 'above';
+          return (
+            <span
+              key={index}
+              className={cn(
+                "px-1.5 py-0.5 rounded-md font-bold transition-colors mx-0.5 whitespace-nowrap",
+                isAbove
+                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+              )}
+            >
+              {label}
+            </span>
+          );
+        }
+
         // Sinon (autre catégorie ou iqr manquant), on affiche juste le label net
         return label;
       }
@@ -235,6 +253,14 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
       className="w-full"
     >
       <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5 md:p-6 shadow-xl relative overflow-hidden group">
+        {/* Guillaumets décoratifs subtils */}
+        <div className="absolute -top-4 -left-2 text-8xl md:text-[12rem] font-serif text-slate-700/10 select-none pointer-events-none transition-transform duration-1000 group-hover:scale-110 group-hover:-rotate-12 origin-center">
+          “
+        </div>
+        <div className="absolute -bottom-12 -right-2 text-8xl md:text-[12rem] font-serif text-slate-700/10 select-none pointer-events-none transition-transform duration-1000 group-hover:scale-110 group-hover:rotate-12 origin-center">
+          ”
+        </div>
+
         <motion.div
           className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent -translate-x-full"
           animate={{ translateX: ["100%", "-100%"] }}

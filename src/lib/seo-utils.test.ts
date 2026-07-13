@@ -221,7 +221,7 @@ describe("generateSeoText", () => {
     const text = generateSeoText(stats, {
       marque: "X", famille: "Y", modele: "Z", level: "modele"
     });
-    expect(text).toContain("se classe actuellement 12e/88 de ses catégories, au-dessus de la moyenne des segments qui est de 82.");
+    expect(text).toContain("se classe actuellement 12e/88 de ses catégories, [[stats:above|au-dessus]] de la moyenne des segments qui est de 82.");
   });
 });
 

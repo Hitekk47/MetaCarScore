@@ -151,7 +151,7 @@ export function generateSeoText(
 
   const isMultiSegment = data.segments.length > 1;
   const comparisonText = (rank !== null && total !== null && avg !== null)
-    ? `${pronounToUse.charAt(0).toUpperCase() + pronounToUse.slice(1)} se classe actuellement ${formatOrdinal(rank)}/${total} ${isMultiSegment ? 'de ses catégories' : 'de sa catégorie'}, ${score >= avg ? 'au-dessus' : 'en-dessous'} de la moyenne ${isMultiSegment ? 'des segments' : 'du segment'} qui est de ${avg}.`
+    ? `${pronounToUse.charAt(0).toUpperCase() + pronounToUse.slice(1)} se classe actuellement ${formatOrdinal(rank)}/${total} ${isMultiSegment ? 'de ses catégories' : 'de sa catégorie'}, ${score >= avg ? '[[stats:above|au-dessus]]' : '[[stats:below|en-dessous]]'} de la moyenne ${isMultiSegment ? 'des segments' : 'du segment'} qui est de ${avg}.`
     : "";
 
   const distributionText = skipDistribution ? "" : `Les avis sont majoritairement ${getDistributionPhrasing(data.distribution)}.`;
