@@ -254,7 +254,7 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
     >
       <div className="bg-slate-800/40 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5 md:p-6 shadow-xl relative overflow-hidden group">
         {/* Guillemets décoratifs subtils */}
-        <div className="absolute -top-6 left-12 md:left-16 text-8xl md:text-[12rem] font-serif text-slate-600/20 select-none pointer-events-none transition-transform duration-1000 group-hover:scale-110 group-hover:-rotate-12 origin-center">
+        <div className="absolute top-[-1rem] md:top-[-2rem] left-12 md:left-16 text-8xl md:text-[12rem] font-serif text-slate-600/20 select-none pointer-events-none leading-none transition-transform duration-1000 group-hover:scale-110 group-hover:-rotate-12 origin-top-left">
           “
         </div>
         <div className="absolute bottom-[-3rem] md:bottom-[-6rem] right-0 text-8xl md:text-[12rem] font-serif text-slate-600/20 select-none pointer-events-none leading-none transition-transform duration-1000 group-hover:scale-110 group-hover:rotate-12 origin-bottom-right">
