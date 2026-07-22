@@ -124,7 +124,7 @@ describe("generateSeoText", () => {
       marque: "X", famille: "Y", modele: "Z", level: "modele"
     });
     // On ne vérifie plus "not.toContain('segment')" car la comparaison l'utilise
-    expect(text).toContain("Sur la base de 19 essais, Le X Z obtient un MetaCarScore de 92.");
+    expect(text).toContain("Sur la base de 19 essais, le X Z obtient un MetaCarScore de 92.");
     expect(text).toContain("moyenne du segment");
   });
 

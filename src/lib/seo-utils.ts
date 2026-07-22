@@ -160,7 +160,7 @@ export function generateSeoText(
     const parts = [
       segmentPhrasing
         ? `${vehicleArticle} ${marque} ${modele} ${segmentPhrasing}. Sur la base de ${data.review_count} essais, ${vehiclePronoun} obtient un MetaCarScore de ${score}.`
-        : `Sur la base de ${data.review_count} essais, ${vehicleArticle} ${marque} ${modele} obtient un MetaCarScore de ${score}.`,
+        : `Sur la base de ${data.review_count} essais, ${vehicleArticle.toLowerCase()} ${marque} ${modele} obtient un MetaCarScore de ${score}.`,
       consensusSentence,
       distributionText,
       comparisonText
