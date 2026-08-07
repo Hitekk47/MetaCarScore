@@ -68,7 +68,7 @@ export const magazineCountries: Record<string, string> = {
   // --- Spain 🇪🇸 ---
   "altagama coches": "es",
   "autopista": "es",
-  "coches": "es",
+  "coches 2000": "es",
 
   // --- Sweden 🇸🇪 ---
   "elbilen": "se",
