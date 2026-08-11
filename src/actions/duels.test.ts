@@ -2,7 +2,7 @@ import { describe, it, expect, mock, beforeEach } from "bun:test";
 
 // Mock next/cache
 mock.module("next/cache", () => ({
-  unstable_cache: (fn: any) => fn,
+  unstable_cache: <T>(fn: T): T => fn,
 }));
 
 // Mock @/lib/queries
@@ -36,7 +36,7 @@ describe("fetchBatchFighterReviews security", () => {
     const { fetchBatchFighterReviews } = await import("./duels");
 
     // Setup mock return for getFullContext with a malicious/special name
-    mockGetFullContext.mockImplementation(async ({ p_marque_slug }: any) => {
+    mockGetFullContext.mockImplementation(async ({ p_marque_slug }: { p_marque_slug?: string }) => {
       if (p_marque_slug === "brand") {
         return {
           real_marque: 'Brand "With" Quotes',
