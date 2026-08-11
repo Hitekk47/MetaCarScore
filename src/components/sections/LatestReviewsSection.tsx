@@ -96,7 +96,7 @@ export default function LatestReviewsSection({ initialData }: { initialData: Rev
                 <Loader2 className="animate-spin w-4 h-4" /> Chargement...
               </span>
             ) : (
-              <span>Afficher plus d'essais</span>
+              <span>Afficher plus d{"'"}essais</span>
             )}
           </button>
         </div>
@@ -104,7 +104,7 @@ export default function LatestReviewsSection({ initialData }: { initialData: Rev
         /* Message de fin */
         reviews.length >= MAX_ITEMS && (
             <div className="mt-8 text-center text-xs font-bold text-slate-400 uppercase tracking-widest border-t border-slate-100 pt-4">
-                Limite d'affichage atteinte ({MAX_ITEMS} essais)
+                Limite d{"'"}affichage atteinte ({MAX_ITEMS} essais)
             </div>
         )
       )}

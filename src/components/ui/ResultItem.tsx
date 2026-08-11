@@ -68,7 +68,7 @@ export default function ResultItem({ res, onClick, isActive, isHistory = false }
 
       {/* CHEVRON */}
       <div className="pl-4 shrink-0 relative z-20">
-        {isFamily && !isHistory ? <span className="text-[10px] font-bold bg-white border border-slate-200 px-2 py-1 rounded text-slate-600 group-hover/item:text-blue-600 group-hover/item:border-blue-200 transition whitespace-nowrap">Vue d'ensemble</span> : <ChevronRight size={14} className="text-slate-300 group-hover/item:text-blue-600 transition" />}
+        {isFamily && !isHistory ? <span className="text-[10px] font-bold bg-white border border-slate-200 px-2 py-1 rounded text-slate-600 group-hover/item:text-blue-600 group-hover/item:border-blue-200 transition whitespace-nowrap">Vue d{"'"}ensemble</span> : <ChevronRight size={14} className="text-slate-300 group-hover/item:text-blue-600 transition" />}
       </div>
     </div>
   );
