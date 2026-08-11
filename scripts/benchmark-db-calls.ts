@@ -63,7 +63,7 @@ async function runOptimized() {
 
   // Define cached functions linked to this DB instance
   const getFullContext = cachedFn(
-    (params) => db.rpc('get_full_context_by_slugs', params),
+    (params: Record<string, unknown>) => db.rpc('get_full_context_by_slugs', params),
     (params) => JSON.stringify(params)
   );
 
