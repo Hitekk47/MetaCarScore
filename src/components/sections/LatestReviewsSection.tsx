@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ReviewsTableCompact from "../tables/ReviewsTableCompact";
 import { Review } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
@@ -14,11 +14,13 @@ export default function LatestReviewsSection({ initialData }: { initialData: Rev
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  // --- SYNCHRONISATION (Au cas où le parent revalidate) ---
-  useEffect(() => {
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
+
+  if (initialData !== prevInitialData) {
+    setPrevInitialData(initialData);
     setReviews(initialData);
     setHasMore(true);
-  }, [initialData]);
+  }
 
   const loadMore = async () => {
     const currentLength = reviews.length;

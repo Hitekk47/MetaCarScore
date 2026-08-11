@@ -21,14 +21,18 @@ export default function Header() {
   
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setIsMobileMenuOpen(false);
+  }
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  useEffect(() => { setIsMobileMenuOpen(false); }, [pathname]);
 
   useEffect(() => {
     if (isMobileMenuOpen) document.body.style.overflow = 'hidden';

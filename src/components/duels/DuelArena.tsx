@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { Review, AggregatedSource } from "@/lib/types";
 import ScoreBadge from "@/components/ui/ScoreBadge";
 import { cn, aggregateReviews, getPowerRange } from "@/lib/utils";
@@ -18,16 +18,19 @@ type Props = {
 
 // --- COMPOSANT PRINCIPAL ---
 
+const subscribeEmpty = () => () => {};
+const getSnapshotClient = () => true;
+const getServerSnapshot = () => false;
+
 export default function DuelArena({ carA, carB }: Props) {
   
   // DETECTION DU SCROLL
   const [showSticky, setShowSticky] = useState(false);
   // Ajout d'un flag pour éviter les erreurs d'hydratation sur le composant sticky
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useSyncExternalStore(subscribeEmpty, getSnapshotClient, getServerSnapshot);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setIsMounted(true);
     const el = sentinelRef.current;
     if (!el) return;
 

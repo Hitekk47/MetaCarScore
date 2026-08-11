@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { Search, Loader2, History, LayoutGrid, X } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -11,6 +11,63 @@ import { toSlug } from "@/lib/slugify";
 import { SearchResult } from "@/lib/types";
 import ResultItem from "./ResultItem";
 import { SEARCH_PLACEHOLDERS } from "@/lib/constants";
+
+// --- MCS SEARCH HISTORY STORE ---
+
+const listeners = new Set<() => void>();
+const emitHistoryChange = () => {
+  for (const listener of listeners) {
+    listener();
+  }
+};
+
+const EMPTY_ARRAY: SearchResult[] = [];
+let cachedHistory: SearchResult[] = EMPTY_ARRAY;
+let cachedRaw: string | null = null;
+
+const historyStore = {
+  subscribe(listener: () => void) {
+    listeners.add(listener);
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === "mcs_search_history") {
+        cachedRaw = null;
+        listener();
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      listeners.delete(listener);
+      window.removeEventListener("storage", handleStorage);
+    };
+  },
+  getSnapshot() {
+    if (typeof window === "undefined") return EMPTY_ARRAY;
+    try {
+      const raw = localStorage.getItem("mcs_search_history");
+      if (raw !== cachedRaw) {
+        cachedRaw = raw;
+        cachedHistory = raw ? JSON.parse(raw) : EMPTY_ARRAY;
+      }
+      return cachedHistory;
+    } catch {
+      return EMPTY_ARRAY;
+    }
+  },
+  getServerSnapshot() {
+    return EMPTY_ARRAY;
+  },
+  set(newHistory: SearchResult[]) {
+    try {
+      const raw = JSON.stringify(newHistory);
+      localStorage.setItem("mcs_search_history", raw);
+      cachedRaw = raw;
+      cachedHistory = newHistory;
+    } catch (e) {
+      console.error(e);
+    }
+    emitHistoryChange();
+  }
+};
 
 // --- CONFIGURATION TYPEWRITER ---
 
@@ -29,8 +86,21 @@ export default function SearchBar({ placeholder, variant = "header", className, 
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   
-  const [history, setHistory] = useState<SearchResult[]>([]);
+  const history = useSyncExternalStore(
+    historyStore.subscribe,
+    historyStore.getSnapshot,
+    historyStore.getServerSnapshot
+  );
   const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  const [prevResults, setPrevResults] = useState(results);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+  if (results !== prevResults || isOpen !== prevIsOpen) {
+    setPrevResults(results);
+    setPrevIsOpen(isOpen);
+    setSelectedIndex(-1);
+  }
   
   // État pour le placeholder animé
   const [placeholderText, setPlaceholderText] = useState(placeholder || "Rechercher...");
@@ -87,22 +157,12 @@ export default function SearchBar({ placeholder, variant = "header", className, 
 
   // --- LOGIQUE EXISTANTE ---
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("mcs_search_history");
-      if (stored) setHistory(JSON.parse(stored));
-    }
-  }, []);
-
   const addToHistory = (item: SearchResult) => {
     const newHistory = [item, ...history.filter(h => 
       !(h.Marque === item.Marque && h.Famille === item.Famille && h.Modele === item.Modele)
     )].slice(0, 5);
-    setHistory(newHistory);
-    localStorage.setItem("mcs_search_history", JSON.stringify(newHistory));
+    historyStore.set(newHistory);
   };
-
-  useEffect(() => { setSelectedIndex(-1); }, [results, isOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const activeList = (results.length > 0) ? results : (query.length === 0 ? history : []);
@@ -175,7 +235,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
     }
 
     fetchResults();
-  }, [debouncedQuery, modelOnly]);
+  }, [debouncedQuery, modelOnly, history.length]);
 
   const handleSelect = (res: SearchResult) => {
     addToHistory(res);
