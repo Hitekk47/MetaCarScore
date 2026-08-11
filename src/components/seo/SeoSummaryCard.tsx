@@ -194,7 +194,7 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
 
         // Si c'est un marqueur iqr et qu'on a la donnée iqr, on affiche le tooltip
         if (category === 'iqr' && iqr !== undefined) {
-          return <Tooltip key={index} type={data as any} label={label} iqr={iqr} />;
+          return <Tooltip key={index} type={data as TooltipProps["type"]} label={label} iqr={iqr} />;
         }
 
         if (category === 'segment') {

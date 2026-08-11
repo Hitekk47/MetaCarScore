@@ -9,7 +9,7 @@ class DBBenchmark {
     return { data: [{ mock: 'data' }], error: null };
   }
 
-  async rpc(functionName: string, params: any) {
+  async rpc(functionName: string, params: Record<string, unknown>) {
     await new Promise(resolve => setTimeout(resolve, LATENCY_MS));
     this.queryCount++;
     return { data: [{ mock: 'context' }], error: null };
@@ -42,17 +42,17 @@ async function runBaseline() {
 
 // --- OPTIMIZED SCENARIO ---
 // Mocking React.cache behavior
-const cache = new Map<string, Promise<any>>();
+const cache = new Map<string, Promise<unknown>>();
 
-function cachedFn<T, Args extends any[]>(
+function cachedFn<T, Args extends unknown[]>(
   fn: (...args: Args) => Promise<T>,
   keyGenerator: (...args: Args) => string
 ) {
   return async (...args: Args): Promise<T> => {
     const key = keyGenerator(...args);
-    if (cache.has(key)) return cache.get(key)!;
+    if (cache.has(key)) return cache.get(key) as Promise<T>;
     const promise = fn(...args);
-    cache.set(key, promise);
+    cache.set(key, promise as Promise<unknown>);
     return promise;
   };
 }

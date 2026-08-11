@@ -1,8 +1,8 @@
 import { expect, test, describe, mock, beforeAll } from "bun:test";
 
 mock.module("clsx", () => ({
-  clsx: (...args: any[]) => args.join(" "),
-  default: (...args: any[]) => args.join(" "),
+  clsx: (...args: unknown[]) => args.join(" "),
+  default: (...args: unknown[]) => args.join(" "),
 }));
 
 mock.module("tailwind-merge", () => ({
@@ -10,7 +10,7 @@ mock.module("tailwind-merge", () => ({
 }));
 
 describe("utils", () => {
-  let utils: any;
+  let utils: typeof import("./utils");
 
   beforeAll(async () => {
     utils = await import("./utils");
@@ -23,7 +23,7 @@ describe("utils", () => {
         { id: 2, name: "Bob" },
         { id: 3, name: "Alice" },
       ];
-      const result = utils.groupBy(list, (item: any) => item.name);
+      const result = utils.groupBy(list, (item: { id: number; name: string }) => item.name);
       expect(result).toEqual({
         Alice: [
           { id: 1, name: "Alice" },
@@ -34,7 +34,7 @@ describe("utils", () => {
     });
 
     test("should handle empty list", () => {
-      const result = utils.groupBy([], (item: any) => item.id);
+      const result = utils.groupBy([], (item: { id: number }) => item.id);
       expect(result).toEqual({});
     });
   });
