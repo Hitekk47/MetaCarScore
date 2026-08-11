@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Info, ExternalLink } from "lucide-react";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -18,17 +18,17 @@ type TooltipProps = {
   iqr?: number;
 };
 
+const subscribeEmpty = () => () => {};
+const getSnapshotClient = () => true;
+const getServerSnapshot = () => false;
+
 function Tooltip({ type, label, iqr }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState({ x: 0, y: 0 });
   const [offset, setOffset] = useState(0);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(subscribeEmpty, getSnapshotClient, getServerSnapshot);
   const containerRef = useRef<HTMLSpanElement>(null);
   const tooltipRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (isOpen && tooltipRef.current) {

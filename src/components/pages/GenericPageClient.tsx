@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Header from "@/components/Header";
 import ScoreBadge from "@/components/ui/ScoreBadge";
 import ScoreDistribution from "@/components/dataviz/ScoreDistribution";
@@ -42,6 +42,30 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
   const [maxPower, setMaxPower] = useState<string>("");
   const [displayLimit, setDisplayLimit] = useState(50);  
 
+  const [prevQuery, setPrevQuery] = useState(query);
+  const [prevFilterMY, setPrevFilterMY] = useState(filterMY);
+  const [prevFilterType, setPrevFilterType] = useState(filterType);
+  const [prevFilterTrans, setPrevFilterTrans] = useState(filterTrans);
+  const [prevMinPower, setPrevMinPower] = useState(minPower);
+  const [prevMaxPower, setPrevMaxPower] = useState(maxPower);
+
+  if (
+    query !== prevQuery ||
+    filterMY !== prevFilterMY ||
+    filterType !== prevFilterType ||
+    filterTrans !== prevFilterTrans ||
+    minPower !== prevMinPower ||
+    maxPower !== prevMaxPower
+  ) {
+    setPrevQuery(query);
+    setPrevFilterMY(filterMY);
+    setPrevFilterType(filterType);
+    setPrevFilterTrans(filterTrans);
+    setPrevMinPower(minPower);
+    setPrevMaxPower(maxPower);
+    setDisplayLimit(50);
+  }
+
   const { availableYears, availableTypes } = useMemo(() => {
     const yearsSet = new Set<number>();
     const typesSet = new Set<string>();
@@ -82,9 +106,6 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
       return true;
     }).sort((a, b) => (a.Test_date < b.Test_date ? 1 : a.Test_date > b.Test_date ? -1 : 0));
   }, [initialReviews, query, filterMY, filterType, filterTrans, minPower, maxPower]);
-    useEffect(() => {
-    setDisplayLimit(50);
-  }, [query, filterMY, filterType, filterTrans, minPower, maxPower]);
     const visibleReviews = filteredReviews.slice(0, displayLimit);
 
   // --- CALCULS STATS ---
