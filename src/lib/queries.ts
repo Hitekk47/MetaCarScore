@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Review } from '@/lib/types';
+import { SeoStats } from './seo-utils';
 
 // Types for RPC responses
 export interface BrandContext {
@@ -128,5 +129,5 @@ export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_fam
     return null;
   }
 
-  return data as any;
+  return data as SeoStats | null;
 });

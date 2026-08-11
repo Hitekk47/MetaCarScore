@@ -72,7 +72,7 @@ export default function NetworkBackground() {
 
     // Read the most accurate viewport size when available (visualViewport on mobile)
     const getViewport = () => {
-      const vv = (window as any).visualViewport;
+      const vv = window.visualViewport;
       return {
         width: vv?.width ?? window.innerWidth,
         height: vv?.height ?? window.innerHeight,
@@ -204,7 +204,7 @@ export default function NetworkBackground() {
     }
 
     // Listen to visualViewport when available (gives better info on mobile chrome address bar changes)
-    const vv = (window as any).visualViewport;
+    const vv = window.visualViewport;
     if (vv) {
       vv.addEventListener("resize", resize);
       // No-op on scroll: visualViewport.resize will fire appropriately when the visible area changes.
