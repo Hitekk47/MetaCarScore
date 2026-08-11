@@ -9,7 +9,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import DuelScore from "./DuelScore";
 import MiniScoreBar from "./MiniScoreBar";
-import PowerBadge from "./PowerBadge";
 import { MagazineBadge } from "@/components/ui/MagazineBadge";
 
 type Props = {

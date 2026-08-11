@@ -99,7 +99,6 @@ export default function NetworkBackground() {
       const desiredCount = Math.min(90, Math.max(28, Math.round(area / 22000)));
 
       if (prevWidth && prevHeight && points.length > 0) {
-        const deltaW = Math.abs(width - prevWidth);
         const deltaH = Math.abs(height - prevHeight);
 
         // Threshold: ignore small height-only changes (typical when mobile browser chrome hides/shows).

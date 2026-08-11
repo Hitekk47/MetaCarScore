@@ -34,7 +34,7 @@ export default function LatestReviewsSection({ initialData }: { initialData: Rev
     const from = currentLength;
     const to = currentLength + ITEMS_PER_PAGE - 1;
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('reviews')
       .select('*')
       .order('Test_date', { ascending: false })
