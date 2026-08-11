@@ -316,7 +316,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
                     <Search size={24} />
                   </div>
                   <p className="text-slate-900 font-bold mb-1">Aucun modèle trouvé</p>
-                  <p className="text-slate-500 text-xs mb-4">Nous n'avons pas trouvé de résultat pour "{query}".</p>
+                  <p className="text-slate-500 text-xs mb-4">Nous n{"'"}avons pas trouvé de résultat pour {"\""}{query}{"\""}.</p>
                   <Link
                     href="/marques"
                     onClick={() => {

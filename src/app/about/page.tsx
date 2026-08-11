@@ -23,7 +23,7 @@ export default function AboutPage() {
                 Notre Méthodologie
             </h1>
             <p className="text-slate-500 max-w-2xl mx-auto text-lg">
-                La transparence est notre moteur. Voici les règles strictes qui régissent l'ajout de chaque essai dans notre base de données.
+                La transparence est notre moteur. Voici les règles strictes qui régissent l{"'"}ajout de chaque essai dans notre base de données.
             </p>
         </div>
 
@@ -61,7 +61,7 @@ export default function AboutPage() {
                     La Règle de Fiabilité
                 </h3>
                 <p className="text-slate-300 leading-relaxed">
-                    Pour éviter les biais d'un testeur isolé, nous n'affichons aucun score global (MetaCarScore) tant qu'un véhicule n'a pas reçu <strong>au moins 3 essais distincts</strong>. En dessous, le score reste confidentiel.
+                    Pour éviter les biais d{"'"}un testeur isolé, nous n{"'"}affichons aucun score global (MetaCarScore) tant qu{"'"}un véhicule n{"'"}a pas reçu <strong>au moins 3 essais distincts</strong>. En dessous, le score reste confidentiel.
                 </p>
             </div>
 
@@ -90,7 +90,7 @@ export default function AboutPage() {
                     </h3>
                 </div>
                 <p className="text-sm text-slate-500 leading-relaxed">
-                    La collecte des données MetaCarScore a débuté en <strong>Juillet 2019</strong>. Les véhicules dont la carrière s'est arrêtée avant cette date sont absents ou incomplets, faute d'essais contemporains numérisés et compatibles avec nos critères.
+                    La collecte des données MetaCarScore a débuté en <strong>Juillet 2019</strong>. Les véhicules dont la carrière s{"'"}est arrêtée avant cette date sont absents ou incomplets, faute d{"'"}essais contemporains numérisés et compatibles avec nos critères.
                 </p>
             </div>
             {/* 7. DOUBLONS (Pourquoi plusieurs essais ?) */}
@@ -101,10 +101,10 @@ export default function AboutPage() {
                     </div>
                     <div>
                         <h3 className="text-xl font-bold uppercase tracking-tight text-slate-900 mb-4">
-                            Pourquoi plusieurs essais d'une même source ?
+                            Pourquoi plusieurs essais d{"'"}une même source ?
                         </h3>
                         <p className="text-slate-500 mb-4">
-                            Il arrive qu'un même média (ex: Top Gear) apparaisse plusieurs fois pour un même véhicule. C'est normal et voulu dans les cas suivants :
+                            Il arrive qu{"'"}un même média (ex: Top Gear) apparaisse plusieurs fois pour un même véhicule. C{"'"}est normal et voulu dans les cas suivants :
                         </p>
                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-medium text-slate-700">
                             <li className="flex items-center gap-2">
@@ -117,12 +117,12 @@ export default function AboutPage() {
                             </li>
                             <li className="flex items-center gap-2">
                                 <span className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5 shrink-0"></span>
-                                Écart de note significatif (&gt; 2 points) sur un re-test. (Cela arrive souvent lors d'un duel ou d'un comparatif postérieur).
+                                Écart de note significatif (&gt; 2 points) sur un re-test. (Cela arrive souvent lors d{"'"}un duel ou d{"'"}un comparatif postérieur).
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5 shrink-0"></span>
                                 <span>
-                                    Précision de la finition : Un second essai est ajouté uniquement s'il vient préciser la finition d'une première prise en main générique datant de plus d'un an.
+                                    Précision de la finition : Un second essai est ajouté uniquement s{"'"}il vient préciser la finition d{"'"}une première prise en main générique datant de plus d{"'"}un an.
                                 </span>
                             </li>
                         </ul>

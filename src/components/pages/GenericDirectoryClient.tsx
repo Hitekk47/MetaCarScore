@@ -184,7 +184,7 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
         </div>
 
         {displayItems.length === 0 && (
-            <div className="text-center py-20 text-slate-400">Aucun résultat pour "{query}"</div>
+            <div className="text-center py-20 text-slate-400">Aucun résultat pour {"\""}{query}{"\""}</div>
         )}
 
       </main>
