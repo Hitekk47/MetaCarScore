@@ -20,7 +20,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
   // Simulate the render loop
   filteredData.forEach((item) => {
     // Current implementation: findIndex
-    const realRank = data.findIndex(d => d.brand === item.brand) + 1;
+    data.findIndex(d => d.brand === item.brand);
     // (We do nothing with realRank here, just measuring the calculation cost)
   });
 }
@@ -43,7 +43,7 @@ for (let iter = 0; iter < ITERATIONS; iter++) {
   // Simulate the render loop
   filteredData.forEach((item) => {
     // Optimized implementation: map lookup
-    const realRank = rankMap.get(item.brand);
+    rankMap.get(item.brand);
   });
 }
 const endOptimized = performance.now();

@@ -3,7 +3,7 @@ const LATENCY_MS = 50;
 class DBBenchmark {
   queryCount = 0;
 
-  async select(table: string) {
+  async select(_table: string) {
     await new Promise(resolve => setTimeout(resolve, LATENCY_MS));
     this.queryCount++;
     return { data: [{ mock: 'data' }], error: null };

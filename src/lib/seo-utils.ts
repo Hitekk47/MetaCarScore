@@ -65,7 +65,7 @@ function formatSegmentPhrasing(segments: { macro: string; size: string }[], leve
 
   if (level === 'my' || level === 'family') {
     if (validResolved.length === 1) {
-      const { label, macro, size } = validResolved[0];
+      const { macro, size } = validResolved[0];
       const des = (macro === "Sport / Coupé / Cab" && size === "GT") ? "" : "des ";
       return `couvre le segment ${des}${wrap(validResolved[0])}`;
     }
@@ -76,7 +76,7 @@ function formatSegmentPhrasing(segments: { macro: string; size: string }[], leve
 
   // Model/Powertrain level
   if (validResolved.length === 1) {
-    const { label, macro, size } = validResolved[0];
+    const { macro, size } = validResolved[0];
     if (macro === "Sport / Coupé / Cab" && size === "GT") {
       return `appartient au segment ${wrap(validResolved[0])}`;
     }

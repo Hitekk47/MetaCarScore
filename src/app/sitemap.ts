@@ -100,7 +100,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // --- CONSTRUCTION DES ROUTES FILTRÉES ---
 
   const familyRoutes = Array.from(familyCounts.entries())
-    .filter(([_, count]) => count >= 3)
+    .filter(([, count]) => count >= 3)
     .map(([url]) => ({
       url,
       lastModified: new Date(),
@@ -109,7 +109,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   const myRoutes = Array.from(myCounts.entries())
-    .filter(([_, count]) => count >= 3)
+    .filter(([, count]) => count >= 3)
     .map(([url]) => ({
       url,
       lastModified: new Date(),

@@ -8,7 +8,7 @@ import PodiumWidget from "@/components/dataviz/PodiumWidget";
 import ReviewsTableCompact from "@/components/tables/ReviewsTableCompact";
 import SmartBreadcrumb from "@/components/ui/SmartBreadcrumb";
 import { Review } from "@/lib/types";
-import { CalendarRange, Gauge, Search, SlidersHorizontal, X, ChevronRight, Swords } from "lucide-react"; // Ajout ChevronRight
+import { CalendarRange, Gauge, Search, SlidersHorizontal, X, Swords } from "lucide-react";
 import { cn, calculatePageStats } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
