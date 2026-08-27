@@ -221,3 +221,44 @@ export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_fam
 
   return data as SeoStats | null;
 });
+
+export type GetModelAliasesParams = {
+  marque: string;
+  famille: string;
+  my?: number;
+  modele?: string;
+};
+
+export const getModelAliases = cache(async (params: GetModelAliasesParams): Promise<ModelAlias[]> => {
+  const escapedMarque = escapePostgrestValue(params.marque);
+  const escapedFamille = escapePostgrestValue(params.famille);
+
+  const { data, error } = await supabase
+    .from('model_aliases')
+    .select('canonical_marque, canonical_famille, canonical_modele, canonical_my, alias_marque, alias_famille, alias_modele')
+    .or(
+      `and(canonical_marque.eq."${escapedMarque}",canonical_famille.eq."${escapedFamille}"),and(alias_marque.eq."${escapedMarque}",alias_famille.eq."${escapedFamille}")`
+    );
+
+  if (error) {
+    console.error('Error fetching model aliases:', error);
+    return [];
+  }
+
+  const aliases = (data as ModelAlias[] | null) || [];
+
+  return aliases.filter((alias) => {
+    if (params.my && alias.canonical_my !== null && alias.canonical_my !== params.my) {
+      return false;
+    }
+    if (params.modele) {
+      const lowerModele = params.modele.toLowerCase();
+      const matchCanonical = alias.canonical_modele === null || alias.canonical_modele.toLowerCase() === lowerModele;
+      const matchAlias = alias.alias_modele === null || alias.alias_modele.toLowerCase() === lowerModele;
+      if (!matchCanonical && !matchAlias) {
+        return false;
+      }
+    }
+    return true;
+  });
+});

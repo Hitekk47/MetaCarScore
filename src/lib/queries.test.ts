@@ -1,22 +1,25 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
-import { supabase } from '@/lib/supabase';
-import { getReviews } from './queries';
 
-mock.module('@/lib/supabase', () => {
-  const mockFrom = mock();
-  return {
-    supabase: {
-      from: mockFrom,
-    },
-  };
-});
+mock.module('react', () => ({
+  cache: <T>(fn: T): T => fn,
+}));
+
+const mockFrom = mock();
+mock.module('@/lib/supabase', () => ({
+  supabase: {
+    from: mockFrom,
+  },
+}));
 
 describe('getReviews with aliases', () => {
   beforeEach(() => {
-    (supabase.from as any).mockClear?.();
+    mockFrom.mockClear();
   });
 
   it('should fetch unified reviews for canonical vehicle and its alias', async () => {
+    const { supabase } = await import('@/lib/supabase');
+    const { getReviews } = await import('./queries');
+
     let capturedOrQuery = '';
 
     const mockAliasChain = {
@@ -72,6 +75,9 @@ describe('getReviews with aliases', () => {
   });
 
   it('should support bidirectional alias lookup when querying by alias brand', async () => {
+    const { supabase } = await import('@/lib/supabase');
+    const { getReviews } = await import('./queries');
+
     let capturedOrQuery = '';
 
     const mockAliasChain = {
@@ -127,6 +133,9 @@ describe('getReviews with aliases', () => {
   });
 
   it('should filter out aliases with non-matching canonical_my', async () => {
+    const { supabase } = await import('@/lib/supabase');
+    const { getReviews } = await import('./queries');
+
     let capturedOrQuery = '';
 
     const mockAliasChain = {
@@ -176,5 +185,85 @@ describe('getReviews with aliases', () => {
     expect(reviews).toHaveLength(1);
     expect(capturedOrQuery).toBe('and(Marque.eq."BrandA",Famille.eq."FamA")');
     expect(capturedOrQuery).not.toContain('BrandB');
+  });
+});
+
+describe('getModelAliases', () => {
+  beforeEach(() => {
+    mockFrom.mockClear();
+  });
+
+  it('should fetch aliases for given marque and famille bidirectionally', async () => {
+    const { supabase } = await import('@/lib/supabase');
+    const { getModelAliases } = await import('./queries');
+
+    let capturedOrQuery = '';
+
+    const mockAliasChain = {
+      select: mock(() => mockAliasChain),
+      or: mock((orStr: string) => {
+        capturedOrQuery = orStr;
+        return Promise.resolve({
+          data: [
+            {
+              canonical_marque: 'Chery',
+              canonical_famille: 'Tiggo 7',
+              canonical_modele: null,
+              canonical_my: null,
+              alias_marque: 'Ebro',
+              alias_famille: 'S700',
+              alias_modele: null,
+            },
+          ],
+          error: null,
+        });
+      }),
+    };
+
+    (supabase.from as any).mockImplementation((table: string) => {
+      if (table === 'model_aliases') return mockAliasChain;
+      return {};
+    });
+
+    const aliases = await getModelAliases({ marque: 'Chery', famille: 'Tiggo 7' });
+
+    expect(aliases).toHaveLength(1);
+    expect(aliases[0].alias_marque).toBe('Ebro');
+    expect(capturedOrQuery).toContain('canonical_marque.eq."Chery"');
+    expect(capturedOrQuery).toContain('alias_marque.eq."Chery"');
+  });
+
+  it('should filter aliases by MY if specified', async () => {
+    const { supabase } = await import('@/lib/supabase');
+    const { getModelAliases } = await import('./queries');
+
+    const mockAliasChain = {
+      select: mock(() => mockAliasChain),
+      or: mock(() =>
+        Promise.resolve({
+          data: [
+            {
+              canonical_marque: 'Chery',
+              canonical_famille: 'Tiggo 7',
+              canonical_modele: null,
+              canonical_my: 2023,
+              alias_marque: 'Ebro',
+              alias_famille: 'S700',
+              alias_modele: null,
+            },
+          ],
+          error: null,
+        })
+      ),
+    };
+
+    (supabase.from as any).mockImplementation((table: string) => {
+      if (table === 'model_aliases') return mockAliasChain;
+      return {};
+    });
+
+    const aliases = await getModelAliases({ marque: 'Chery', famille: 'Tiggo 7', my: 2024 });
+
+    expect(aliases).toHaveLength(0);
   });
 });

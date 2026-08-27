@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
-import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
+import { getFullContext, getReviews, getVehicleSeoStats, getModelAliases } from "@/lib/queries";
 import { generateSeoText, cleanSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
@@ -118,7 +118,7 @@ export default async function PowertrainPage({ params }: PageProps) {
   const realType = context.real_powertrain;
 
   // 4. Chargement Data via cache
-  const [reviews, seoStats] = await Promise.all([
+  const [reviews, seoStats, aliases] = await Promise.all([
     getReviews({
       marque: realMarque,
       famille: realFamille,
@@ -133,6 +133,12 @@ export default async function PowertrainPage({ params }: PageProps) {
       p_famille: realFamille,
       p_my: parseInt(my),
       p_modele: realModele
+    }),
+    getModelAliases({
+      marque: realMarque,
+      famille: realFamille,
+      my: parseInt(my),
+      modele: realModele
     })
   ]);
 
@@ -192,6 +198,7 @@ export default async function PowertrainPage({ params }: PageProps) {
         level="powertrain"
         seoText={seoText}
         iqr={seoStats?.iqr}
+        aliases={aliases}
       />
     </>
   );
