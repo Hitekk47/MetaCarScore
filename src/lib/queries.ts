@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Review } from '@/lib/types';
+import { Review, ModelAlias } from '@/lib/types';
 import { SeoStats } from './seo-utils';
 
 // Types for RPC responses
@@ -122,7 +122,7 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
 });
 
 export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_famille: string; p_my?: number; p_modele?: string }) => {
-  const { data, error } = await supabase.rpc('get_vehicle_seo_stats', params);
+  const { data, error } = await supabase.rpc('get_vehicle_seo_stats_v2', params);
 
   if (error) {
     console.error('Error fetching vehicle SEO stats:', error);
@@ -130,4 +130,29 @@ export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_fam
   }
 
   return data as SeoStats | null;
+});
+
+export const getModelAliases = cache(async (params: { marque: string; famille: string; my?: number; modele?: string }) => {
+  let query = supabase
+    .from('model_aliases')
+    .select('*')
+    .eq('canonical_marque', params.marque)
+    .eq('canonical_famille', params.famille);
+
+  if (params.modele) {
+    query = query.eq('canonical_modele', params.modele);
+  }
+
+  if (params.my) {
+    query = query.or(`canonical_my.eq.${params.my},canonical_my.is.null`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching model aliases:', error);
+    return [];
+  }
+
+  return (data as ModelAlias[]) || [];
 });

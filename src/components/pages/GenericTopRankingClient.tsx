@@ -85,7 +85,7 @@ function RankingContent({
       if (timeRange === '1y') targetMY = currentYear - 1;
       else if (timeRange === '5y') targetMY = currentYear - 5;
 
-      const rpcName = customRpcName || 'get_model_ranking_v3';
+      const rpcName = customRpcName || 'get_model_ranking_v4';
       const rpcParams: RpcParams = { min_my: targetMY, limit_val: 100 };
 
       if (!customRpcName) {

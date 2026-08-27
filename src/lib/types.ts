@@ -73,3 +73,14 @@ export type CarouselItem = {
   MaxPower: number;
   FirstTestDate: string;
 };
+
+export type ModelAlias = {
+  id?: number;
+  canonical_marque: string;
+  canonical_famille: string;
+  canonical_modele: string;
+  canonical_my?: number | null;
+  alias_marque: string;
+  alias_famille: string;
+  alias_modele: string;
+};

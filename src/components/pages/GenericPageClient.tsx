@@ -7,9 +7,9 @@ import ScoreDistribution from "@/components/dataviz/ScoreDistribution";
 import PodiumWidget from "@/components/dataviz/PodiumWidget";
 import ReviewsTableCompact from "@/components/tables/ReviewsTableCompact";
 import SmartBreadcrumb from "@/components/ui/SmartBreadcrumb";
-import { Review } from "@/lib/types";
+import { Review, ModelAlias } from "@/lib/types";
 import { CalendarRange, Gauge, Search, SlidersHorizontal, X, Swords } from "lucide-react";
-import { cn, calculatePageStats } from "@/lib/utils";
+import { cn, calculatePageStats, formatAliasDisplay } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import SeoSummaryCard from "@/components/seo/SeoSummaryCard";
@@ -26,11 +26,12 @@ type Props = {
   powertrain?: string;
   powertrainName?: string;
   level: PageLevel;
+  aliases?: ModelAlias[];
   seoText?: string;
   iqr?: number;
 };
 
-export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, seoText, iqr }: Props) {
+export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, aliases, seoText, iqr }: Props) {
 
   // --- FILTRES ---
   const [query, setQuery] = useState("");
@@ -171,6 +172,13 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                         <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none text-white">
                             {getPageTitle()}
                         </h1>
+
+                        {/* ENCART ALIASES */}
+                        {aliases && aliases.length > 0 && (
+                          <div className="mt-2 text-sm md:text-base font-medium text-slate-400 italic">
+                            {formatAliasDisplay(aliases, marque)}
+                          </div>
+                        )}
 
                         {/* SOUS-TITRE POWERTRAIN (Nouveau) */}
                         {/* S'affiche uniquement si on est au niveau powertrain */}

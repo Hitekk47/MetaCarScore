@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Review, AggregatedSource } from "@/lib/types";
+import { Review, ModelAlias, AggregatedSource } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -42,6 +42,25 @@ export function getScoreCategory(score: number): ScoreCategory {
   if (score >= 75) return 'positive';
   if (score >= 50) return 'mixed';
   return 'negative';
+}
+
+export function formatAliasDisplay(aliases: ModelAlias[], canonicalMarque: string): string {
+  if (!aliases || aliases.length === 0) return "";
+
+  // Unique formatted alias names
+  const aliasNames = Array.from(
+    new Set(
+      aliases.map(a => {
+        const showBrand = a.alias_marque.toLowerCase() !== canonicalMarque.toLowerCase();
+        return showBrand ? `${a.alias_marque} ${a.alias_modele}` : a.alias_modele;
+      })
+    )
+  );
+
+  if (aliasNames.length === 0) return "";
+
+  const prefix = aliasNames.length > 1 ? "Également commercialisé sous les noms :" : "Également commercialisé sous le nom :";
+  return `${prefix} ${aliasNames.join(", ")}`;
 }
 
 export function calculateDistribution(scores: number[]) {

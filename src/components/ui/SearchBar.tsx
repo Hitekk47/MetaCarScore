@@ -215,7 +215,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
       setIsOpen(true);
 
       const { data, error } = await supabase
-        .rpc('search_cars_v13', { search_term: debouncedQuery });
+        .rpc('search_cars_v14', { search_term: debouncedQuery });
 
       if (data) {
         let finalResults = data as SearchResult[];
