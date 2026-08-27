@@ -113,6 +113,8 @@ export default async function MYPage({ params }: PageProps) {
 
   if (!reviews || reviews.length === 0) notFound();
 
+  console.log('[MYPage] Transmitted aliases to GenericPageClient:', aliases);
+
   const seoText = seoStats ? generateSeoText(seoStats, {
     marque: realMarque,
     famille: realFamille,

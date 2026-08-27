@@ -126,6 +126,8 @@ export default async function ModelePage({ params }: PageProps) {
     notFound();
   }
 
+  console.log('[ModelePage] Transmitted aliases to GenericPageClient:', aliases);
+
   const seoText = seoStats ? generateSeoText(seoStats, {
     marque: realMarque,
     famille: realFamille,

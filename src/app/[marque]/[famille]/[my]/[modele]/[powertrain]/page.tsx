@@ -144,6 +144,8 @@ export default async function PowertrainPage({ params }: PageProps) {
 
   if (!reviews || reviews.length === 0) notFound();
 
+  console.log('[PowertrainPage] Transmitted aliases to GenericPageClient:', aliases);
+
   const seoText = seoStats ? generateSeoText(seoStats, {
     marque: realMarque,
     famille: realFamille,

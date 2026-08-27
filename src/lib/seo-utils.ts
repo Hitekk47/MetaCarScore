@@ -63,9 +63,10 @@ function formatSegmentPhrasing(rawSegments: (string | { macro?: string; size?: s
   const resolved = segments.map(s => {
     const macroEntry = MACRO_CONFIG.find(m => m.label === s.macro);
     if (!macroEntry) return null;
-    const segment = macroEntry.segments.find(seg => seg.code === s.size);
+    const cleanSize = s.size.replace(/^(SUV|BERLINE|VAN|UTILITAIRE)-/i, "");
+    const segment = macroEntry.segments.find(seg => seg.code === s.size || seg.code === cleanSize);
     if (!segment) return null;
-    return { label: segment.label, macro: s.macro, size: s.size };
+    return { label: segment.label, macro: s.macro, size: segment.code };
   });
 
   if (resolved.some(r => r === null)) return "";

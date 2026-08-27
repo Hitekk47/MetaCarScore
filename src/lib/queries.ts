@@ -138,14 +138,16 @@ export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_fam
 });
 
 export const getModelAliases = cache(async (params: { marque: string; famille: string; my?: number; modele?: string }) => {
+  console.log('[getModelAliases] Params:', params);
+
   let query = supabase
     .from('model_aliases')
     .select('*')
-    .eq('canonical_marque', params.marque)
-    .eq('canonical_famille', params.famille);
+    .ilike('canonical_marque', params.marque)
+    .ilike('canonical_famille', params.famille);
 
   if (params.modele) {
-    query = query.or(`canonical_modele.eq."${params.modele}",canonical_modele.is.null`);
+    query = query.or(`canonical_modele.ilike."${params.modele}",canonical_modele.is.null`);
   }
 
   if (params.my) {
@@ -155,9 +157,10 @@ export const getModelAliases = cache(async (params: { marque: string; famille: s
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching model aliases:', error);
+    console.error('[getModelAliases] Error fetching model aliases:', error);
     return [];
   }
 
+  console.log('[getModelAliases] Fetched aliases data:', data);
   return (data as ModelAlias[]) || [];
 });
