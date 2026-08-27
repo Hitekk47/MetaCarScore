@@ -48,7 +48,11 @@ BEGIN
     SELECT
       ma."canonical_marque" AS "Marque",
       ma."canonical_famille" AS "Famille",
-      COALESCE(ma."canonical_modele", r."Modele") AS "Modele",
+      COALESCE(
+        ma."canonical_modele",
+        (SELECT r_can."Modele" FROM reviews r_can WHERE r_can."Marque" = ma.canonical_marque AND r_can."Famille" = ma.canonical_famille LIMIT 1),
+        r."Modele"
+      ) AS "Modele",
       r."MY",
       ma."alias_marque" AS alias_m,
       ma."alias_famille" AS alias_f,
@@ -139,7 +143,10 @@ BEGIN
   SELECT
     ma.canonical_marque,
     ma.canonical_famille,
-    ma.canonical_modele,
+    COALESCE(
+      ma.canonical_modele,
+      (SELECT r_can."Modele" FROM reviews r_can WHERE r_can."Marque" = ma.canonical_marque AND r_can."Famille" = ma.canonical_famille LIMIT 1)
+    ),
     ma.alias_marque,
     ma.alias_famille,
     ma.alias_modele
@@ -205,7 +212,7 @@ REVOKE ALL ON FUNCTION "public"."get_full_context_by_slugs_v2"("p_marque_slug" "
 GRANT EXECUTE ON FUNCTION "public"."get_full_context_by_slugs_v2"("p_marque_slug" "text", "p_famille_slug" "text", "p_my" integer, "p_modele_slug" "text", "p_powertrain_slug" "text") TO "anon", "authenticated", "service_role";
 
 
--- 3. get_vehicle_seo_stats_v2: Unified SEO stats aggregating canonical & alias reviews
+-- 3. get_vehicle_seo_stats_v2: Restored full SEO stats logic with exact JSON keys expected by generateSeoText
 CREATE OR REPLACE FUNCTION "public"."get_vehicle_seo_stats_v2"("p_marque" "text", "p_famille" "text", "p_my" integer DEFAULT NULL::integer, "p_modele" "text" DEFAULT NULL::"text") RETURNS "jsonb"
 LANGUAGE "plpgsql" SECURITY DEFINER
 SET "search_path" TO 'public'
@@ -294,30 +301,133 @@ BEGIN
     )
   )
   INTO v_segments
-  FROM public.model_segments ms
-  WHERE ms."Marque" = p_marque
-    AND (
-      p_modele IS NOT NULL AND ms."Modele" = p_modele
-      OR
-      p_modele IS NULL AND ms."Modele" IN (
-        SELECT DISTINCT r."Modele"
-        FROM public.reviews r
-        WHERE r."Marque" = p_marque AND r."Famille" = p_famille
-      )
-    );
+  FROM public.reviews r
+  JOIN public.model_segments ms
+    ON (r."Marque" = ms."Marque" OR r."Marque" IN (SELECT ma.alias_marque FROM public.model_aliases ma WHERE ma.canonical_marque = p_marque))
+    AND (r."Modele" = ms."Modele" OR ms."Modele" IN (SELECT ma.canonical_modele FROM public.model_aliases ma WHERE ma.canonical_marque = p_marque AND ma.canonical_modele IS NOT NULL))
+    AND r."MY" = ms."MY"
+  WHERE (r."Marque" = p_marque OR r."Marque" IN (SELECT ma.alias_marque FROM public.model_aliases ma WHERE ma.canonical_marque = p_marque))
+    AND (r."Famille" = p_famille OR r."Famille" IN (SELECT ma.alias_famille FROM public.model_aliases ma WHERE ma.canonical_famille = p_famille))
+    AND (p_my IS NULL OR r."MY" = p_my)
+    AND (p_modele IS NULL OR r."Modele" = p_modele);
 
-  v_result := jsonb_build_object(
-    'reviewCount', v_entity_reviews_count,
-    'avgScore', ROUND(v_entity_avg_score, 1),
-    'isReliable', v_is_reliable,
-    'iqr', ROUND(v_iqr, 1),
-    'consensusLabel', v_consensus_label,
-    'distribution', jsonb_build_object(
-      'pos', v_dist_pos_count,
-      'mix', v_dist_mix_count,
-      'neg', v_dist_neg_count
+  -- 3. Rang et moyenne sur les cinq dernières MY
+  IF v_segments IS NOT NULL AND jsonb_array_length(v_segments) > 0 THEN
+    WITH target_segments AS (
+      SELECT macro, size
+      FROM jsonb_to_recordset(v_segments) AS es(macro text, size text)
     ),
-    'segments', COALESCE(v_segments, '[]'::jsonb)
+    segment_vehicles AS (
+      SELECT
+        COALESCE(ma.canonical_marque, r."Marque") AS eff_marque,
+        COALESCE(ma.canonical_famille, r."Famille") AS eff_famille,
+        r."MY" AS eff_my,
+        COALESCE(ma.canonical_modele, r."Modele") AS eff_modele,
+        avg(r."Score") AS vehicle_avg_raw,
+        ROUND(avg(r."Score"), 1) AS vehicle_avg_rank_score,
+        count(*) AS vehicle_review_count
+      FROM public.reviews r
+      LEFT JOIN public.model_aliases ma ON r."Marque" = ma.alias_marque AND r."Famille" = ma.alias_famille AND (ma.alias_modele IS NULL OR r."Modele" = ma.alias_modele)
+      JOIN public.model_segments ms
+        ON r."Marque" = ms."Marque"
+        AND r."Modele" = ms."Modele"
+        AND r."MY" = ms."MY"
+      JOIN target_segments ts
+        ON ms."Macro_Category" = ts.macro
+        AND ms."Segment_Size" = ts.size
+      WHERE r."MY" >= v_current_year - 5
+        AND NOT (
+          COALESCE(ma.canonical_marque, r."Marque") = p_marque
+          AND COALESCE(ma.canonical_famille, r."Famille") = p_famille
+          AND (p_my IS NULL OR r."MY" = p_my)
+          AND (p_modele IS NULL OR COALESCE(ma.canonical_modele, r."Modele") = p_modele)
+        )
+      GROUP BY
+        COALESCE(ma.canonical_marque, r."Marque"),
+        COALESCE(ma.canonical_famille, r."Famille"),
+        r."MY",
+        COALESCE(ma.canonical_modele, r."Modele")
+    ),
+    all_for_avg AS (
+      SELECT vehicle_avg_raw
+      FROM segment_vehicles
+      UNION ALL
+      SELECT v_entity_avg_score
+    ),
+    ranked_pool AS (
+      SELECT
+        vehicle_avg_rank_score AS rank_score,
+        vehicle_review_count AS review_count,
+        false AS is_target
+      FROM segment_vehicles
+      WHERE vehicle_review_count >= 3
+      UNION ALL
+      SELECT
+        v_entity_rank_score AS rank_score,
+        v_entity_reviews_count AS review_count,
+        true AS is_target
+      WHERE v_is_reliable
+    ),
+    ranked_results AS (
+      SELECT
+        is_target,
+        RANK() OVER (
+          ORDER BY rank_score DESC, review_count DESC
+        ) AS calculated_rank
+      FROM ranked_pool
+    )
+    SELECT
+      CASE
+        WHEN v_is_reliable THEN (
+          SELECT calculated_rank
+          FROM ranked_results
+          WHERE is_target = true
+          LIMIT 1
+        )
+        ELSE NULL
+      END,
+      (SELECT count(*) FROM ranked_pool),
+      (SELECT avg(vehicle_avg_raw) FROM all_for_avg)
+    INTO
+      v_rank,
+      v_total_in_segment,
+      v_segment_avg;
+  END IF;
+
+  -- 4. JSON retourné à Next.js (Strictement identique à v1)
+  v_result := jsonb_build_object(
+    'review_count', v_entity_reviews_count,
+    'metacarscore', ROUND(v_entity_avg_score),
+    'q1', ROUND(v_q1::numeric, 1),
+    'median', ROUND(v_median::numeric, 1),
+    'q3', ROUND(v_q3::numeric, 1),
+    'iqr', ROUND(v_iqr::numeric, 1),
+    'consensus_label', v_consensus_label,
+    'distribution', jsonb_build_object(
+      'positive', jsonb_build_object(
+        'count', v_dist_pos_count,
+        'percentage', ROUND(
+          (v_dist_pos_count::numeric / v_entity_reviews_count) * 100
+        )
+      ),
+      'mixed', jsonb_build_object(
+        'count', v_dist_mix_count,
+        'percentage', ROUND(
+          (v_dist_mix_count::numeric / v_entity_reviews_count) * 100
+        )
+      ),
+      'negative', jsonb_build_object(
+        'count', v_dist_neg_count,
+        'percentage', ROUND(
+          (v_dist_neg_count::numeric / v_entity_reviews_count) * 100
+        )
+      )
+    ),
+    'rank', v_rank,
+    'total_in_segment', v_total_in_segment,
+    'segment_avg', ROUND(v_segment_avg, 1),
+    'segments', COALESCE(v_segments, '[]'::jsonb),
+    'is_reliable', v_is_reliable
   );
 
   RETURN v_result;
@@ -347,7 +457,11 @@ BEGIN
       COALESCE(ma.canonical_marque, r."Marque") AS effective_marque,
       COALESCE(ma.canonical_famille, r."Famille") AS effective_famille,
       r."MY",
-      COALESCE(ma.canonical_modele, r."Modele") AS effective_modele,
+      COALESCE(
+        ma.canonical_modele,
+        (SELECT r_can."Modele" FROM reviews r_can WHERE r_can."Marque" = ma.canonical_marque AND r_can."Famille" = ma.canonical_famille LIMIT 1),
+        r."Modele"
+      ) AS effective_modele,
       r."Score",
       r."Type",
       r."Transmission"
@@ -357,8 +471,8 @@ BEGIN
       AND (ma.alias_modele IS NULL OR r."Modele" = ma.alias_modele)
       AND (ma.canonical_my IS NULL OR ma.canonical_my = r."MY")
     WHERE (min_my IS NULL OR r."MY" >= min_my)
-      AND (category_filter IS NULL OR r."Type" ILIKE '%' || category_filter || '%')
-      AND (transmission_filter IS NULL OR r."Transmission" ILIKE '%' || transmission_filter || '%')
+      AND (category_filter IS NULL OR r."Type" ILIKE category_filter || '%')
+      AND (transmission_filter IS NULL OR r."Transmission" ILIKE '%' || transmission_filter)
   ),
   ModelAggregates AS (
     SELECT
@@ -382,7 +496,7 @@ BEGIN
     ms."Segment_Size" AS "segment_size",
     ms."Macro_Category" AS "macro_category"
   FROM ModelAggregates ma
-  LEFT JOIN model_segments ms ON ms."Marque" = ma.m_marque AND ms."Modele" = ma.m_modele
+  LEFT JOIN model_segments ms ON ms."Marque" = ma.m_marque AND ms."Modele" = ma.m_modele AND ms."MY" = ma.m_my
   WHERE (macro_category_filter IS NULL OR ms."Macro_Category" = macro_category_filter)
     AND (segment_filter IS NULL OR ms."Segment_Size" = segment_filter)
   ORDER BY ma.calculated_avg DESC, ma.total_reviews DESC
@@ -406,7 +520,11 @@ BEGIN
     SELECT
       COALESCE(ma.canonical_marque, r."Marque") AS effective_marque,
       COALESCE(ma.canonical_famille, r."Famille") AS effective_famille,
-      COALESCE(ma.canonical_modele, r."Modele") AS effective_modele,
+      COALESCE(
+        ma.canonical_modele,
+        (SELECT r_can."Modele" FROM reviews r_can WHERE r_can."Marque" = ma.canonical_marque AND r_can."Famille" = ma.canonical_famille LIMIT 1),
+        r."Modele"
+      ) AS effective_modele,
       r."MY",
       r."Score",
       r."Puissance",
@@ -453,7 +571,11 @@ BEGIN
     SELECT
       COALESCE(ma.canonical_marque, r."Marque") AS effective_marque,
       COALESCE(ma.canonical_famille, r."Famille") AS effective_famille,
-      COALESCE(ma.canonical_modele, r."Modele") AS effective_modele,
+      COALESCE(
+        ma.canonical_modele,
+        (SELECT r_can."Modele" FROM reviews r_can WHERE r_can."Marque" = ma.canonical_marque AND r_can."Famille" = ma.canonical_famille LIMIT 1),
+        r."Modele"
+      ) AS effective_modele,
       r."MY",
       r."Score"
     FROM reviews r
