@@ -68,6 +68,56 @@ $$;
 ALTER FUNCTION "public"."find_brand_by_slug"("slug_input" "text") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."find_family_by_slug"("real_brand_name" "text", "family_slug" "text") RETURNS TABLE("Famille" "text")
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT DISTINCT r."Famille"
+  FROM reviews r
+  WHERE r."Marque" = real_brand_name
+  AND slugify_text(r."Famille") = family_slug
+  LIMIT 1;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."find_family_by_slug"("real_brand_name" "text", "family_slug" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."find_model_by_slug"("real_brand_name" "text", "real_family_name" "text", "target_my" integer, "model_slug" "text") RETURNS TABLE("Modele" "text")
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT DISTINCT r."Modele"
+  FROM reviews r
+  WHERE r."Marque" = real_brand_name
+  AND r."Famille" = real_family_name
+  AND r."MY" = target_my
+  AND slugify_text(r."Modele") = model_slug
+  LIMIT 1;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."find_model_by_slug"("real_brand_name" "text", "real_family_name" "text", "target_my" integer, "model_slug" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."find_type_by_slug"("type_slug" "text") RETURNS TABLE("Type" "text")
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT DISTINCT r."Type"
+  FROM reviews r
+  WHERE slugify_text(r."Type") = type_slug
+  LIMIT 1;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."find_type_by_slug"("type_slug" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_brand_ranking_v3"("min_my" integer DEFAULT NULL::integer, "min_count" integer DEFAULT 5) RETURNS TABLE("brand" "text", "avg_score" numeric, "review_count" bigint, "best_model" "text", "best_score" integer, "best_famille" "text", "best_my" integer, "worst_model" "text", "worst_score" integer, "worst_famille" "text", "worst_my" integer)
@@ -1078,83 +1128,98 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."find_brand_by_slug"("slug_input" "text") TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."find_brand_by_slug"("slug_input" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."find_brand_by_slug"("slug_input" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."find_brand_by_slug"("slug_input" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."find_brand_by_slug"("slug_input" "text") TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."find_family_by_slug"("real_brand_name" "text", "family_slug" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."find_family_by_slug"("real_brand_name" "text", "family_slug" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."find_family_by_slug"("real_brand_name" "text", "family_slug" "text") TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_brand_ranking_v3"("min_my" integer, "min_count" integer) TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_brand_ranking_v3"("min_my" integer, "min_count" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."find_model_by_slug"("real_brand_name" "text", "real_family_name" "text", "target_my" integer, "model_slug" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."find_model_by_slug"("real_brand_name" "text", "real_family_name" "text", "target_my" integer, "model_slug" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."find_model_by_slug"("real_brand_name" "text", "real_family_name" "text", "target_my" integer, "model_slug" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."find_type_by_slug"("type_slug" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."find_type_by_slug"("type_slug" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."find_type_by_slug"("type_slug" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_brand_ranking_v3"("min_my" integer, "min_count" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_brand_ranking_v3"("min_my" integer, "min_count" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_brand_ranking_v3"("min_my" integer, "min_count" integer) TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_break_ranking"("min_my" integer, "limit_val" integer) TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_break_ranking"("min_my" integer, "limit_val" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_break_ranking"("min_my" integer, "limit_val" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_break_ranking"("min_my" integer, "limit_val" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_break_ranking"("min_my" integer, "limit_val" integer) TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_convertible_ranking"("min_my" integer, "limit_val" integer) TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_convertible_ranking"("min_my" integer, "limit_val" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_convertible_ranking"("min_my" integer, "limit_val" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_convertible_ranking"("min_my" integer, "limit_val" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_convertible_ranking"("min_my" integer, "limit_val" integer) TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_families_by_brand"("brand_name" "text") TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_families_by_brand"("brand_name" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_families_by_brand"("brand_name" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_families_by_brand"("brand_name" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_families_by_brand"("brand_name" "text") TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_full_context_by_slugs"("p_marque_slug" "text", "p_famille_slug" "text", "p_my" integer, "p_modele_slug" "text", "p_powertrain_slug" "text") TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_full_context_by_slugs"("p_marque_slug" "text", "p_famille_slug" "text", "p_my" integer, "p_modele_slug" "text", "p_powertrain_slug" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_full_context_by_slugs"("p_marque_slug" "text", "p_famille_slug" "text", "p_my" integer, "p_modele_slug" "text", "p_powertrain_slug" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_full_context_by_slugs"("p_marque_slug" "text", "p_famille_slug" "text", "p_my" integer, "p_modele_slug" "text", "p_powertrain_slug" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_full_context_by_slugs"("p_marque_slug" "text", "p_famille_slug" "text", "p_my" integer, "p_modele_slug" "text", "p_powertrain_slug" "text") TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_homepage_stats"() TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_homepage_stats"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_homepage_stats"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_homepage_stats"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_homepage_stats"() TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_model_ranking_v3"("min_my" integer, "category_filter" "text", "transmission_filter" "text", "macro_category_filter" "text", "segment_filter" "text", "limit_val" integer) TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_model_ranking_v3"("min_my" integer, "category_filter" "text", "transmission_filter" "text", "macro_category_filter" "text", "segment_filter" "text", "limit_val" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_model_ranking_v3"("min_my" integer, "category_filter" "text", "transmission_filter" "text", "macro_category_filter" "text", "segment_filter" "text", "limit_val" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_model_ranking_v3"("min_my" integer, "category_filter" "text", "transmission_filter" "text", "macro_category_filter" "text", "segment_filter" "text", "limit_val" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_model_ranking_v3"("min_my" integer, "category_filter" "text", "transmission_filter" "text", "macro_category_filter" "text", "segment_filter" "text", "limit_val" integer) TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_sitemap_groups_filtered"() TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_sitemap_groups_filtered"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_sitemap_groups_filtered"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_sitemap_groups_filtered"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_sitemap_groups_filtered"() TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_trending_models"("limit_val" integer) TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_trending_models"("limit_val" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_trending_models"("limit_val" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_trending_models"("limit_val" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_trending_models"("limit_val" integer) TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."get_vehicle_seo_stats"("p_marque" "text", "p_famille" "text", "p_my" integer, "p_modele" "text") TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."get_vehicle_seo_stats"("p_marque" "text", "p_famille" "text", "p_my" integer, "p_modele" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_vehicle_seo_stats"("p_marque" "text", "p_famille" "text", "p_my" integer, "p_modele" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_vehicle_seo_stats"("p_marque" "text", "p_famille" "text", "p_my" integer, "p_modele" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_vehicle_seo_stats"("p_marque" "text", "p_famille" "text", "p_my" integer, "p_modele" "text") TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."search_cars_v13"("search_term" "text") TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."search_cars_v13"("search_term" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_cars_v13"("search_term" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."search_cars_v13"("search_term" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."search_cars_v13"("search_term" "text") TO "service_role";
 
 
 
-GRANT EXECUTE ON FUNCTION "public"."slugify_text"("value" "text") TO "anon";
-GRANT EXECUTE ON FUNCTION "public"."slugify_text"("value" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."slugify_text"("value" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."slugify_text"("value" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."slugify_text"("value" "text") TO "service_role";
 
 
