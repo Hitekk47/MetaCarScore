@@ -165,3 +165,59 @@ export function getPowerRange(reviews: Review[]) {
     const max = Math.max(...powers);
     return min === max ? `${min} ch` : `${min} - ${max} ch`;
 }
+
+export type AliasItem = {
+  canonical_marque: string;
+  canonical_famille: string;
+  canonical_modele: string | null;
+  alias_marque: string;
+  alias_famille: string;
+  alias_modele: string | null;
+};
+
+export function formatAliasDisplay(aliases: AliasItem[], currentMarque: string): string | null {
+  if (!aliases || aliases.length === 0) return null;
+
+  const namesSet = new Set<string>();
+
+  for (const alias of aliases) {
+    const isCanonical = alias.canonical_marque.toLowerCase() === currentMarque.toLowerCase();
+
+    const counterpartBrand = isCanonical ? alias.alias_marque : alias.canonical_marque;
+    const counterpartName = isCanonical
+      ? alias.alias_modele || alias.alias_famille
+      : alias.canonical_modele || alias.canonical_famille;
+
+    if (!counterpartName) continue;
+
+    const brandDiffers = counterpartBrand.toLowerCase() !== currentMarque.toLowerCase();
+
+    let displayString: string;
+    if (brandDiffers) {
+      if (counterpartName.toLowerCase().startsWith(counterpartBrand.toLowerCase() + ' ')) {
+        displayString = counterpartName;
+      } else {
+        displayString = `${counterpartBrand} ${counterpartName}`;
+      }
+    } else {
+      if (counterpartName.toLowerCase().startsWith(counterpartBrand.toLowerCase() + ' ')) {
+        displayString = counterpartName.slice(counterpartBrand.length).trim();
+      } else {
+        displayString = counterpartName;
+      }
+    }
+
+    if (displayString) {
+      namesSet.add(displayString);
+    }
+  }
+
+  const namesList = Array.from(namesSet);
+  if (namesList.length === 0) return null;
+
+  if (namesList.length === 1) {
+    return `Également commercialisé sous le nom : ${namesList[0]}`;
+  }
+
+  return `Également commercialisé sous les noms : ${namesList.join(', ')}`;
+}

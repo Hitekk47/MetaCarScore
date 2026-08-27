@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
-import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
+import { getFullContext, getReviews, getVehicleSeoStats, getModelAliases } from "@/lib/queries";
 import { generateSeoText, cleanSeoText } from "@/lib/seo-utils";
 
 export const revalidate = 3600;
@@ -93,7 +93,7 @@ export default async function MYPage({ params }: PageProps) {
 
 
   // 3. Chargement Data (avec cache)
-  const [reviews, seoStats] = await Promise.all([
+  const [reviews, seoStats, aliases] = await Promise.all([
     getReviews({
       marque: realMarque,
       famille: realFamille,
@@ -103,6 +103,11 @@ export default async function MYPage({ params }: PageProps) {
       p_marque: realMarque,
       p_famille: realFamille,
       p_my: parseInt(my)
+    }),
+    getModelAliases({
+      marque: realMarque,
+      famille: realFamille,
+      my: parseInt(my)
     })
   ]);
 
@@ -152,6 +157,7 @@ export default async function MYPage({ params }: PageProps) {
         level="my"
         seoText={seoText}
         iqr={seoStats?.iqr}
+        aliases={aliases}
       />
     </>
   );

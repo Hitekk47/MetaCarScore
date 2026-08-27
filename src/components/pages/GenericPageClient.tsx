@@ -8,8 +8,8 @@ import PodiumWidget from "@/components/dataviz/PodiumWidget";
 import ReviewsTableCompact from "@/components/tables/ReviewsTableCompact";
 import SmartBreadcrumb from "@/components/ui/SmartBreadcrumb";
 import { Review } from "@/lib/types";
-import { CalendarRange, Gauge, Search, SlidersHorizontal, X, Swords } from "lucide-react";
-import { cn, calculatePageStats } from "@/lib/utils";
+import { CalendarRange, Gauge, Search, SlidersHorizontal, X, Swords, ArrowRightLeft } from "lucide-react";
+import { cn, calculatePageStats, formatAliasDisplay, AliasItem } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import SeoSummaryCard from "@/components/seo/SeoSummaryCard";
@@ -28,9 +28,10 @@ type Props = {
   level: PageLevel;
   seoText?: string;
   iqr?: number;
+  aliases?: AliasItem[];
 };
 
-export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, seoText, iqr }: Props) {
+export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, seoText, iqr, aliases }: Props) {
 
   // --- FILTRES ---
   const [query, setQuery] = useState("");
@@ -171,6 +172,14 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                         <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none text-white">
                             {getPageTitle()}
                         </h1>
+
+                        {/* ENCART ALIASES */}
+                        {aliases && aliases.length > 0 && formatAliasDisplay(aliases, marque) && (
+                            <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/60 text-slate-300 text-xs md:text-sm font-medium backdrop-blur-sm">
+                                <ArrowRightLeft size={14} className="text-blue-400 shrink-0" />
+                                <span>{formatAliasDisplay(aliases, marque)}</span>
+                            </div>
+                        )}
 
                         {/* SOUS-TITRE POWERTRAIN (Nouveau) */}
                         {/* S'affiche uniquement si on est au niveau powertrain */}
