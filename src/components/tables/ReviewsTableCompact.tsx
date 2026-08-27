@@ -5,7 +5,7 @@ import Powertrain from "../ui/Powertrain";
 import { toSlug } from "@/lib/slugify";
 import { MagazineBadge } from "@/components/ui/MagazineBadge";
 
-export default function ReviewsTableCompact({ data, hideBrand = false }: { data: Review[], hideBrand?: boolean }) {
+export default function ReviewsTableCompact({ data, hideBrand = false, pageMarque }: { data: Review[], hideBrand?: boolean, pageMarque?: string }) {
   
   const formatYearMonth = (dateStr: string) => {
     if (!dateStr) return "";
@@ -75,7 +75,11 @@ export default function ReviewsTableCompact({ data, hideBrand = false }: { data:
                         href={modelHref}
                         className="font-bold text-xs md:text-sm text-slate-900 group-hover:text-blue-600 transition leading-tight truncate max-w-[180px] md:max-w-none block"
                       >
-                        {hideBrand ? row.Modele : `${row.Marque} ${row.Modele}`}
+                        {hideBrand && pageMarque && row.Marque.toLowerCase() !== pageMarque.toLowerCase()
+                          ? `${row.Marque} ${row.Modele}`
+                          : hideBrand
+                          ? row.Modele
+                          : `${row.Marque} ${row.Modele}`}
                       </Link>
 
                       {row.Finition && (

@@ -294,6 +294,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                 <ReviewsTableCompact 
                     data={visibleReviews} 
                     hideBrand={true}
+                    pageMarque={marque}
                 />
 {filteredReviews.length > displayLimit && (
     <div className="mt-8 flex flex-col items-center gap-2">

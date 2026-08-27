@@ -2,6 +2,7 @@ import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Review } from '@/lib/types';
 import { SeoStats } from './seo-utils';
+import { escapePostgrestValue } from './validation';
 
 // Types for RPC responses
 export interface BrandContext {
@@ -78,22 +79,111 @@ export type ReviewFilters = {
   transmission?: string; // For ilike
 };
 
+export interface ModelAlias {
+  canonical_marque: string;
+  canonical_famille: string;
+  canonical_modele: string | null;
+  canonical_my: number | null;
+  alias_marque: string;
+  alias_famille: string;
+  alias_modele: string | null;
+}
+
 export const getReviews = cache(async (filters: ReviewFilters) => {
-  let query = supabase
-    .from('reviews')
-    .select('*')
-    .eq('Marque', filters.marque);
+  // 1. Fetch relevant aliases bidirectionally from `model_aliases`
+  let aliasQuery = supabase
+    .from('model_aliases')
+    .select('canonical_marque, canonical_famille, canonical_modele, canonical_my, alias_marque, alias_famille, alias_modele');
 
   if (filters.famille) {
-    query = query.eq('Famille', filters.famille);
+    const escapedMarque = escapePostgrestValue(filters.marque);
+    const escapedFamille = escapePostgrestValue(filters.famille);
+
+    aliasQuery = aliasQuery.or(
+      `and(canonical_marque.eq."${escapedMarque}",canonical_famille.eq."${escapedFamille}"),and(alias_marque.eq."${escapedMarque}",alias_famille.eq."${escapedFamille}")`
+    );
+  } else {
+    const escapedMarque = escapePostgrestValue(filters.marque);
+    aliasQuery = aliasQuery.or(
+      `canonical_marque.eq."${escapedMarque}",alias_marque.eq."${escapedMarque}"`
+    );
   }
 
+  const { data: aliasData, error: aliasError } = await aliasQuery;
+
+  if (aliasError) {
+    console.error('Error fetching model aliases:', aliasError);
+  }
+
+  const aliases = (aliasData as ModelAlias[] | null) || [];
+
+  // Filter aliases by MY if filters.my is specified
+  const matchingAliases = aliases.filter((alias) => {
+    if (filters.my && alias.canonical_my !== null && alias.canonical_my !== filters.my) {
+      return false;
+    }
+    return true;
+  });
+
+  // Collect vehicle identities (Marque, Famille, and optional Modele)
+  // Standard queried entity:
+  const targetEntities: Array<{ marque: string; famille?: string; modele?: string }> = [
+    {
+      marque: filters.marque,
+      famille: filters.famille,
+      modele: filters.modele,
+    },
+  ];
+
+  for (const alias of matchingAliases) {
+    const isTargetCanonical =
+      alias.canonical_marque.toLowerCase() === filters.marque.toLowerCase() &&
+      (!filters.famille || alias.canonical_famille.toLowerCase() === filters.famille.toLowerCase());
+
+    if (isTargetCanonical) {
+      // Add alias entity
+      targetEntities.push({
+        marque: alias.alias_marque,
+        famille: alias.alias_famille,
+        modele: alias.alias_modele || undefined,
+      });
+    } else {
+      // Input matched as alias, add canonical entity
+      targetEntities.push({
+        marque: alias.canonical_marque,
+        famille: alias.canonical_famille,
+        modele: alias.canonical_modele || undefined,
+      });
+    }
+  }
+
+  // Deduplicate target entities by marque + famille + modele
+  const uniqueEntitiesMap = new Map<string, { marque: string; famille?: string; modele?: string }>();
+  for (const entity of targetEntities) {
+    const key = `${entity.marque.toLowerCase()}|${(entity.famille || '').toLowerCase()}|${(entity.modele || '').toLowerCase()}`;
+    if (!uniqueEntitiesMap.has(key)) {
+      uniqueEntitiesMap.set(key, entity);
+    }
+  }
+  const uniqueEntities = Array.from(uniqueEntitiesMap.values());
+
+  // 2. Build PostgREST `.or(...)` filter
+  const orConditions = uniqueEntities.map((entity) => {
+    const conds = [`Marque.eq."${escapePostgrestValue(entity.marque)}"`];
+    if (entity.famille) {
+      conds.push(`Famille.eq."${escapePostgrestValue(entity.famille)}"`);
+    }
+    if (entity.modele) {
+      conds.push(`Modele.eq."${escapePostgrestValue(entity.modele)}"`);
+    }
+    return `and(${conds.join(',')})`;
+  });
+
+  let query = supabase.from('reviews').select('*').or(orConditions.join(','));
+
+  // 3. Secondary filters
   if (filters.my) {
     query = query.eq('MY', filters.my);
-  }
-
-  if (filters.modele) {
-    query = query.eq('Modele', filters.modele);
   }
 
   if (filters.type) {
