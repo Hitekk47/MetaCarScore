@@ -70,4 +70,19 @@ describe("formatAliasDisplay", () => {
 
     expect(formatAliasDisplay(aliases, "Chery")).toBe("Également commercialisé sous les noms : Ebro S700, Tiggo Cross");
   });
+
+  it("should fall back to alias_famille if alias_modele is missing or empty", () => {
+    const aliases: ModelAlias[] = [
+      {
+        canonical_marque: "Chery",
+        canonical_famille: "Tiggo 7",
+        canonical_modele: "Tiggo 7",
+        alias_marque: "Ebro",
+        alias_famille: "S700",
+        alias_modele: ""
+      }
+    ];
+
+    expect(formatAliasDisplay(aliases, "Chery")).toBe("Également commercialisé sous le nom : Ebro S700");
+  });
 });

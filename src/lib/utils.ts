@@ -47,12 +47,12 @@ export function getScoreCategory(score: number): ScoreCategory {
 export function formatAliasDisplay(aliases: ModelAlias[], canonicalMarque: string): string {
   if (!aliases || aliases.length === 0) return "";
 
-  // Unique formatted alias names
   const aliasNames = Array.from(
     new Set(
       aliases.map(a => {
+        const modelOrFamily = a.alias_modele || a.alias_famille;
         const showBrand = a.alias_marque.toLowerCase() !== canonicalMarque.toLowerCase();
-        return showBrand ? `${a.alias_marque} ${a.alias_modele}` : a.alias_modele;
+        return showBrand ? `${a.alias_marque} ${modelOrFamily}` : modelOrFamily;
       })
     )
   );

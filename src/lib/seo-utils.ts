@@ -16,7 +16,7 @@ export interface SeoStats {
   rank: number | null;
   total_in_segment: number | null;
   segment_avg: number | null;
-  segments: { macro: string; size: string }[];
+  segments: (string | { macro?: string; size?: string })[];
   is_reliable: boolean;
 }
 
@@ -46,7 +46,18 @@ export function cleanSeoText(text: string): string {
   return text.replace(/\[\[(.*?):(.*?)\|(.*?)\]\]/g, '$3');
 }
 
-function formatSegmentPhrasing(segments: { macro: string; size: string }[], level: string): string {
+function normalizeSegments(segments: (string | { macro?: string; size?: string })[]): { macro: string; size: string }[] {
+  if (!segments) return [];
+  return segments.map(s => {
+    if (typeof s === "string") {
+      return { macro: s, size: "" };
+    }
+    return { macro: s.macro || "", size: s.size || "" };
+  });
+}
+
+function formatSegmentPhrasing(rawSegments: (string | { macro?: string; size?: string })[], level: string): string {
+  const segments = normalizeSegments(rawSegments);
   if (segments.length === 0) return "";
 
   const resolved = segments.map(s => {
@@ -107,7 +118,8 @@ export function generateSeoText(
   const avg = data.segment_avg ? Math.round(Number(data.segment_avg)) : null;
   const score = Number(data.metacarscore);
 
-  const gender = data.segments.length > 0 ? getSegmentGender(data.segments[0].macro) : "masculine";
+  const normalizedSegments = normalizeSegments(data.segments);
+  const gender = normalizedSegments.length > 0 ? getSegmentGender(normalizedSegments[0].macro) : "masculine";
   const vehicleArticle = gender === "feminine" ? "La" : "Le";
   const vehiclePronoun = gender === "feminine" ? "elle" : "il";
   const vehicleDeArticle = gender === "feminine" ? "de la" : "du";

@@ -122,7 +122,12 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
 });
 
 export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_famille: string; p_my?: number; p_modele?: string }) => {
-  const { data, error } = await supabase.rpc('get_vehicle_seo_stats_v2', params);
+  const { data, error } = await supabase.rpc('get_vehicle_seo_stats_v2', {
+    p_marque: params.p_marque,
+    p_famille: params.p_famille,
+    p_my: params.p_my ?? null,
+    p_modele: params.p_modele ?? null
+  });
 
   if (error) {
     console.error('Error fetching vehicle SEO stats:', error);
@@ -140,7 +145,7 @@ export const getModelAliases = cache(async (params: { marque: string; famille: s
     .eq('canonical_famille', params.famille);
 
   if (params.modele) {
-    query = query.eq('canonical_modele', params.modele);
+    query = query.or(`canonical_modele.eq."${params.modele}",canonical_modele.is.null`);
   }
 
   if (params.my) {
