@@ -37,9 +37,15 @@ export default function ResultItem({ res, onClick, isActive, isHistory = false }
 
           {/* CONTENEUR TEXTE */}
           <div className="truncate w-full relative z-10">
-              {isFamily ? (
+              {res.DisplayName ? (
                 <div className="flex flex-col">
-                    {/* J'ai retiré !isHistory pour afficher "GAMME" même dans l'historique */}
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Alias</span>
+                    <span className={cn("font-black text-slate-900 text-sm uppercase truncate", isHistory && "font-medium text-slate-600")}>
+                        {res.DisplayName}
+                    </span>
+                </div>
+              ) : isFamily ? (
+                <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gamme</span>
                     <span className={cn("font-black text-slate-900 text-sm uppercase truncate", isHistory && "font-medium text-slate-600")}>
                         {res.Marque} {res.Famille}
@@ -48,7 +54,7 @@ export default function ResultItem({ res, onClick, isActive, isHistory = false }
               ) : (
                 <div className="flex flex-col relative w-full">
 
-                    {/* LE FILIGRANE (Inchangé) */}
+                    {/* LE FILIGRANE */}
                     {res.MaxMY && !isHistory && (
                         <span className="absolute right-2 top-1/2 -translate-y-1/2 text-4xl font-black text-slate-100 -z-10 select-none pointer-events-none italic tracking-tighter">
                             {res.MaxMY}

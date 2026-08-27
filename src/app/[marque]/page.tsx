@@ -72,11 +72,13 @@ export default async function BrandPage({ params }: PageProps) {
   // -----------------------------------------------------------
   const items: DirectoryItem[] = families.map((item) => ({
     id: item.famille,
-    title: item.famille,
+    title: item.is_alias ? `${item.famille} (${item.canonical_marque} ${item.canonical_famille})` : item.famille,
     subtitle: `${item.review_count} Essai${item.review_count > 1 ? 's' : ''}`,
     
-    // IMPORTANT : On slugifie les deux parties de l'URL sortante
-    href: `/${toSlug(realMarque)}/${toSlug(item.famille)}`,
+    // Si la famille est un alias, on redirige vers la fiche canonique
+    href: item.is_alias && item.canonical_marque && item.canonical_famille
+      ? `/${toSlug(item.canonical_marque)}/${toSlug(item.canonical_famille)}`
+      : `/${toSlug(realMarque)}/${toSlug(item.famille)}`,
     
     iconName: "layers",
     colorClass: "bg-slate-50 text-slate-700 border-slate-200"

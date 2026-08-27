@@ -1,9 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from "next";
 import { serializeJsonLd } from "@/lib/utils";
-import { getFullContext, getReviews, getVehicleSeoStats } from "@/lib/queries";
+import { getFullContext, getReviews, getVehicleSeoStats, getAliases } from "@/lib/queries";
 import { generateSeoText, cleanSeoText } from "@/lib/seo-utils";
+import { toSlug } from "@/lib/slugify";
 
 export const revalidate = 3600;
 
@@ -100,8 +101,16 @@ export default async function ModelePage({ params }: PageProps) {
   if (!context?.real_modele) return notFound();
   const realModele = context.real_modele;
 
+  // Redirection automatique vers l'URL canonique si l'URL courante contient des slugs d'alias
+  const canonicalMarqueSlug = toSlug(realMarque);
+  const canonicalFamilleSlug = toSlug(realFamille);
+  const canonicalModeleSlug = toSlug(realModele);
+  if (sMarque !== canonicalMarqueSlug || sFamille !== canonicalFamilleSlug || sModele !== canonicalModeleSlug) {
+    redirect(`/${canonicalMarqueSlug}/${canonicalFamilleSlug}/${my}/${canonicalModeleSlug}`);
+  }
+
   // 3. Récupération des données (avec cache)
-  const [reviews, seoStats] = await Promise.all([
+  const [reviews, seoStats, aliases] = await Promise.all([
     getReviews({
       marque: realMarque,
       famille: realFamille,
@@ -113,6 +122,12 @@ export default async function ModelePage({ params }: PageProps) {
       p_famille: realFamille,
       p_my: parseInt(my),
       p_modele: realModele
+    }),
+    getAliases({
+      canonicalMarque: realMarque,
+      canonicalFamille: realFamille,
+      my: parseInt(my),
+      modele: realModele
     })
   ]);
 
@@ -179,6 +194,7 @@ export default async function ModelePage({ params }: PageProps) {
         level="modele" 
         seoText={seoText}
         iqr={seoStats?.iqr}
+        aliases={aliases}
       />
     </>
   );

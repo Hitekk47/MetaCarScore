@@ -13,7 +13,9 @@ import { cn, calculatePageStats } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import SeoSummaryCard from "@/components/seo/SeoSummaryCard";
+import AliasBadge from "@/components/ui/AliasBadge";
 import { toSlug } from "@/lib/slugify";
+import { ModelAlias } from "@/lib/types";
 
 type PageLevel = 'family' | 'my' | 'modele' | 'powertrain';
 
@@ -28,9 +30,10 @@ type Props = {
   level: PageLevel;
   seoText?: string;
   iqr?: number;
+  aliases?: ModelAlias[];
 };
 
-export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, seoText, iqr }: Props) {
+export default function GenericPageClient({ initialReviews, marque, famille, my, modele, powertrain, powertrainName, level, seoText, iqr, aliases = [] }: Props) {
 
   // --- FILTRES ---
   const [query, setQuery] = useState("");
@@ -171,6 +174,11 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                         <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none text-white">
                             {getPageTitle()}
                         </h1>
+
+                        {/* ENCART / BADGE ALIAS SOUS LE H1 */}
+                        {aliases && aliases.length > 0 && (
+                          <AliasBadge canonicalMarque={marque} aliases={aliases} />
+                        )}
 
                         {/* SOUS-TITRE POWERTRAIN (Nouveau) */}
                         {/* S'affiche uniquement si on est au niveau powertrain */}
