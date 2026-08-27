@@ -2,6 +2,7 @@ import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Review, ModelAlias } from '@/lib/types';
 import { SeoStats } from './seo-utils';
+import { escapePostgrestValue } from '@/lib/validation';
 
 // Types for RPC responses
 export interface BrandContext {
@@ -79,21 +80,55 @@ export type ReviewFilters = {
 };
 
 export const getReviews = cache(async (filters: ReviewFilters) => {
+  // Fetch aliases if famille is provided
+  let aliases: ModelAlias[] = [];
+  if (filters.famille) {
+    aliases = await getModelAliases({
+      marque: filters.marque,
+      famille: filters.famille,
+      my: filters.my,
+      modele: filters.modele
+    });
+  }
+
+  // Target pairs: canonical vehicle + aliases
+  const targets = [
+    {
+      marque: filters.marque,
+      famille: filters.famille,
+      modele: filters.modele
+    }
+  ];
+
+  if (aliases && aliases.length > 0) {
+    for (const a of aliases) {
+      targets.push({
+        marque: a.alias_marque,
+        famille: a.alias_famille,
+        modele: a.alias_modele || filters.modele
+      });
+    }
+  }
+
+  // Build PostgREST OR conditions
+  const orConditions = targets.map(t => {
+    const parts = [`Marque.ilike."${escapePostgrestValue(t.marque)}"`];
+    if (t.famille) {
+      parts.push(`Famille.ilike."${escapePostgrestValue(t.famille)}"`);
+    }
+    if (t.modele) {
+      parts.push(`Modele.ilike."${escapePostgrestValue(t.modele)}"`);
+    }
+    return `and(${parts.join(',')})`;
+  });
+
   let query = supabase
     .from('reviews')
     .select('*')
-    .eq('Marque', filters.marque);
-
-  if (filters.famille) {
-    query = query.eq('Famille', filters.famille);
-  }
+    .or(orConditions.join(','));
 
   if (filters.my) {
     query = query.eq('MY', filters.my);
-  }
-
-  if (filters.modele) {
-    query = query.eq('Modele', filters.modele);
   }
 
   if (filters.type) {
@@ -114,7 +149,7 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching reviews: An unexpected error occurred');
+    console.error('Error fetching reviews:', error);
     return [];
   }
 

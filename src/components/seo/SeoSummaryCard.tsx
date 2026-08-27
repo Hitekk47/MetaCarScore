@@ -199,7 +199,9 @@ export default function SeoSummaryCard({ text, iqr }: Props) {
 
         if (category === 'segment') {
           // Format attendu pour data : MACRO:CODE
-          const [macro, code] = data.split(':');
+          const lastColonIndex = data.lastIndexOf(':');
+          const macro = lastColonIndex !== -1 ? data.slice(0, lastColonIndex) : data;
+          const code = lastColonIndex !== -1 ? data.slice(lastColonIndex + 1) : '';
           return (
             <Link
               key={index}
