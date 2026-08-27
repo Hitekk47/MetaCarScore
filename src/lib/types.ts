@@ -35,6 +35,10 @@ export type SearchResult = {
   Modele: string | null;
   Type: 'family' | 'model';
   MaxMY: number | null;
+  DisplayName?: string | null;
+  CanonicalMarque?: string | null;
+  CanonicalFamille?: string | null;
+  CanonicalModele?: string | null;
 };
 
 export type ModelRankingItem = {

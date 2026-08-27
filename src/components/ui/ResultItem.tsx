@@ -37,7 +37,16 @@ export default function ResultItem({ res, onClick, isActive, isHistory = false }
 
           {/* CONTENEUR TEXTE */}
           <div className="truncate w-full relative z-10">
-              {isFamily ? (
+              {res.DisplayName ? (
+                <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      {isFamily ? "Gamme" : "Modèle"}
+                    </span>
+                    <span className={cn("font-black text-slate-900 text-sm uppercase truncate", isHistory && "font-medium text-slate-600")}>
+                        {res.DisplayName}
+                    </span>
+                </div>
+              ) : isFamily ? (
                 <div className="flex flex-col">
                     {/* J'ai retiré !isHistory pour afficher "GAMME" même dans l'historique */}
                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gamme</span>

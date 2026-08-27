@@ -215,7 +215,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
       setIsOpen(true);
 
       const { data, error } = await supabase
-        .rpc('search_cars_v13', { search_term: debouncedQuery });
+        .rpc('search_cars_v14', { search_term: debouncedQuery });
 
       if (data) {
         let finalResults = data as SearchResult[];
@@ -248,13 +248,17 @@ export default function SearchBar({ placeholder, variant = "header", className, 
       setQuery(""); // On vide le champ visuel
     } else {
       // Mode "Navigation" (Comportement classique)
+      const targetMarque = res.CanonicalMarque || res.Marque;
+      const targetFamille = res.CanonicalFamille || res.Famille;
+      const targetModele = res.CanonicalModele || res.Modele;
+
       if (res.Type === 'family') {
-        router.push(`/${toSlug(res.Marque)}/${toSlug(res.Famille)}`);
+        router.push(`/${toSlug(targetMarque)}/${toSlug(targetFamille)}`);
       } else {
-        if (res.MaxMY && res.Modele) {
-          router.push(`/${toSlug(res.Marque)}/${toSlug(res.Famille)}/${res.MaxMY}/${toSlug(res.Modele)}`);
+        if (res.MaxMY && targetModele) {
+          router.push(`/${toSlug(targetMarque)}/${toSlug(targetFamille)}/${res.MaxMY}/${toSlug(targetModele)}`);
         } else {
-          router.push(`/${toSlug(res.Marque)}/${toSlug(res.Famille)}`);
+          router.push(`/${toSlug(targetMarque)}/${toSlug(targetFamille)}`);
         }
       }
       setIsOpen(false);
