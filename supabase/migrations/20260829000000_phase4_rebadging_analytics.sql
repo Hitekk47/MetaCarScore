@@ -2,6 +2,105 @@
 -- Description: Phase 4 Rebadging & Rebranding Analytics Unification (SEO Stats, Rankings, Trends, Brand Families, Sitemap)
 
 -- -----------------------------------------------------------------------------
+-- 0. Brand Context & Slug Resolution (find_brand_by_slug & get_full_context_by_slugs)
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION "public"."find_brand_by_slug"("slug_input" "text")
+RETURNS TABLE("Marque" "text")
+LANGUAGE "plpgsql"
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT m."Marque"
+  FROM (
+    SELECT r."Marque" FROM public.reviews r WHERE slugify_text(r."Marque") = slug_input
+    UNION
+    SELECT ma.canonical_marque AS "Marque" FROM public.model_aliases ma WHERE slugify_text(ma.canonical_marque) = slug_input
+    UNION
+    SELECT ma.alias_marque AS "Marque" FROM public.model_aliases ma WHERE slugify_text(ma.alias_marque) = slug_input
+  ) m
+  LIMIT 1;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION "public"."find_brand_by_slug"("text") FROM "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."find_brand_by_slug"("text") TO "anon", "authenticated", "service_role";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_full_context_by_slugs"(
+  "p_marque_slug" "text",
+  "p_famille_slug" "text" DEFAULT NULL::"text",
+  "p_my" integer DEFAULT NULL::integer,
+  "p_modele_slug" "text" DEFAULT NULL::"text",
+  "p_powertrain_slug" "text" DEFAULT NULL::"text"
+) RETURNS TABLE("real_marque" "text", "real_famille" "text", "real_modele" "text", "real_powertrain" "text")
+LANGUAGE "plpgsql"
+AS $$
+DECLARE
+  v_marque text;
+  v_famille text;
+  v_modele text;
+  v_powertrain text;
+BEGIN
+  -- 1. Résolution Marque (directe ou via alias)
+  SELECT m."Marque" INTO v_marque
+  FROM (
+    SELECT r."Marque" FROM public.reviews r WHERE slugify_text(r."Marque") = p_marque_slug
+    UNION
+    SELECT ma.canonical_marque FROM public.model_aliases ma WHERE slugify_text(ma.canonical_marque) = p_marque_slug
+    UNION
+    SELECT ma.alias_marque FROM public.model_aliases ma WHERE slugify_text(ma.alias_marque) = p_marque_slug
+  ) m
+  LIMIT 1;
+
+  -- 2. Résolution Famille
+  IF v_marque IS NOT NULL AND p_famille_slug IS NOT NULL THEN
+    SELECT f."Famille" INTO v_famille
+    FROM (
+      SELECT r."Famille" FROM public.reviews r WHERE r."Marque" = v_marque AND slugify_text(r."Famille") = p_famille_slug
+      UNION
+      SELECT ma.canonical_famille FROM public.model_aliases ma WHERE ma.canonical_marque = v_marque AND slugify_text(ma.canonical_famille) = p_famille_slug
+      UNION
+      SELECT ma.alias_famille FROM public.model_aliases ma WHERE ma.alias_marque = v_marque AND slugify_text(ma.alias_famille) = p_famille_slug
+    ) f
+    LIMIT 1;
+  END IF;
+
+  -- 3. Résolution Modèle
+  IF v_famille IS NOT NULL AND p_my IS NOT NULL AND p_modele_slug IS NOT NULL THEN
+    SELECT mo."Modele" INTO v_modele
+    FROM (
+      SELECT r."Modele" FROM public.reviews r WHERE r."Marque" = v_marque AND r."Famille" = v_famille AND r."MY" = p_my AND slugify_text(r."Modele") = p_modele_slug
+      UNION
+      SELECT COALESCE(ma.canonical_modele, r_c."Modele")
+      FROM public.model_aliases ma
+      LEFT JOIN public.reviews r_c ON r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille AND r_c."MY" = p_my
+      WHERE (ma.canonical_marque = v_marque AND ma.canonical_famille = v_famille AND (ma.canonical_modele IS NULL OR slugify_text(ma.canonical_modele) = p_modele_slug))
+         OR (ma.alias_marque = v_marque AND ma.alias_famille = v_famille AND (ma.alias_modele IS NULL OR slugify_text(ma.alias_modele) = p_modele_slug))
+    ) mo
+    WHERE mo."Modele" IS NOT NULL
+    LIMIT 1;
+  END IF;
+
+  -- 4. Résolution Powertrain
+  IF v_modele IS NOT NULL AND p_powertrain_slug IS NOT NULL THEN
+    SELECT r."Type" INTO v_powertrain
+    FROM public.reviews r
+    WHERE (r."Marque" = v_marque OR EXISTS (SELECT 1 FROM public.model_aliases ma WHERE ma.canonical_marque = v_marque AND r."Marque" = ma.alias_marque))
+      AND (r."Famille" = v_famille OR EXISTS (SELECT 1 FROM public.model_aliases ma WHERE ma.canonical_famille = v_famille AND r."Famille" = ma.alias_famille))
+      AND r."MY" = p_my
+      AND slugify_text(r."Type") = p_powertrain_slug
+    LIMIT 1;
+  END IF;
+
+  RETURN QUERY SELECT v_marque, v_famille, v_modele, v_powertrain;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION "public"."get_full_context_by_slugs"("text", "text", integer, "text", "text") FROM "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."get_full_context_by_slugs"("text", "text", integer, "text", "text") TO "anon", "authenticated", "service_role";
+
+
+-- -----------------------------------------------------------------------------
 -- 1. get_vehicle_seo_stats_v2
 -- -----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION "public"."get_vehicle_seo_stats_v2"(
