@@ -14,11 +14,14 @@ type PageProps = {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { marque } = await params;
 
+  console.log('1. Slug reçu (metadata) :', marque);
   // Utilisation du cache partagé
   const context = await getBrandContext(marque);
+  console.log('2. Contexte marque résolu (metadata) :', context);
 
   // Si la marque n'existe pas, on renvoie une 404 dès les métadonnées
   if (!context) {
+    console.log('404 déclenchée dans generateMetadata (context est null)');
     notFound();
   }
 
@@ -44,13 +47,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function BrandPage({ params }: PageProps) {
   const { marque } = await params;
 
+  console.log('1. Slug reçu :', marque);
+
   // -----------------------------------------------------------
   // 1. GATEKEEPER : On traduit le slug en vrai nom
   // -----------------------------------------------------------
   // Utilisation du cache partagé (même appel que metadata -> instantané)
   const context = await getBrandContext(marque);
+  console.log('2. Contexte marque résolu :', context);
 
   if (!context) {
+    console.log('404 déclenchée dans BrandPage (context est null)');
     notFound();
   }
 
@@ -61,8 +68,10 @@ export default async function BrandPage({ params }: PageProps) {
   // -----------------------------------------------------------
   // Utilisation du cache partagé
   const families = await getFamilies(realMarque);
+  console.log('3. Familles récupérées :', families);
 
   if (!families || families.length === 0) {
+    console.log('404 déclenchée dans BrandPage (families est vide)');
     // Si la marque existe mais n'a pas de familles (peu probable), on peut aussi 404
     notFound();
   }
