@@ -239,12 +239,12 @@ export default function SearchBar({ placeholder, variant = "header", className, 
 
   const handleSelect = (res: SearchResult) => {
     addToHistory(res);
-    inputRef.current?.blur();
     setIsOpen(false);
+    inputRef.current?.blur();
+
     if (onSelect) {
       // Mode "Sélecteur" (pour le Duel)
       onSelect(res);
-      setIsOpen(false);
       setQuery(""); // On vide le champ visuel
     } else {
       // Mode "Navigation" (Comportement classique)
@@ -261,9 +261,6 @@ export default function SearchBar({ placeholder, variant = "header", className, 
           router.push(`/${toSlug(targetMarque)}/${toSlug(targetFamille)}`);
         }
       }
-      setIsOpen(false);
-      inputRef.current?.blur();
-      setQuery("");
     }
   };
 

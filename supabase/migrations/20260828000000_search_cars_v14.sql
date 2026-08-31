@@ -54,7 +54,12 @@ BEGIN
     SELECT
       ma."canonical_marque" AS "Marque",
       ma."canonical_famille" AS "Famille",
-      COALESCE(ma."canonical_modele", r."Modele") AS "Modele",
+      COALESCE(
+        ma."canonical_modele",
+        (SELECT r_canon."Modele" FROM reviews r_canon WHERE r_canon."Marque" = ma."canonical_marque" AND r_canon."Famille" = ma."canonical_famille" AND r_canon."MY" = r."MY" LIMIT 1),
+        (SELECT r_canon."Modele" FROM reviews r_canon WHERE r_canon."Marque" = ma."canonical_marque" AND r_canon."Famille" = ma."canonical_famille" LIMIT 1),
+        r."Modele"
+      ) AS "Modele",
       r."MY",
       ma."alias_marque" AS alias_m,
       ma."alias_famille" AS alias_f,
