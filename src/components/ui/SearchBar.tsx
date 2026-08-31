@@ -202,7 +202,6 @@ export default function SearchBar({ placeholder, variant = "header", className, 
         if (history.length > 0 && document.activeElement === inputRef.current) {
            setIsOpen(true); 
         }
-        // --------------------
         return;
       }
       
@@ -235,17 +234,18 @@ export default function SearchBar({ placeholder, variant = "header", className, 
     }
 
     fetchResults();
-  }, [debouncedQuery, modelOnly, history.length]);
+  }, [debouncedQuery, modelOnly]);
 
   const handleSelect = (res: SearchResult) => {
     addToHistory(res);
     setIsOpen(false);
+    setResults([]);
+    setQuery("");
     inputRef.current?.blur();
 
     if (onSelect) {
       // Mode "Sélecteur" (pour le Duel)
       onSelect(res);
-      setQuery(""); // On vide le champ visuel
     } else {
       // Mode "Navigation" (Comportement classique)
       const targetMarque = res.CanonicalMarque || res.Marque;
@@ -261,7 +261,6 @@ export default function SearchBar({ placeholder, variant = "header", className, 
           router.push(`/${toSlug(targetMarque)}/${toSlug(targetFamille)}`);
         }
       }
-      setQuery("");
     }
   };
 
