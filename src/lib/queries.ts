@@ -17,8 +17,12 @@ export interface FullContext {
 }
 
 export interface FamilyItem {
-  famille: string;
+  famille?: string;
+  Famille?: string;
   review_count: number;
+  is_alias?: boolean;
+  canonical_marque?: string | null;
+  canonical_famille?: string | null;
 }
 
 export type FullContextParams = {
@@ -31,7 +35,7 @@ export type FullContextParams = {
 
 // 1. Cached Brand Context
 export const getBrandContext = cache(async (slug: string) => {
-  const { data, error } = await supabase.rpc('find_brand_by_slug', {
+  const { data, error } = await supabase.rpc('find_brand_by_slug_v2', {
     slug_input: slug
   });
 
@@ -45,7 +49,7 @@ export const getBrandContext = cache(async (slug: string) => {
 
 // 2. Cached Full Context (Family, Model, Powertrain)
 export const getFullContext = cache(async (params: FullContextParams) => {
-  const { data, error } = await supabase.rpc('get_full_context_by_slugs', params);
+  const { data, error } = await supabase.rpc('get_full_context_by_slugs_v2', params);
 
   if (error) {
     console.error('Error fetching full context: An unexpected error occurred');
@@ -62,7 +66,7 @@ export const getFamilies = cache(async (brandName: string) => {
   });
 
   if (error) {
-    console.error('Error fetching families: An unexpected error occurred');
+    console.error('Error fetching families:', error);
     return [];
   }
 
@@ -212,7 +216,7 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
 });
 
 export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_famille: string; p_my?: number; p_modele?: string }) => {
-  const { data, error } = await supabase.rpc('get_vehicle_seo_stats', params);
+  const { data, error } = await supabase.rpc('get_vehicle_seo_stats_v2', params);
 
   if (error) {
     console.error('Error fetching vehicle SEO stats:', error);

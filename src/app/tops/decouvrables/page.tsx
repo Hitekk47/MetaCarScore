@@ -17,7 +17,7 @@ export default function ConvertiblesPage() {
       subtitle="Cheveux au vent, toit ouvert."
       iconType="sun"
       colorTheme="orange"
-      customRpcName="get_convertible_ranking"
+      customRpcName="get_convertible_ranking_v2"
     />
   );
 }
