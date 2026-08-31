@@ -261,6 +261,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
           router.push(`/${toSlug(targetMarque)}/${toSlug(targetFamille)}`);
         }
       }
+      setQuery("");
     }
   };
 
