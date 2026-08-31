@@ -61,7 +61,7 @@ export const getFullContext = cache(async (params: FullContextParams) => {
 
 // 3. Cached Families List
 export const getFamilies = cache(async (brandName: string) => {
-  const { data, error } = await supabase.rpc('get_families_by_brand', {
+  const { data, error } = await supabase.rpc('get_families_by_brand_v2', {
     brand_name: brandName
   });
 

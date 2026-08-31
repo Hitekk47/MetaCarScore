@@ -27,6 +27,9 @@ export type DirectoryItem = {
   iconName?: keyof typeof ICON_MAP;
   letter?: string;
   colorClass?: string;
+  isAlias?: boolean;
+  canonicalMarque?: string | null;
+  canonicalFamille?: string | null;
 };
 
 type Props = {
@@ -168,6 +171,13 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
                                     </div>
 
                                     <div>
+                                        {item.isAlias && item.canonicalMarque && item.canonicalFamille && (
+                                            <div className="mb-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-900/10 border border-slate-900/15 backdrop-blur-xs">
+                                                <span className="text-[10px] font-bold text-slate-800 tracking-tight">
+                                                    Modèle {item.canonicalMarque} {item.canonicalFamille}
+                                                </span>
+                                            </div>
+                                        )}
                                         <h3 className="text-xl font-black uppercase tracking-tight leading-none mb-1 group-hover:translate-x-1 transition-transform truncate">
                                             {item.title}
                                         </h3>
