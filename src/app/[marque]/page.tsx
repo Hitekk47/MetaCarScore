@@ -79,17 +79,17 @@ export default async function BrandPage({ params }: PageProps) {
   // -----------------------------------------------------------
   // 3. TRANSFORMATION (Avec slugification des liens)
   // -----------------------------------------------------------
-  const items: DirectoryItem[] = families.map((item) => ({
-    id: item.famille,
-    title: item.famille,
-    subtitle: `${item.review_count} Essai${item.review_count > 1 ? 's' : ''}`,
-    
-    // IMPORTANT : On slugifie les deux parties de l'URL sortante
-    href: `/${toSlug(realMarque)}/${toSlug(item.famille)}`,
-    
-    iconName: "layers",
-    colorClass: "bg-slate-50 text-slate-700 border-slate-200"
-  }));
+  const items: DirectoryItem[] = families.map((item: any) => {
+    const familyName = String(item.Famille || item.famille || "");
+    return {
+      id: familyName,
+      title: familyName,
+      subtitle: `${item.review_count} Essai${item.review_count > 1 ? 's' : ''}`,
+      href: `/${toSlug(realMarque)}/${toSlug(familyName)}`,
+      iconName: "layers",
+      colorClass: "bg-slate-50 text-slate-700 border-slate-200"
+    };
+  });
 
   const subtitle = families.length === 1
     ? `Découvrez l'unique gamme de véhicules ${realMarque} analysée par des experts.`
