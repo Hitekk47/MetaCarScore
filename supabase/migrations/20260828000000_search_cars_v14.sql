@@ -114,7 +114,7 @@ BEGIN
       MAX(rs."Modele") AS "CanonicalModele"
     FROM raw_search rs
     WHERE rs."Modele" IS NOT NULL
-    GROUP BY rs."Marque", UPPER(TRIM(rs."Famille")), UPPER(TRIM(rs."Modele")), rs.alias_mo
+    GROUP BY rs."Marque", UPPER(TRIM(rs."Famille")), UPPER(TRIM(rs."Modele")), rs.alias_f, rs.alias_mo
     ORDER BY count(*) DESC
     LIMIT 20
   );
