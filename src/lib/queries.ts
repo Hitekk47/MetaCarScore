@@ -17,8 +17,12 @@ export interface FullContext {
 }
 
 export interface FamilyItem {
-  famille: string;
+  famille?: string;
+  Famille?: string;
   review_count: number;
+  is_alias?: boolean;
+  canonical_marque?: string | null;
+  canonical_famille?: string | null;
 }
 
 export type FullContextParams = {
@@ -66,7 +70,11 @@ export const getFamilies = cache(async (brandName: string) => {
     return [];
   }
 
-  return (data as FamilyItem[]) || [];
+  const items = (data as FamilyItem[] | null) || [];
+  return items.map((item) => ({
+    ...item,
+    famille: item.famille || item.Famille || '',
+  }));
 });
 
 export type ReviewFilters = {

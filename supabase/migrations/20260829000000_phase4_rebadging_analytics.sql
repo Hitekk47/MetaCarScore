@@ -632,7 +632,7 @@ GRANT EXECUTE ON FUNCTION "public"."get_trending_models_v2"(integer) TO "anon", 
 CREATE OR REPLACE FUNCTION "public"."get_families_by_brand_v2"(
   "brand_name" "text"
 ) RETURNS TABLE(
-  "famille" "text",
+  "Famille" "text",
   "review_count" bigint,
   "is_alias" boolean,
   "canonical_marque" "text",
@@ -646,30 +646,31 @@ BEGIN
     SELECT
       r."Marque",
       r."Famille",
-      ma.canonical_marque,
-      ma.canonical_famille,
-      (ma.alias_marque IS NOT NULL AND LOWER(ma.alias_marque) = LOWER(brand_name) AND LOWER(ma.canonical_marque) = LOWER(brand_name)) AS is_intra_alias,
-      (ma.alias_marque IS NOT NULL AND LOWER(ma.alias_marque) = LOWER(brand_name) AND LOWER(ma.canonical_marque) <> LOWER(brand_name)) AS is_inter_alias
+      COALESCE(ma.canonical_marque, r."Marque") AS c_marque,
+      COALESCE(ma.canonical_famille, r."Famille") AS c_famille,
+      ma.alias_marque,
+      ma.alias_famille
     FROM public.reviews r
     LEFT JOIN public.model_aliases ma
       ON r."Marque" = ma.alias_marque
      AND r."Famille" = ma.alias_famille
      AND (ma.alias_modele IS NULL OR r."Modele" = ma.alias_modele)
     WHERE r."Marque" ILIKE brand_name
+       OR (ma.canonical_marque IS NOT NULL AND ma.canonical_marque ILIKE brand_name)
   ),
   unified_families AS (
     SELECT
       CASE
-        WHEN is_intra_alias THEN canonical_famille
+        WHEN LOWER(c_marque) = LOWER(brand_name) THEN c_famille
         ELSE "Famille"
       END AS unified_famille,
-      is_inter_alias,
-      CASE WHEN is_inter_alias THEN canonical_marque ELSE NULL END AS c_m,
-      CASE WHEN is_inter_alias THEN canonical_famille ELSE NULL END AS c_f
+      (LOWER("Marque") <> LOWER(brand_name) OR (alias_marque IS NOT NULL AND LOWER(alias_marque) = LOWER(brand_name) AND LOWER(c_marque) <> LOWER(brand_name))) AS is_inter_alias,
+      CASE WHEN LOWER(c_marque) <> LOWER(brand_name) THEN c_marque ELSE NULL END AS c_m,
+      CASE WHEN LOWER(c_marque) <> LOWER(brand_name) THEN c_famille ELSE NULL END AS c_f
     FROM brand_reviews
   )
   SELECT
-    uf.unified_famille AS famille,
+    uf.unified_famille AS "Famille",
     COUNT(*) AS review_count,
     BOOL_OR(uf.is_inter_alias) AS is_alias,
     MAX(uf.c_m) AS canonical_marque,
