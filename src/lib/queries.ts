@@ -61,20 +61,16 @@ export const getFullContext = cache(async (params: FullContextParams) => {
 
 // 3. Cached Families List
 export const getFamilies = cache(async (brandName: string) => {
-  const { data, error } = await supabase.rpc('get_families_by_brand_v2', {
+  const { data, error } = await supabase.rpc('get_families_by_brand', {
     brand_name: brandName
   });
 
   if (error) {
-    console.error('Error fetching families: An unexpected error occurred');
+    console.error('Error fetching families:', error);
     return [];
   }
 
-  const items = (data as FamilyItem[] | null) || [];
-  return items.map((item) => ({
-    ...item,
-    famille: item.famille || item.Famille || '',
-  }));
+  return (data as FamilyItem[]) || [];
 });
 
 export type ReviewFilters = {
