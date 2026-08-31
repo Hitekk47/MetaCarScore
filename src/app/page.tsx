@@ -18,7 +18,7 @@ export default async function Home() {
   // 1. APPELS PARALLÈLES
   const [trendingReq, statsReq, latestReq] = await Promise.all([
     // A. LE CARROUSEL (Via la nouvelle fonction SQL)
-    supabase.rpc('get_trending_models', { limit_val: 15 }),
+    supabase.rpc('get_trending_models_v2', { limit_val: 15 }),
 
     // B. LES STATS GLOBALES
     supabase.rpc('get_homepage_stats'),
