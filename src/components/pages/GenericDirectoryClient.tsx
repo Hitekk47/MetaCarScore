@@ -158,26 +158,28 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
 
                                 <div className="relative z-10 p-6 h-full flex flex-col justify-between">
                                     <div className="flex justify-between items-start">
-                                        {IconComponent && (
-                                            <div className={cn("w-10 h-10 rounded-full flex items-center justify-center mb-3", item.colorClass?.replace('bg-', 'bg-opacity-20 '))} >
-                                                <IconComponent size={20} />
-                                            </div>
-                                        )}
-                                        {!IconComponent && <div className="h-10"></div>}
+                                        <div className="flex items-center gap-2">
+                                            {IconComponent && (
+                                                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", item.colorClass?.replace('bg-', 'bg-opacity-20 '))} >
+                                                    <IconComponent size={20} />
+                                                </div>
+                                            )}
+                                            {item.isAlias && item.canonicalMarque && item.canonicalFamille && (
+                                                <div className="inline-flex items-center px-2 py-1 rounded-full bg-slate-900/10 border border-slate-900/15 backdrop-blur-xs">
+                                                    <span className="text-[10px] font-bold text-slate-800 tracking-tight whitespace-nowrap">
+                                                        Modèle {item.canonicalMarque} {item.canonicalFamille}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {!IconComponent && !item.isAlias && <div className="h-10"></div>}
                                         
-                                        <span className="w-8 h-8 rounded-full bg-white/80 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm">
+                                        <span className="w-8 h-8 rounded-full bg-white/80 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm shrink-0">
                                             <ChevronRight size={16} className="text-slate-900" />
                                         </span>
                                     </div>
 
                                     <div>
-                                        {item.isAlias && item.canonicalMarque && item.canonicalFamille && (
-                                            <div className="mb-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-900/10 border border-slate-900/15 backdrop-blur-xs">
-                                                <span className="text-[10px] font-bold text-slate-800 tracking-tight">
-                                                    Modèle {item.canonicalMarque} {item.canonicalFamille}
-                                                </span>
-                                            </div>
-                                        )}
                                         <h3 className="text-xl font-black uppercase tracking-tight leading-none mb-1 group-hover:translate-x-1 transition-transform truncate">
                                             {item.title}
                                         </h3>
