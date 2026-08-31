@@ -35,7 +35,7 @@ export type FullContextParams = {
 
 // 1. Cached Brand Context
 export const getBrandContext = cache(async (slug: string) => {
-  const { data, error } = await supabase.rpc('find_brand_by_slug', {
+  const { data, error } = await supabase.rpc('find_brand_by_slug_v2', {
     slug_input: slug
   });
 
@@ -49,7 +49,7 @@ export const getBrandContext = cache(async (slug: string) => {
 
 // 2. Cached Full Context (Family, Model, Powertrain)
 export const getFullContext = cache(async (params: FullContextParams) => {
-  const { data, error } = await supabase.rpc('get_full_context_by_slugs', params);
+  const { data, error } = await supabase.rpc('get_full_context_by_slugs_v2', params);
 
   if (error) {
     console.error('Error fetching full context: An unexpected error occurred');

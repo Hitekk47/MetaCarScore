@@ -2,9 +2,9 @@
 -- Description: Phase 4 Rebadging & Rebranding Analytics Unification (SEO Stats, Rankings, Trends, Brand Families, Sitemap)
 
 -- -----------------------------------------------------------------------------
--- 0. Brand Context & Slug Resolution (find_brand_by_slug & get_full_context_by_slugs)
+-- 0. Brand Context & Slug Resolution v2 (find_brand_by_slug_v2 & get_full_context_by_slugs_v2)
 -- -----------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION "public"."find_brand_by_slug"("slug_input" "text")
+CREATE OR REPLACE FUNCTION "public"."find_brand_by_slug_v2"("slug_input" "text")
 RETURNS TABLE("Marque" "text")
 LANGUAGE "plpgsql"
 AS $$
@@ -22,11 +22,11 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION "public"."find_brand_by_slug"("text") FROM "anon", "authenticated";
-GRANT EXECUTE ON FUNCTION "public"."find_brand_by_slug"("text") TO "anon", "authenticated", "service_role";
+REVOKE ALL ON FUNCTION "public"."find_brand_by_slug_v2"("text") FROM "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."find_brand_by_slug_v2"("text") TO "anon", "authenticated", "service_role";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_full_context_by_slugs"(
+CREATE OR REPLACE FUNCTION "public"."get_full_context_by_slugs_v2"(
   "p_marque_slug" "text",
   "p_famille_slug" "text" DEFAULT NULL::"text",
   "p_my" integer DEFAULT NULL::integer,
@@ -96,8 +96,8 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION "public"."get_full_context_by_slugs"("text", "text", integer, "text", "text") FROM "anon", "authenticated";
-GRANT EXECUTE ON FUNCTION "public"."get_full_context_by_slugs"("text", "text", integer, "text", "text") TO "anon", "authenticated", "service_role";
+REVOKE ALL ON FUNCTION "public"."get_full_context_by_slugs_v2"("text", "text", integer, "text", "text") FROM "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."get_full_context_by_slugs_v2"("text", "text", integer, "text", "text") TO "anon", "authenticated", "service_role";
 
 
 -- -----------------------------------------------------------------------------
@@ -134,27 +134,20 @@ DECLARE
 BEGIN
   -- 1. Statistiques de l'entité cible (canonique + tous alias)
   WITH target_alias_rules AS (
-    -- Cas 1: p_marque/p_famille est le canonique
     SELECT alias_marque, alias_famille, alias_modele
     FROM public.model_aliases
     WHERE canonical_marque = p_marque
       AND canonical_famille = p_famille
       AND (canonical_my IS NULL OR p_my IS NULL OR canonical_my = p_my)
       AND (canonical_modele IS NULL OR p_modele IS NULL OR canonical_modele = p_modele)
-
     UNION
-
-    -- Cas 2: p_marque/p_famille est un alias -> cibler la marque/famille canonique
     SELECT canonical_marque AS alias_marque, canonical_famille AS alias_famille, canonical_modele AS alias_modele
     FROM public.model_aliases
     WHERE alias_marque = p_marque
       AND alias_famille = p_famille
       AND (alias_modele IS NULL OR p_modele IS NULL OR alias_modele = p_modele)
       AND (canonical_my IS NULL OR p_my IS NULL OR canonical_my = p_my)
-
     UNION
-
-    -- Cas 3: p_marque/p_famille est un alias -> cibler les autres alias du même canonique
     SELECT ma2.alias_marque, ma2.alias_famille, ma2.alias_modele
     FROM public.model_aliases ma1
     JOIN public.model_aliases ma2
@@ -212,7 +205,7 @@ BEGIN
     ELSE 'forte division'
   END;
 
-  -- 2. Segments couverts par l'entité (y compris via alias)
+  -- 2. Segments couverts par l'entité (y compris via alias, avec LATERAL join)
   WITH target_alias_rules AS (
     SELECT alias_marque, alias_famille, alias_modele
     FROM public.model_aliases
@@ -235,24 +228,37 @@ BEGIN
   )
   SELECT jsonb_agg(
     DISTINCT jsonb_build_object(
-      'macro', ms."Macro_Category",
-      'size', ms."Segment_Size"
+      'macro', ms.macro_category,
+      'size', ms.segment_size
     )
   )
   INTO v_segments
   FROM public.reviews r
-  JOIN public.model_segments ms
-    ON r."Marque" = ms."Marque"
-   AND r."Modele" = ms."Modele"
-   AND r."MY" = ms."MY"
-  WHERE (r."Marque" = p_marque AND r."Famille" = p_famille AND (p_my IS NULL OR r."MY" = p_my) AND (p_modele IS NULL OR r."Modele" = p_modele))
-     OR EXISTS (
+  LEFT JOIN public.model_aliases ma
+    ON r."Marque" = ma.alias_marque
+   AND r."Famille" = ma.alias_famille
+   AND (ma.alias_modele IS NULL OR r."Modele" = ma.alias_modele)
+  LEFT JOIN LATERAL (
+    SELECT
+      m_seg."Segment_Size" AS segment_size,
+      m_seg."Macro_Category" AS macro_category
+    FROM public.model_segments m_seg
+    WHERE m_seg."Marque" = COALESCE(ma.canonical_marque, r."Marque")
+      AND m_seg."Modele" = COALESCE(ma.canonical_modele, r."Modele")
+    ORDER BY (m_seg."MY" = r."MY") DESC, m_seg."MY" DESC NULLS LAST
+    LIMIT 1
+  ) ms ON TRUE
+  WHERE ms.macro_category IS NOT NULL
+    AND (
+      (r."Marque" = p_marque AND r."Famille" = p_famille AND (p_my IS NULL OR r."MY" = p_my) AND (p_modele IS NULL OR r."Modele" = p_modele))
+      OR EXISTS (
         SELECT 1 FROM target_alias_rules tar
         WHERE r."Marque" = tar.alias_marque
           AND r."Famille" = tar.alias_famille
           AND (p_my IS NULL OR r."MY" = p_my)
           AND (tar.alias_modele IS NULL OR r."Modele" = tar.alias_modele)
-     );
+      )
+    );
 
   -- 3. Rang et moyenne sur les 5 dernières MY avec véhicules consolidés
   IF v_segments IS NOT NULL AND jsonb_array_length(v_segments) > 0 THEN
@@ -284,13 +290,19 @@ BEGIN
         ON r."Marque" = ma.alias_marque
        AND r."Famille" = ma.alias_famille
        AND (ma.alias_modele IS NULL OR r."Modele" = ma.alias_modele)
-      JOIN public.model_segments ms
-        ON r."Marque" = ms."Marque"
-       AND r."Modele" = ms."Modele"
-       AND r."MY" = ms."MY"
+      LEFT JOIN LATERAL (
+        SELECT
+          m_seg."Segment_Size" AS segment_size,
+          m_seg."Macro_Category" AS macro_category
+        FROM public.model_segments m_seg
+        WHERE m_seg."Marque" = COALESCE(ma.canonical_marque, r."Marque")
+          AND m_seg."Modele" = COALESCE(ma.canonical_modele, r."Modele")
+        ORDER BY (m_seg."MY" = r."MY") DESC, m_seg."MY" DESC NULLS LAST
+        LIMIT 1
+      ) ms ON TRUE
       JOIN target_segments ts
-        ON ms."Macro_Category" = ts.macro
-       AND ms."Segment_Size" = ts.size
+        ON ms.macro_category = ts.macro
+       AND ms.segment_size = ts.size
       WHERE r."MY" >= v_current_year - 5
     ),
     segment_vehicles AS (
