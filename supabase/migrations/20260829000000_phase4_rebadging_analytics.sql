@@ -167,7 +167,16 @@ BEGIN
         r."MY",
         COALESCE(ma.canonical_marque, r."Marque") AS c_marque,
         COALESCE(ma.canonical_famille, r."Famille") AS c_famille,
-        COALESCE(ma.canonical_modele, r."Modele") AS c_modele,
+        COALESCE(
+          ma.canonical_modele,
+          CASE WHEN ma.canonical_marque IS NOT NULL THEN
+            (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille AND r_c."MY" = r."MY" LIMIT 1)
+          END,
+          CASE WHEN ma.canonical_marque IS NOT NULL THEN
+            (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille LIMIT 1)
+          END,
+          r."Modele"
+        ) AS c_modele,
         r."Marque" AS orig_marque,
         r."Famille" AS orig_famille,
         r."Modele" AS orig_modele
@@ -306,7 +315,23 @@ BEGIN
       r."Transmission",
       COALESCE(ma.canonical_marque, r."Marque") AS c_marque,
       COALESCE(ma.canonical_famille, r."Famille") AS c_famille,
-      COALESCE(ma.canonical_modele, r."Modele") AS c_modele,
+      COALESCE(
+        ma.canonical_modele,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c
+           WHERE r_c."Marque" = ma.canonical_marque
+             AND r_c."Famille" = ma.canonical_famille
+             AND r_c."MY" = r."MY"
+           LIMIT 1)
+        END,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c
+           WHERE r_c."Marque" = ma.canonical_marque
+             AND r_c."Famille" = ma.canonical_famille
+           LIMIT 1)
+        END,
+        r."Modele"
+      ) AS c_modele,
       r."Marque" AS orig_marque,
       r."Modele" AS orig_modele
     FROM public.reviews r
@@ -314,11 +339,6 @@ BEGIN
       ON r."Marque" = ma.alias_marque
      AND r."Famille" = ma.alias_famille
      AND (ma.alias_modele IS NULL OR r."Modele" = ma.alias_modele)
-  ),
-  segment_mapping AS (
-    SELECT DISTINCT ON ("Marque", "Modele", "MY")
-      "Marque", "Modele", "MY", "Segment_Size", "Macro_Category"
-    FROM public.model_segments
   )
   SELECT
     nr.c_marque AS "Marque",
@@ -327,23 +347,27 @@ BEGIN
     nr.c_modele AS "Modele",
     ROUND(AVG(nr."Score"), 1) AS avg_score,
     COUNT(*) AS review_count,
-    COALESCE(MAX(s_orig."Segment_Size"), MAX(s_canon."Segment_Size")) AS segment_size,
-    COALESCE(MAX(s_orig."Macro_Category"), MAX(s_canon."Macro_Category")) AS macro_category
+    s.segment_size,
+    s.macro_category
   FROM normalized_reviews nr
-  LEFT JOIN segment_mapping s_orig ON (
-    nr.orig_marque = s_orig."Marque" AND nr.orig_modele = s_orig."Modele" AND nr."MY" = s_orig."MY"
-  )
-  LEFT JOIN segment_mapping s_canon ON (
-    nr.c_marque = s_canon."Marque" AND nr.c_modele = s_canon."Modele" AND nr."MY" = s_canon."MY"
-  )
+  LEFT JOIN LATERAL (
+    SELECT
+      ms."Segment_Size" AS segment_size,
+      ms."Macro_Category" AS macro_category
+    FROM public.model_segments ms
+    WHERE ms."Marque" = nr.c_marque
+      AND ms."Modele" = nr.c_modele
+    ORDER BY (ms."MY" = nr."MY") DESC, ms."MY" DESC NULLS LAST
+    LIMIT 1
+  ) s ON TRUE
   WHERE
     (min_my IS NULL OR nr."MY" >= min_my)
     AND (category_filter IS NULL OR nr."Type" ILIKE category_filter || '%')
     AND (transmission_filter IS NULL OR nr."Transmission" ILIKE '%' || transmission_filter)
-    AND (macro_category_filter IS NULL OR COALESCE(s_orig."Macro_Category", s_canon."Macro_Category") = macro_category_filter)
-    AND (segment_filter IS NULL OR COALESCE(s_orig."Segment_Size", s_canon."Segment_Size") = segment_filter)
+    AND (macro_category_filter IS NULL OR s.macro_category = macro_category_filter)
+    AND (segment_filter IS NULL OR s.segment_size = segment_filter)
   GROUP BY
-    nr.c_marque, nr.c_famille, nr."MY", nr.c_modele
+    nr.c_marque, nr.c_famille, nr."MY", nr.c_modele, s.segment_size, s.macro_category
   HAVING
     COUNT(*) >= 3
   ORDER BY
@@ -381,7 +405,16 @@ BEGIN
       r."MY",
       COALESCE(ma.canonical_marque, r."Marque") AS c_marque,
       COALESCE(ma.canonical_famille, r."Famille") AS c_famille,
-      COALESCE(ma.canonical_modele, r."Modele") AS c_modele,
+      COALESCE(
+        ma.canonical_modele,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille AND r_c."MY" = r."MY" LIMIT 1)
+        END,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille LIMIT 1)
+        END,
+        r."Modele"
+      ) AS c_modele,
       r."Modele" AS orig_modele,
       r."Marque" AS orig_marque
     FROM public.reviews r
@@ -460,7 +493,16 @@ BEGIN
       r."MY",
       COALESCE(ma.canonical_marque, r."Marque") AS c_marque,
       COALESCE(ma.canonical_famille, r."Famille") AS c_famille,
-      COALESCE(ma.canonical_modele, r."Modele") AS c_modele,
+      COALESCE(
+        ma.canonical_modele,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille AND r_c."MY" = r."MY" LIMIT 1)
+        END,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille LIMIT 1)
+        END,
+        r."Modele"
+      ) AS c_modele,
       r."Modele" AS orig_modele
     FROM public.reviews r
     LEFT JOIN public.model_aliases ma
@@ -544,7 +586,16 @@ BEGIN
       r."MY",
       COALESCE(ma.canonical_marque, r."Marque") AS c_marque,
       COALESCE(ma.canonical_famille, r."Famille") AS c_famille,
-      COALESCE(ma.canonical_modele, r."Modele") AS c_modele
+      COALESCE(
+        ma.canonical_modele,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille AND r_c."MY" = r."MY" LIMIT 1)
+        END,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille LIMIT 1)
+        END,
+        r."Modele"
+      ) AS c_modele
     FROM public.reviews r
     LEFT JOIN public.model_aliases ma
       ON r."Marque" = ma.alias_marque
@@ -662,7 +713,16 @@ BEGIN
   ModelStats AS (
     SELECT
       r."Marque",
-      COALESCE(ma.canonical_modele, r."Modele") AS display_modele,
+      COALESCE(
+        ma.canonical_modele,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille AND r_c."MY" = r."MY" LIMIT 1)
+        END,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille LIMIT 1)
+        END,
+        r."Modele"
+      ) AS display_modele,
       COALESCE(ma.canonical_famille, r."Famille") AS display_famille,
       r."MY",
       ROUND(AVG(r."Score")) AS model_avg
@@ -732,7 +792,16 @@ AS $$
       COALESCE(ma.canonical_marque, r."Marque") AS c_marque,
       COALESCE(ma.canonical_famille, r."Famille") AS c_famille,
       r."MY"::text AS c_my,
-      COALESCE(ma.canonical_modele, r."Modele") AS c_modele
+      COALESCE(
+        ma.canonical_modele,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille AND r_c."MY" = r."MY" LIMIT 1)
+        END,
+        CASE WHEN ma.canonical_marque IS NOT NULL THEN
+          (SELECT r_c."Modele" FROM public.reviews r_c WHERE r_c."Marque" = ma.canonical_marque AND r_c."Famille" = ma.canonical_famille LIMIT 1)
+        END,
+        r."Modele"
+      ) AS c_modele
     FROM public.reviews r
     LEFT JOIN public.model_aliases ma
       ON r."Marque" = ma.alias_marque
