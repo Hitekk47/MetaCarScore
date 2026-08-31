@@ -56,10 +56,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // 4. Récupération des groupes optimisés pour les Modèles (review_count >= 3)
-  const { data: modelGroups, error: rpcError } = await supabase.rpc('get_sitemap_groups_filtered');
+  const { data: modelGroups, error: rpcError } = await supabase.rpc('get_sitemap_groups_filtered_v2');
 
   if (rpcError) {
-    console.error('Error calling get_sitemap_groups_filtered:', rpcError.message);
+    console.error('Error calling get_sitemap_groups_filtered_v2:', rpcError.message);
   }
 
   // --- CALCUL DES COMPTEURS ET DÉDOUBLONNAGE ---

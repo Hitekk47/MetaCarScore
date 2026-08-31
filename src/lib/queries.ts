@@ -57,7 +57,7 @@ export const getFullContext = cache(async (params: FullContextParams) => {
 
 // 3. Cached Families List
 export const getFamilies = cache(async (brandName: string) => {
-  const { data, error } = await supabase.rpc('get_families_by_brand', {
+  const { data, error } = await supabase.rpc('get_families_by_brand_v2', {
     brand_name: brandName
   });
 
@@ -212,7 +212,7 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
 });
 
 export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_famille: string; p_my?: number; p_modele?: string }) => {
-  const { data, error } = await supabase.rpc('get_vehicle_seo_stats', params);
+  const { data, error } = await supabase.rpc('get_vehicle_seo_stats_v2', params);
 
   if (error) {
     console.error('Error fetching vehicle SEO stats:', error);

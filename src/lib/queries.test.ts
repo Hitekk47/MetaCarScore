@@ -1,24 +1,32 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
 
+const mockFrom = mock();
+const mockRpc = mock();
+
 mock.module('react', () => ({
-  cache: <T>(fn: T): T => fn,
+  cache: (fn: any) => fn,
+  default: {
+    cache: (fn: any) => fn,
+  },
 }));
 
-const mockFrom = mock();
 mock.module('@/lib/supabase', () => ({
   supabase: {
     from: mockFrom,
+    rpc: mockRpc,
   },
 }));
+
+import { getReviews, getFamilies, getVehicleSeoStats, getModelAliases } from './queries';
 
 describe('getReviews with aliases', () => {
   beforeEach(() => {
     mockFrom.mockClear();
+    mockRpc.mockClear();
   });
 
   it('should fetch unified reviews for canonical vehicle and its alias', async () => {
     const { supabase } = await import('@/lib/supabase');
-    const { getReviews } = await import('./queries');
 
     let capturedOrQuery = '';
 
@@ -76,7 +84,6 @@ describe('getReviews with aliases', () => {
 
   it('should support bidirectional alias lookup when querying by alias brand', async () => {
     const { supabase } = await import('@/lib/supabase');
-    const { getReviews } = await import('./queries');
 
     let capturedOrQuery = '';
 
@@ -134,7 +141,6 @@ describe('getReviews with aliases', () => {
 
   it('should filter out aliases with non-matching canonical_my', async () => {
     const { supabase } = await import('@/lib/supabase');
-    const { getReviews } = await import('./queries');
 
     let capturedOrQuery = '';
 
@@ -188,14 +194,44 @@ describe('getReviews with aliases', () => {
   });
 });
 
+describe('Phase 4 RPC query wrappers', () => {
+  beforeEach(() => {
+    mockRpc.mockClear();
+  });
+
+  it('getFamilies should call get_families_by_brand_v2', async () => {
+    mockRpc.mockResolvedValueOnce({
+      data: [{ famille: 'Tiggo 7', review_count: 10, is_alias: false, canonical_marque: 'Chery', canonical_famille: 'Tiggo 7' }],
+      error: null,
+    });
+
+    const res = await getFamilies('Chery');
+    expect(mockRpc).toHaveBeenCalledWith('get_families_by_brand_v2', { brand_name: 'Chery' });
+    expect(res).toHaveLength(1);
+    expect(res[0].famille).toBe('Tiggo 7');
+  });
+
+  it('getVehicleSeoStats should call get_vehicle_seo_stats_v2', async () => {
+    const params = { p_marque: 'Porsche', p_famille: '911', p_my: 2025, p_modele: '911 GT3' };
+    mockRpc.mockResolvedValueOnce({
+      data: { review_count: 5, metacarscore: 92 },
+      error: null,
+    });
+
+    const res = await getVehicleSeoStats(params);
+    expect(mockRpc).toHaveBeenCalledWith('get_vehicle_seo_stats_v2', params);
+    expect(res).toEqual({ review_count: 5, metacarscore: 92 } as any);
+  });
+});
+
 describe('getModelAliases', () => {
   beforeEach(() => {
     mockFrom.mockClear();
+    mockRpc.mockClear();
   });
 
   it('should fetch aliases for given marque and famille bidirectionally', async () => {
     const { supabase } = await import('@/lib/supabase');
-    const { getModelAliases } = await import('./queries');
 
     let capturedOrQuery = '';
 
@@ -235,7 +271,6 @@ describe('getModelAliases', () => {
 
   it('should filter aliases by MY if specified', async () => {
     const { supabase } = await import('@/lib/supabase');
-    const { getModelAliases } = await import('./queries');
 
     const mockAliasChain = {
       select: mock(() => mockAliasChain),
