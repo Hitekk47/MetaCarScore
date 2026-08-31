@@ -81,13 +81,24 @@ export default async function BrandPage({ params }: PageProps) {
   // -----------------------------------------------------------
   const items: DirectoryItem[] = families.map((item: any) => {
     const familyName = String(item.Famille || item.famille || "");
+    const isAlias = Boolean(item.is_alias);
+    const canonicalMarque = item.canonical_marque || null;
+    const canonicalFamille = item.canonical_famille || null;
+
+    const href = isAlias && canonicalMarque && canonicalFamille
+      ? `/${toSlug(canonicalMarque)}/${toSlug(canonicalFamille)}`
+      : `/${toSlug(realMarque)}/${toSlug(familyName)}`;
+
     return {
       id: familyName,
       title: familyName,
-      subtitle: `${item.review_count} Essai${item.review_count > 1 ? 's' : ''}`,
-      href: `/${toSlug(realMarque)}/${toSlug(familyName)}`,
+      subtitle: `${item.review_count} Essai${Number(item.review_count) > 1 ? 's' : ''}`,
+      href,
       iconName: "layers",
-      colorClass: "bg-slate-50 text-slate-700 border-slate-200"
+      colorClass: "bg-slate-50 text-slate-700 border-slate-200",
+      isAlias,
+      canonicalMarque,
+      canonicalFamille
     };
   });
 

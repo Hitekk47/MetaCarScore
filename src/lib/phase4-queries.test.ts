@@ -17,7 +17,7 @@ describe('Phase 4 Queries and RPCs', () => {
   });
 
   it('getVehicleSeoStats calls get_vehicle_seo_stats_v2', async () => {
-    mockRpc.mockImplementation((fnName: string, params: any) => {
+    mockRpc.mockImplementation((fnName: string) => {
       if (fnName === 'get_vehicle_seo_stats_v2') {
         return Promise.resolve({
           data: {
@@ -39,7 +39,7 @@ describe('Phase 4 Queries and RPCs', () => {
   });
 
   it('getBrandContext calls find_brand_by_slug_v2', async () => {
-    mockRpc.mockImplementation((fnName: string, params: any) => {
+    mockRpc.mockImplementation((fnName: string) => {
       if (fnName === 'find_brand_by_slug_v2') {
         return Promise.resolve({
           data: [{ Marque: 'Chery' }],
