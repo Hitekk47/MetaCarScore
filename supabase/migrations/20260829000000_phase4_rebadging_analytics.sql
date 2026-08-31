@@ -433,6 +433,7 @@ BEGIN
   FROM normalized_reviews nr
   WHERE
     (min_my IS NULL OR nr."MY" >= min_my)
+    AND nr.orig_modele NOT ILIKE '%bZ4X%'
     AND (
       nr.orig_modele ILIKE '% SW%' OR
       nr.orig_modele ILIKE '% Turismo%' OR
