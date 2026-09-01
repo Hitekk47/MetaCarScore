@@ -12,8 +12,12 @@ type BrandPodiumStepProps = {
 
 export default function BrandPodiumStep({ item, rank }: BrandPodiumStepProps) {
     const isFirst = rank === 1;
-    const modelUrl = item.best_model && item.best_famille && item.best_my
-        ? `/${toSlug(item.brand)}/${toSlug(item.best_famille)}/${item.best_my}/${toSlug(item.best_model)}`
+    const bestMarque = item.best_canonical_marque || item.brand;
+    const bestFamille = item.best_canonical_famille || item.best_famille;
+    const bestModele = item.best_canonical_modele || item.best_model;
+
+    const modelUrl = item.best_model && bestFamille && item.best_my && bestModele
+        ? `/${toSlug(bestMarque)}/${toSlug(bestFamille)}/${item.best_my}/${toSlug(bestModele)}`
         : null;
 
     return (

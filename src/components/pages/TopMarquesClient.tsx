@@ -39,8 +39,8 @@ export default function TopMarquesClient() {
       if (timeRange === '1y') targetMY = currentYear - 1; // ex: 2024
       else if (timeRange === '5y') targetMY = currentYear - 5; // ex: 2020
       
-      // APPEL V5 : 'min_my' au lieu de 'min_date'
-      const { data: ranking } = await supabase.rpc('get_brand_ranking_v5', {
+      // APPEL V6 : 'min_my' au lieu de 'min_date'
+      const { data: ranking } = await supabase.rpc('get_brand_ranking_v6', {
         min_my: targetMY,
         min_count: 5
       });
@@ -121,8 +121,21 @@ export default function TopMarquesClient() {
 
                             // URLs
                             const brandUrl = `/${toSlug(item.brand)}`;
-                            const bestModelUrl = item.best_model ? `/${toSlug(item.brand)}/${toSlug(item.best_famille)}/${item.best_my}/${toSlug(item.best_model)}` : null;
-                            const worstModelUrl = item.worst_model ? `/${toSlug(item.brand)}/${toSlug(item.worst_famille)}/${item.worst_my}/${toSlug(item.worst_model)}` : null;
+
+                            const bestMarque = item.best_canonical_marque || item.brand;
+                            const bestFamille = item.best_canonical_famille || item.best_famille;
+                            const bestModele = item.best_canonical_modele || item.best_model;
+
+                            const worstMarque = item.worst_canonical_marque || item.brand;
+                            const worstFamille = item.worst_canonical_famille || item.worst_famille;
+                            const worstModele = item.worst_canonical_modele || item.worst_model;
+
+                            const bestModelUrl = item.best_model && bestFamille && item.best_my && bestModele
+                                ? `/${toSlug(bestMarque)}/${toSlug(bestFamille)}/${item.best_my}/${toSlug(bestModele)}`
+                                : null;
+                            const worstModelUrl = item.worst_model && worstFamille && item.worst_my && worstModele
+                                ? `/${toSlug(worstMarque)}/${toSlug(worstFamille)}/${item.worst_my}/${toSlug(worstModele)}`
+                                : null;
 
                             return (
                                 <div key={item.brand}>
