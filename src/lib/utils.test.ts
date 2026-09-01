@@ -123,5 +123,28 @@ describe("utils", () => {
         "Également commercialisé sous les noms : BrandB ModelB, BrandC ModelC"
       );
     });
+
+    test("should handle intra-brand alias rebadging (e.g., Jaecoo J7 vs Jaecoo 7)", () => {
+      const aliases = [
+        {
+          canonical_marque: "Jaecoo",
+          canonical_famille: "7",
+          canonical_modele: null,
+          alias_marque: "Jaecoo",
+          alias_famille: "J7",
+          alias_modele: null,
+        },
+      ];
+
+      // Sur la page de l'alias (/jaecoo/j7) -> affiche la contrepartie canonique "7"
+      expect(utils.formatAliasDisplay(aliases, "Jaecoo", "J7")).toBe(
+        "Également commercialisé sous le nom : 7"
+      );
+
+      // Sur la page canonique (/jaecoo/7) -> affiche la contrepartie alias "J7"
+      expect(utils.formatAliasDisplay(aliases, "Jaecoo", "7")).toBe(
+        "Également commercialisé sous le nom : J7"
+      );
+    });
   });
 });

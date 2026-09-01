@@ -175,13 +175,62 @@ export type AliasItem = {
   alias_modele: string | null;
 };
 
-export function formatAliasDisplay(aliases: AliasItem[], currentMarque: string): string | null {
+export function formatAliasDisplay(
+  aliases: AliasItem[],
+  currentMarque: string,
+  currentFamille?: string,
+  currentModele?: string
+): string | null {
   if (!aliases || aliases.length === 0) return null;
 
   const namesSet = new Set<string>();
+  const lowerCurrentMarque = currentMarque.toLowerCase();
+  const lowerCurrentFamille = currentFamille ? currentFamille.toLowerCase() : null;
+  const lowerCurrentModele = currentModele ? currentModele.toLowerCase() : null;
 
   for (const alias of aliases) {
-    const isCanonical = alias.canonical_marque.toLowerCase() === currentMarque.toLowerCase();
+    const matchCanonicalMarque = alias.canonical_marque.toLowerCase() === lowerCurrentMarque;
+    const matchCanonicalFamille = lowerCurrentFamille
+      ? alias.canonical_famille.toLowerCase() === lowerCurrentFamille
+      : true;
+    const matchCanonicalModele = lowerCurrentModele
+      ? alias.canonical_modele
+        ? alias.canonical_modele.toLowerCase() === lowerCurrentModele
+        : true
+      : true;
+
+    const matchCanonical = matchCanonicalMarque && matchCanonicalFamille && matchCanonicalModele;
+
+    const matchAliasMarque = alias.alias_marque.toLowerCase() === lowerCurrentMarque;
+    const matchAliasFamille = lowerCurrentFamille
+      ? alias.alias_famille.toLowerCase() === lowerCurrentFamille
+      : true;
+    const matchAliasModele = lowerCurrentModele
+      ? alias.alias_modele
+        ? alias.alias_modele.toLowerCase() === lowerCurrentModele
+        : true
+      : true;
+
+    const matchAlias = matchAliasMarque && matchAliasFamille && matchAliasModele;
+
+    let isCanonical = true;
+    if (matchCanonical && !matchAlias) {
+      isCanonical = true;
+    } else if (matchAlias && !matchCanonical) {
+      isCanonical = false;
+    } else if (matchCanonical && matchAlias) {
+      // Direct tie-breaker when both side brand/family/model match: check family/model exact match
+      if (lowerCurrentFamille) {
+        if (alias.alias_famille.toLowerCase() === lowerCurrentFamille && alias.canonical_famille.toLowerCase() !== lowerCurrentFamille) {
+          isCanonical = false;
+        } else {
+          isCanonical = true;
+        }
+      }
+    } else {
+      // Neither matches fully, fallback to brand match
+      isCanonical = matchCanonicalMarque;
+    }
 
     const counterpartBrand = isCanonical ? alias.alias_marque : alias.canonical_marque;
     const counterpartName = isCanonical
@@ -190,7 +239,7 @@ export function formatAliasDisplay(aliases: AliasItem[], currentMarque: string):
 
     if (!counterpartName) continue;
 
-    const brandDiffers = counterpartBrand.toLowerCase() !== currentMarque.toLowerCase();
+    const brandDiffers = counterpartBrand.toLowerCase() !== lowerCurrentMarque;
 
     let displayString: string;
     if (brandDiffers) {
