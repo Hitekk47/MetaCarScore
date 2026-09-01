@@ -3,169 +3,115 @@
 
 CREATE OR REPLACE FUNCTION "public"."get_brand_ranking_v6"(
     "min_my" integer DEFAULT NULL::integer,
-    "min_count" integer DEFAULT 10
+    "min_count" integer DEFAULT 5
 )
 RETURNS TABLE(
-    "brand" "text",
-    "avg_score" numeric,
-    "review_count" bigint,
-    "best_model" "text",
-    "best_score" integer,
-    "best_famille" "text",
-    "best_my" integer,
-    "best_canonical_marque" "text",
-    "best_canonical_famille" "text",
-    "best_canonical_modele" "text",
-    "worst_model" "text",
-    "worst_score" integer,
-    "worst_famille" "text",
-    "worst_my" integer,
-    "worst_canonical_marque" "text",
-    "worst_canonical_famille" "text",
-    "worst_canonical_modele" "text"
+    "brand" "text", "avg_score" numeric, "review_count" bigint,
+    "best_model" "text", "best_score" integer, "best_famille" "text", "best_my" integer,
+    "best_canonical_marque" "text", "best_canonical_famille" "text", "best_canonical_modele" "text",
+    "worst_model" "text", "worst_score" integer, "worst_famille" "text", "worst_my" integer,
+    "worst_canonical_marque" "text", "worst_canonical_famille" "text", "worst_canonical_modele" "text"
 )
 LANGUAGE "plpgsql"
 AS $$
 BEGIN
   RETURN QUERY
-  WITH
+  WITH 
+  -- 0. PRÉ-RÉSOLUTION ULTRA RAPIDE (S'exécute uniquement sur la table model_aliases, pas sur les 20k lignes)
+  resolved_aliases AS (
+    SELECT 
+      ma.*,
+      COALESCE(
+        ma.canonical_modele,
+        (SELECT r."Modele" FROM public.reviews r WHERE r."Marque" = ma.canonical_marque AND r."Famille" = ma.canonical_famille AND r."MY" = ma.canonical_my LIMIT 1),
+        (SELECT r."Modele" FROM public.reviews r WHERE r."Marque" = ma.canonical_marque AND r."Famille" = ma.canonical_famille LIMIT 1)
+      ) AS resolved_c_modele
+    FROM public.model_aliases ma
+  ),
   raw_data AS (
     SELECT r.id, r."Marque", r."Famille", r."Modele", r."MY", r."Score"
     FROM public.reviews r
     WHERE (min_my IS NULL OR r."MY" >= min_my)
   ),
-
-  -- 1. On consolide chaque essai sous son identité canonique
+  
+  -- 1. NORMALISATION INSTANTANÉE (Jointure directe sans sous-requêtes)
   normalized_reviews AS (
-    SELECT
+    SELECT 
         r.id, r."Score", r."MY",
-        COALESCE(ma.canonical_marque, r."Marque") AS c_marque,
-        COALESCE(ma.canonical_famille, r."Famille") AS c_famille,
-        COALESCE(ma.canonical_modele, r."Modele") AS c_modele
+        COALESCE(ra.canonical_marque, r."Marque") AS c_marque,
+        COALESCE(ra.canonical_famille, r."Famille") AS c_famille,
+        COALESCE(ra.resolved_c_modele, r."Modele") AS c_modele
     FROM raw_data r
-    LEFT JOIN public.model_aliases ma
-        ON LOWER(r."Marque") = LOWER(ma.alias_marque)
-        AND (ma.alias_famille IS NULL OR LOWER(r."Famille") = LOWER(ma.alias_famille))
-        AND (ma.alias_modele IS NULL OR LOWER(r."Modele") = LOWER(ma.alias_modele))
-        AND (ma.canonical_my IS NULL OR r."MY" = ma.canonical_my)
+    LEFT JOIN resolved_aliases ra 
+        ON r."Marque" = ra.alias_marque 
+        AND r."Famille" = ra.alias_famille 
+        AND (ra.alias_modele IS NULL OR r."Modele" = ra.alias_modele)
+        AND (ra.canonical_my IS NULL OR r."MY" = ra.canonical_my)
   ),
-
-  -- 2. On calcule les modèles consolidés (ex: Chery Tiggo 7 = 8 essais)
+  
+  -- 2. CONSOLIDATION PAR VÉHICULE (ex: Chery Tiggo 7 = 8 essais)
   consolidated_models AS (
-    SELECT
+    SELECT 
         c_marque, c_famille, c_modele, "MY",
         ROUND(AVG("Score")) AS model_avg,
         COUNT(*) AS review_count
     FROM normalized_reviews
     GROUP BY c_marque, c_famille, c_modele, "MY"
-    HAVING COUNT(*) >= 1
+    HAVING COUNT(*) >= 3
   ),
-
-  -- 3. On associe ces modèles consolidés à toutes les marques concernées (canoniques ET alias)
+  
+  -- 3. DISTRIBUTION AUX MARQUES (Canoniques + Alias)
   model_to_brands AS (
-    -- Marque canonique
-    SELECT
-        cm.c_marque AS brand_name,
-        cm.c_modele AS display_model_name,
-        cm.c_marque AS c_marque,
-        cm.c_famille AS c_famille,
-        cm.c_modele AS c_modele,
-        cm."MY",
-        cm.model_avg
+    SELECT cm.c_marque AS brand_name, cm.c_modele AS display_model_name, cm.c_marque, cm.c_famille, cm.c_modele, cm."MY", cm.model_avg
     FROM consolidated_models cm
-
     UNION ALL
-
-    -- Marque alias
-    SELECT DISTINCT ON (ma.alias_marque, cm.c_marque, cm.c_famille, cm.c_modele, cm."MY")
-        ma.alias_marque AS brand_name,
-        COALESCE(ma.alias_modele, ma.alias_famille) AS display_model_name,
-        cm.c_marque AS c_marque,
-        cm.c_famille AS c_famille,
-        cm.c_modele AS c_modele,
-        cm."MY",
-        cm.model_avg
+    SELECT DISTINCT ON (ra.alias_marque, cm.c_marque, cm.c_famille, cm.c_modele, cm."MY")
+        ra.alias_marque AS brand_name,
+        COALESCE(ra.alias_modele, ra.alias_famille) AS display_model_name,
+        cm.c_marque, cm.c_famille, cm.c_modele, cm."MY", cm.model_avg
     FROM consolidated_models cm
-    JOIN public.model_aliases ma
-        ON LOWER(cm.c_marque) = LOWER(ma.canonical_marque)
-        AND (ma.canonical_famille IS NULL OR LOWER(cm.c_famille) = LOWER(ma.canonical_famille))
-        AND (ma.canonical_my IS NULL OR cm."MY" = ma.canonical_my)
-        AND (ma.canonical_modele IS NULL OR LOWER(cm.c_modele) = LOWER(ma.canonical_modele))
-    ORDER BY ma.alias_marque, cm.c_marque, cm.c_famille, cm.c_modele, cm."MY"
+    JOIN resolved_aliases ra ON cm.c_marque = ra.canonical_marque AND cm.c_famille = ra.canonical_famille 
+        AND (ra.canonical_my IS NULL OR cm."MY" = ra.canonical_my)
+        AND (ra.canonical_modele IS NULL OR cm.c_modele = ra.resolved_c_modele)
   ),
-
+  
   brand_extremes AS (
-    SELECT DISTINCT ON (brand_name)
-        brand_name AS "Marque",
-        display_model_name AS best_name,
-        c_famille AS best_fam,
-        "MY" AS best_y,
-        c_marque AS best_c_marque,
-        c_famille AS best_c_famille,
-        c_modele AS best_c_modele,
-        model_avg AS best_val
+    SELECT DISTINCT ON (brand_name) 
+        brand_name AS "Marque", display_model_name AS best_name, c_famille AS best_fam, "MY" AS best_y, 
+        c_marque AS best_c_marque, c_famille AS best_c_famille, c_modele AS best_c_modele, model_avg AS best_val
     FROM model_to_brands ORDER BY brand_name, model_avg DESC
   ),
   brand_worsts AS (
-    SELECT DISTINCT ON (brand_name)
-        brand_name AS "Marque",
-        display_model_name AS worst_name,
-        c_famille AS worst_fam,
-        "MY" AS worst_y,
-        c_marque AS worst_c_marque,
-        c_famille AS worst_c_famille,
-        c_modele AS worst_c_modele,
-        model_avg AS worst_val
+    SELECT DISTINCT ON (brand_name) 
+        brand_name AS "Marque", display_model_name AS worst_name, c_famille AS worst_fam, "MY" AS worst_y, 
+        c_marque AS worst_c_marque, c_famille AS worst_c_famille, c_modele AS worst_c_modele, model_avg AS worst_val
     FROM model_to_brands ORDER BY brand_name, model_avg ASC
   ),
 
-  -- 4. On mappe CHAQUE ESSAI à TOUTES les marques concernées pour le total consolidé
+  -- 4. TOTAL CONSOLIDÉ DES ESSAIS PAR MARQUE
   review_brand_mapping AS (
-    -- Essais bruts
     SELECT r.id, r."Score", r."Marque" AS brand_name FROM raw_data r
     UNION
-    -- L'essai appartient aussi à la marque alias (ex: un essai Chery compte pour Ebro)
-    SELECT r.id, r."Score", ma.alias_marque AS brand_name
-    FROM raw_data r
-    JOIN public.model_aliases ma ON LOWER(r."Marque") = LOWER(ma.canonical_marque)
-        AND (ma.canonical_famille IS NULL OR LOWER(r."Famille") = LOWER(ma.canonical_famille))
+    SELECT r.id, r."Score", ra.alias_marque AS brand_name
+    FROM raw_data r JOIN resolved_aliases ra ON r."Marque" = ra.canonical_marque AND r."Famille" = ra.canonical_famille
     UNION
-    -- L'essai appartient aussi à la marque canonique (ex: un essai Ebro compte pour Chery)
-    SELECT r.id, r."Score", ma.canonical_marque AS brand_name
-    FROM raw_data r
-    JOIN public.model_aliases ma ON LOWER(r."Marque") = LOWER(ma.alias_marque)
-        AND (ma.alias_famille IS NULL OR LOWER(r."Famille") = LOWER(ma.alias_famille))
+    SELECT r.id, r."Score", ra.canonical_marque AS brand_name
+    FROM raw_data r JOIN resolved_aliases ra ON r."Marque" = ra.alias_marque AND r."Famille" = ra.alias_famille
   ),
-
-  -- 5. Statistiques globales
   global_stats AS (
-    SELECT
-        brand_name AS "Marque",
-        ROUND(AVG("Score"), 1) AS global_avg,
-        COUNT(DISTINCT id) AS global_count
+    SELECT brand_name AS "Marque", ROUND(AVG("Score"), 1) AS global_avg, COUNT(DISTINCT id) AS global_count
     FROM review_brand_mapping
     GROUP BY brand_name
     HAVING COUNT(DISTINCT id) >= min_count
   )
-
-  SELECT
-    gs."Marque" AS brand,
-    gs.global_avg AS avg_score,
-    gs.global_count AS review_count,
-    be.best_name AS best_model,
-    be.best_val::integer AS best_score,
-    be.best_fam AS best_famille,
-    be.best_y::integer AS best_my,
-    be.best_c_marque AS best_canonical_marque,
-    be.best_c_famille AS best_canonical_famille,
-    be.best_c_modele AS best_canonical_modele,
-    bw.worst_name AS worst_model,
-    bw.worst_val::integer AS worst_score,
-    bw.worst_fam AS worst_famille,
-    bw.worst_y::integer AS worst_my,
-    bw.worst_c_marque AS worst_canonical_marque,
-    bw.worst_c_famille AS worst_canonical_famille,
-    bw.worst_c_modele AS worst_canonical_modele
+  
+  -- 5. RENDU FINAL
+  SELECT 
+    gs."Marque" AS brand, gs.global_avg AS avg_score, gs.global_count AS review_count,
+    be.best_name AS best_model, be.best_val::integer AS best_score, be.best_fam AS best_famille, be.best_y::integer AS best_my,
+    be.best_c_marque AS best_canonical_marque, be.best_c_famille AS best_canonical_famille, be.best_c_modele AS best_canonical_modele,
+    bw.worst_name AS worst_model, bw.worst_val::integer AS worst_score, bw.worst_fam AS worst_famille, bw.worst_y::integer AS worst_my,
+    bw.worst_c_marque AS worst_canonical_marque, bw.worst_c_famille AS worst_canonical_famille, bw.worst_c_modele AS worst_canonical_modele
   FROM global_stats gs
   LEFT JOIN brand_extremes be ON gs."Marque" = be."Marque"
   LEFT JOIN brand_worsts bw ON gs."Marque" = bw."Marque"
