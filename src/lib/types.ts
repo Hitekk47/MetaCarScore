@@ -20,6 +20,9 @@ export type Review = {
   Testeur: string;
   Test_date: string; // Format YYYY/MM
   Score: number;
+  canonical_marque?: string;
+  canonical_famille?: string;
+  canonical_modele?: string | null;
 };
 
 export type AggregatedSource = {

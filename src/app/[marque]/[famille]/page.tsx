@@ -1,9 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect, RedirectType } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
 import { getFullContext, getReviews, getVehicleSeoStats, getModelAliases } from "@/lib/queries";
 import { generateSeoText, cleanSeoText } from "@/lib/seo-utils";
+import { toSlug } from "@/lib/slugify";
 
 export const revalidate = 3600;
 
@@ -86,6 +87,12 @@ export default async function FamilyPage({ params }: PageProps) {
 
   if (!context?.real_famille) return notFound();
   const realFamille = context.real_famille;
+
+  // Redirection permanente si on est sur une URL d'alias
+  if (context.is_alias && context.canonical_marque && context.canonical_famille) {
+    const targetUrl = `/${toSlug(context.canonical_marque)}/${toSlug(context.canonical_famille)}`;
+    redirect(targetUrl, RedirectType.replace);
+  }
 
   // 3. Chargement Data (avec cache)
   const [reviews, seoStats, aliases] = await Promise.all([

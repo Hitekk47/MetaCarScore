@@ -1,9 +1,10 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect, RedirectType } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
 import { getFullContext, getReviews, getVehicleSeoStats, getModelAliases } from "@/lib/queries";
 import { generateSeoText, cleanSeoText } from "@/lib/seo-utils";
+import { toSlug } from "@/lib/slugify";
 
 export const revalidate = 3600;
 
@@ -116,6 +117,13 @@ export default async function PowertrainPage({ params }: PageProps) {
   const realFamille = context.real_famille;
   const realModele = context.real_modele;
   const realType = context.real_powertrain;
+
+  // Redirection permanente si on est sur une URL d'alias
+  if (context.is_alias && context.canonical_marque && context.canonical_famille) {
+    const targetModele = context.canonical_modele || realModele;
+    const targetUrl = `/${toSlug(context.canonical_marque)}/${toSlug(context.canonical_famille)}/${my}/${toSlug(targetModele)}/${sPowertrain}`;
+    redirect(targetUrl, RedirectType.replace);
+  }
 
   // 4. Chargement Data via cache
   const [reviews, seoStats, aliases] = await Promise.all([

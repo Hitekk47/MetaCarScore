@@ -12,13 +12,21 @@ interface ReviewRow {
   Modele: string;
 }
 
-// Interface pour la nouvelle fonction RPC optimisée
 interface SitemapGroup {
   marque: string;
   famille: string;
-  my: string; // Le RPC retourne MY en string visiblement
+  my: string;
   modele: string;
   review_count: number;
+}
+
+interface ModelAliasRow {
+  canonical_marque: string;
+  canonical_famille: string;
+  canonical_modele: string | null;
+  alias_marque: string;
+  alias_famille: string;
+  alias_modele: string | null;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -44,23 +52,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: item.priority || 0.9,
   }));
 
-  // 3. Récupération des données brute pour calcul des scores globaux (Famille / MY)
-  // On récupère toutes les lignes (20k+) pour calculer les counts par groupe
-  // car on ne veut indexer que les pages avec >= 3 essais au total.
-  const { data: allRows, error: fetchError } = await supabase
-    .from('reviews')
-    .select('Marque, Famille, MY');
+  // 3. Récupération des données brute des essais & des alias
+  const [reviewsRes, aliasesRes, modelGroupsRes] = await Promise.all([
+    supabase.from('reviews').select('Marque, Famille, MY'),
+    supabase.from('model_aliases').select('canonical_marque, canonical_famille, canonical_modele, alias_marque, alias_famille, alias_modele'),
+    supabase.rpc('get_sitemap_groups_filtered_v2'),
+  ]);
 
-  if (fetchError) {
-    console.error('Error fetching reviews for sitemap:', fetchError.message);
+  if (reviewsRes.error) {
+    console.error('Error fetching reviews for sitemap:', reviewsRes.error.message);
   }
 
-  // 4. Récupération des groupes optimisés pour les Modèles (review_count >= 3)
-  const { data: modelGroups, error: rpcError } = await supabase.rpc('get_sitemap_groups_filtered_v2');
+  const allRows = reviewsRes.data || [];
+  const aliases = (aliasesRes.data || []) as ModelAliasRow[];
+  const modelGroups = modelGroupsRes.data as SitemapGroup[] | null;
 
-  if (rpcError) {
-    console.error('Error calling get_sitemap_groups_filtered:', rpcError.message);
-  }
+  // Création d'une map pour la résolution rapide d'alias
+  const aliasMap = new Map<string, { canonical_marque: string; canonical_famille: string }>();
+  aliases.forEach((a) => {
+    const key = `${a.alias_marque.toLowerCase()}|${a.alias_famille.toLowerCase()}`;
+    aliasMap.set(key, {
+      canonical_marque: a.canonical_marque,
+      canonical_famille: a.canonical_famille,
+    });
+  });
 
   // --- CALCUL DES COMPTEURS ET DÉDOUBLONNAGE ---
 
@@ -69,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const myCounts = new Map<string, number>();
   const modelRoutesSet = new Set<string>();
 
-  // On traite les modèles via le RPC filtré (déjà >= 3 essais)
+  // Modèles optimisés via RPC get_sitemap_groups_filtered_v2
   if (modelGroups && Array.isArray(modelGroups)) {
     modelGroups.forEach((row: SitemapGroup) => {
       const m = toSlug(row.marque);
@@ -80,24 +95,39 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  // On traite les Familles / MY via les données brutes pour aggrégation large
-  if (allRows && Array.isArray(allRows)) {
-    allRows.forEach((row: Partial<ReviewRow>) => {
-      const m = toSlug(row.Marque!);
-      const f = toSlug(row.Famille!);
-      const y = row.MY;
+  // Traitement des familles & MYs avec unification canonique
+  allRows.forEach((row: Partial<ReviewRow>) => {
+    if (!row.Marque || !row.Famille) return;
 
-      const brandPath = `${BASE_URL}/${m}`;
-      const familyPath = `${BASE_URL}/${m}/${f}`;
-      const myPath = `${BASE_URL}/${m}/${f}/${y}`;
+    // Ajout de la marque (catalogues 200 OK)
+    brands.add(`${BASE_URL}/${toSlug(row.Marque)}`);
 
-      brands.add(brandPath);
-      familyCounts.set(familyPath, (familyCounts.get(familyPath) || 0) + 1);
-      myCounts.set(myPath, (myCounts.get(myPath) || 0) + 1);
-    });
-  }
+    // Unification sous l'identité canonique si la ligne est un alias
+    const aliasKey = `${row.Marque.toLowerCase()}|${row.Famille.toLowerCase()}`;
+    const aliasMatch = aliasMap.get(aliasKey);
 
-  // --- CONSTRUCTION DES ROUTES FILTRÉES ---
+    const canonicalMarque = aliasMatch ? aliasMatch.canonical_marque : row.Marque;
+    const canonicalFamille = aliasMatch ? aliasMatch.canonical_famille : row.Famille;
+
+    const m = toSlug(canonicalMarque);
+    const f = toSlug(canonicalFamille);
+    const y = row.MY;
+
+    const familyPath = `${BASE_URL}/${m}/${f}`;
+    const myPath = `${BASE_URL}/${m}/${f}/${y}`;
+
+    familyCounts.set(familyPath, (familyCounts.get(familyPath) || 0) + 1);
+    myCounts.set(myPath, (myCounts.get(myPath) || 0) + 1);
+  });
+
+  // --- CONSTRUCTION DES ROUTES FILTRÉES (>= 3 essais) ---
+
+  const brandRoutes = Array.from(brands).map((url) => ({
+    url,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
 
   const familyRoutes = Array.from(familyCounts.entries())
     .filter(([, count]) => count >= 3)
@@ -122,15 +152,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(),
     changeFrequency: 'monthly' as const,
     priority: 0.7,
-  }));
-
-  // --- CONSTRUCTION DES ROUTES MARQUES ---
-
-  const brandRoutes = Array.from(brands).map(url => ({
-    url,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
   }));
 
   return [
