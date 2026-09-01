@@ -229,11 +229,25 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
     });
 
     if (matchingAlias) {
+      // Find matching canonical review in rawReviews to inherit canonical model name
+      const canonicalReviewMatch = rawReviews.find(
+        (cr) =>
+          cr.Marque.toLowerCase() === matchingAlias.canonical_marque.toLowerCase() &&
+          cr.Famille.toLowerCase() === matchingAlias.canonical_famille.toLowerCase() &&
+          cr.MY === r.MY
+      );
+
+      const resolvedCanonicalModele =
+        matchingAlias.canonical_modele ||
+        filters.modele ||
+        canonicalReviewMatch?.Modele ||
+        r.Modele;
+
       return {
         ...r,
         canonical_marque: matchingAlias.canonical_marque,
         canonical_famille: matchingAlias.canonical_famille,
-        canonical_modele: matchingAlias.canonical_modele || r.Modele,
+        canonical_modele: resolvedCanonicalModele,
       };
     }
 
