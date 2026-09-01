@@ -174,10 +174,10 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
                         </h1>
 
                         {/* ENCART ALIASES */}
-                        {aliases && aliases.length > 0 && formatAliasDisplay(aliases, marque) && (
+                        {aliases && aliases.length > 0 && formatAliasDisplay(aliases, marque, famille, modele) && (
                             <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/60 text-slate-300 text-xs md:text-sm font-medium backdrop-blur-sm">
                                 <ArrowRightLeft size={14} className="text-blue-400 shrink-0" />
-                                <span>{formatAliasDisplay(aliases, marque)}</span>
+                                <span>{formatAliasDisplay(aliases, marque, famille, modele)}</span>
                             </div>
                         )}
 
