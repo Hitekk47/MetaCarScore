@@ -1,5 +1,5 @@
 -- Migration: 20260831000000_get_brand_ranking_v5.sql
--- Description: Consolidated brand ranking v5 with alias-consolidated review counts per brand
+-- Description: Consolidated brand ranking v5 with alias-consolidated review counts per brand using primary key `id`
 
 CREATE OR REPLACE FUNCTION "public"."get_brand_ranking_v5"(
   "min_my" integer DEFAULT NULL::integer,
@@ -29,6 +29,7 @@ BEGIN
   -- 1. Normalized reviews mapped with canonical identities via model_aliases
   normalized_reviews AS (
     SELECT
+      r.id AS rev_id,
       r."Score",
       r."MY",
       r."Marque" AS orig_marque,
@@ -52,11 +53,11 @@ BEGIN
      AND LOWER(r."Famille") = LOWER(ma.alias_famille)
      AND (ma.alias_modele IS NULL OR LOWER(r."Modele") = LOWER(ma.alias_modele))
   ),
-  -- 2. Consolidated review count per brand (canonical brand OR alias brand)
+  -- 2. Consolidated review count per brand
   brand_consolidated_counts AS (
     SELECT
       b.brand_name AS "Marque",
-      COUNT(DISTINCT nr_id.rev_id) AS total_count
+      COUNT(DISTINCT nr.rev_id) AS total_count
     FROM (
       SELECT r_inner."Marque" AS brand_name FROM raw_data r_inner
       UNION
@@ -64,24 +65,10 @@ BEGIN
       UNION
       SELECT ma_inner.canonical_marque AS brand_name FROM public.model_aliases ma_inner
     ) b
-    JOIN (
-      SELECT
-        r_all.ctid AS rev_id,
-        r_all."Score",
-        r_all."MY",
-        r_all."Marque" AS orig_marque,
-        r_all."Famille" AS orig_famille,
-        COALESCE(ma_all.canonical_marque, r_all."Marque") AS c_marque,
-        COALESCE(ma_all.canonical_famille, r_all."Famille") AS c_famille
-      FROM raw_data r_all
-      LEFT JOIN public.model_aliases ma_all
-        ON LOWER(r_all."Marque") = LOWER(ma_all.alias_marque)
-       AND LOWER(r_all."Famille") = LOWER(ma_all.alias_famille)
-       AND (ma_all.alias_modele IS NULL OR LOWER(r_all."Modele") = LOWER(ma_all.alias_modele))
-    ) nr_id ON LOWER(nr_id.c_marque) = LOWER(b.brand_name) OR LOWER(nr_id.orig_marque) = LOWER(b.brand_name)
+    JOIN normalized_reviews nr ON LOWER(nr.c_marque) = LOWER(b.brand_name) OR LOWER(nr.orig_marque) = LOWER(b.brand_name)
     GROUP BY b.brand_name
   ),
-  -- 3. Model level stats for best/worst models (using original or canonical brand)
+  -- 3. Model level stats for best/worst models
   ModelStats AS (
     SELECT
       nr.orig_marque AS "Marque",
