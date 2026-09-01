@@ -2,13 +2,11 @@
 
 import { unstable_cache } from 'next/cache';
 import { Review } from "@/lib/types";
-import { getFullContext } from "@/lib/queries";
-import { supabase } from "@/lib/supabase";
+import { getFullContext, getReviews } from "@/lib/queries";
 import {
   isValidSlugPart,
   isValidModelPart,
   isValidYear,
-  escapePostgrestValue
 } from "@/lib/validation";
 
 // --- New Cached Batch Function ---
@@ -62,81 +60,24 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
 
   if (validContexts.length === 0) return {};
 
-  // To avoid exceeding Supabase PostgREST URL limits (usually ~8KB max for GET, but conservative at 50 to avoid any risk),
-  // we chunk the valid contexts and query them in batches.
-  const BATCH_SIZE = 50;
-  let reviews: Review[] = [];
-
-  for (let i = 0; i < validContexts.length; i += BATCH_SIZE) {
-    const chunk = validContexts.slice(i, i + BATCH_SIZE);
-    const conditions = chunk.map(ctx => {
-      // PostgREST syntax: wrap strings in quotes to handle special chars (except numbers).
-      // 🔒 Security: Double quotes within values must be escaped by prefixing them with backslash (\").
-      const m = escapePostgrestValue(ctx.real_marque);
-      const f = escapePostgrestValue(ctx.real_famille);
-      const mod = escapePostgrestValue(ctx.real_modele);
-      return `and(Marque.eq."${m}",Famille.eq."${f}",MY.eq.${ctx.my},Modele.eq."${mod}")`;
-    });
-
-    // Join with comma for OR operator in PostgREST
-    const orQuery = conditions.join(',');
-
-    const { data, error } = await supabase
-      .from('reviews')
-      .select('*')
-      .or(orQuery);
-
-    if (error) {
-      console.error("❌ Erreur Supabase Batch: An unexpected error occurred in chunk", i);
-      // We continue to other chunks, returning what we have, or could fail the whole batch.
-      // Deciding to continue to return partial results is safer.
-      continue;
-    }
-
-    if (data) {
-      reviews = reviews.concat(data as Review[]);
-    }
-  }
   const result: Record<string, Review[]> = {};
 
   // Initialize result arrays for requested slugs
   slugs.forEach(s => result[s] = []);
 
-  // Group reviews by slug
-  // Note: We need to map back from (Real Names) -> (Original Slug)
-  // Since multiple slugs might map to same real car (unlikely but possible), or we just iterate contexts
+  if (validContexts.length === 0) return result;
 
-  // Create an O(1) lookup map using a composite key
-  // Using a pipe '|' character as separator because it doesn't appear in car names (unlike underscores or spaces)
-  type ContextType = {
-    slug: string;
-    real_marque: string;
-    real_famille: string;
-    real_modele: string;
-    my: number;
-  };
-  const contextMap = new Map<string, ContextType[]>();
-
-  validContexts.forEach(ctx => {
-    const key = `${ctx.real_marque}|${ctx.real_famille}|${ctx.my}|${ctx.real_modele}`;
-    if (!contextMap.has(key)) {
-      contextMap.set(key, []);
-    }
-    contextMap.get(key)!.push(ctx);
-  });
-
-  reviews.forEach(r => {
-    const key = `${r.Marque}|${r.Famille}|${r.MY}|${r.Modele}`;
-    const matchingContexts = contextMap.get(key);
-
-    if (matchingContexts) {
-      matchingContexts.forEach(ctx => {
-        if (result[ctx.slug]) {
-          result[ctx.slug].push(r);
-        }
+  await Promise.all(
+    validContexts.map(async (ctx) => {
+      const reviews = await getReviews({
+        marque: ctx.real_marque,
+        famille: ctx.real_famille,
+        my: ctx.my,
+        modele: ctx.real_modele,
       });
-    }
-  });
+      result[ctx.slug] = reviews;
+    })
+  );
 
   return result;
 }
