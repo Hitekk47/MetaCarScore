@@ -63,10 +63,16 @@ export type BrandRankingItem = {
   best_score: number | null;
   best_famille: string | null;
   best_my: number | null;
+  best_canonical_marque?: string | null;
+  best_canonical_famille?: string | null;
+  best_canonical_modele?: string | null;
   worst_model: string | null;
   worst_score: number | null;
   worst_famille: string | null;
   worst_my: number | null;
+  worst_canonical_marque?: string | null;
+  worst_canonical_famille?: string | null;
+  worst_canonical_modele?: string | null;
 };
 
 export type CarouselItem = {
