@@ -19,10 +19,11 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
     const groups: Record<string, { totalScore: number; maxPower: number; count: number; name: string; my: number }> = {};
 
     reviews.forEach(r => {
-      const uniqueKey = `${r.Modele}_${r.MY}`;
+      const canonicalModele = r.canonical_modele || r.Modele;
+      const uniqueKey = `${canonicalModele}_${r.MY}`;
       
       if (!groups[uniqueKey]) {
-        groups[uniqueKey] = { totalScore: 0, maxPower: 0, count: 0, name: r.Modele, my: r.MY };
+        groups[uniqueKey] = { totalScore: 0, maxPower: 0, count: 0, name: canonicalModele, my: r.MY };
       }
       
       groups[uniqueKey].totalScore += r.Score;
@@ -74,8 +75,8 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
   if (rawModelsData.length <= 1) return null;
 
   // Pour construire les liens, on a besoin de la Marque et Famille (communes à tous les reviews ici)
-  const slugMarque = toSlug(reviews[0]?.Marque || "");
-  const slugFamille = toSlug(reviews[0]?.Famille || "");
+  const slugMarque = toSlug(reviews[0]?.canonical_marque || reviews[0]?.Marque || "");
+  const slugFamille = toSlug(reviews[0]?.canonical_famille || reviews[0]?.Famille || "");
   return (
     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
       

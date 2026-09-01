@@ -7,8 +7,10 @@ mock.module("next/cache", () => ({
 
 // Mock @/lib/queries
 const mockGetFullContext = mock();
+const mockGetReviews = mock();
 mock.module("@/lib/queries", () => ({
   getFullContext: mockGetFullContext,
+  getReviews: mockGetReviews,
 }));
 
 // Mock @/lib/supabase
@@ -26,39 +28,47 @@ mock.module("@/lib/supabase", () => ({
 describe("fetchBatchFighterReviews security", () => {
   beforeEach(() => {
     mockGetFullContext.mockClear();
+    mockGetReviews.mockClear();
     mockOr.mockClear();
     mockSelect.mockClear();
     mockFrom.mockClear();
   });
 
-  it("should escape double quotes in car names to prevent PostgREST injection", async () => {
+  it("should call getReviews with resolved context parameters to fetch consolidated reviews", async () => {
     // Import the action AFTER mocking
     const { fetchBatchFighterReviews } = await import("./duels");
 
-    // Setup mock return for getFullContext with a malicious/special name
     mockGetFullContext.mockImplementation(async ({ p_marque_slug }: { p_marque_slug?: string }) => {
-      if (p_marque_slug === "brand") {
+      if (p_marque_slug === "ebro") {
         return {
-          real_marque: 'Brand "With" Quotes',
-          real_famille: 'Family',
-          real_modele: 'Model',
+          real_marque: 'Ebro',
+          real_famille: 'S700',
+          real_modele: 'S700',
         };
       }
       return null;
     });
 
-    // Call the action
-    await fetchBatchFighterReviews(["brand_family_2023_model"]);
+    mockGetReviews.mockImplementation(async () => [
+      { Score: 73, Marque: 'Ebro', Famille: 'S700', Modele: 'S700', MY: 2024 }
+    ]);
 
-    // Verify getFullContext was called
-    expect(mockGetFullContext).toHaveBeenCalled();
+    const result = await fetchBatchFighterReviews(["ebro_s700_2024_s700"]);
 
-    // Verify the .or() call received escaped strings
-    expect(mockOr).toHaveBeenCalled();
-    const orQuery = mockOr.mock.calls[0][0] as string;
+    expect(mockGetFullContext).toHaveBeenCalledWith({
+      p_marque_slug: "ebro",
+      p_famille_slug: "s700",
+      p_my: 2024,
+      p_modele_slug: "s700"
+    });
 
-    // The expected PostgREST syntax for escaping " is \"
-    // and(Marque.eq."Brand \"With\" Quotes",Famille.eq."Family",MY.eq.2023,Modele.eq."Model")
-    expect(orQuery).toContain('Marque.eq."Brand \\"With\\" Quotes"');
+    expect(mockGetReviews).toHaveBeenCalledWith({
+      marque: 'Ebro',
+      famille: 'S700',
+      my: 2024,
+      modele: 'S700'
+    });
+
+    expect(result["ebro_s700_2024_s700"]).toHaveLength(1);
   });
 });

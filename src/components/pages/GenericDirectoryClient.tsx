@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import Header from "@/components/Header";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Search, ChevronRight, X, Trophy, Zap, Leaf, Fuel, Cog, LayoutGrid, Layers, LucideIcon, Luggage, ArrowDownAZ, Sun } from "lucide-react";
+import { Search, ChevronRight, X, Trophy, Zap, Leaf, Fuel, Cog, LayoutGrid, Layers, LucideIcon, Luggage, ArrowDownAZ, Sun, ExternalLink } from "lucide-react";
 import Link from "next/link";
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -165,10 +165,11 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
                                                 </div>
                                             )}
                                             {item.isAlias && item.canonicalMarque && item.canonicalFamille && (
-                                                <div className="inline-flex items-center px-2 py-1 rounded-full bg-slate-900/10 border border-slate-900/15 backdrop-blur-xs">
+                                                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-900/10 border border-slate-900/15 backdrop-blur-xs">
                                                     <span className="text-[10px] font-bold text-slate-800 tracking-tight whitespace-nowrap">
-                                                        Modèle {item.canonicalMarque} {item.canonicalFamille}
+                                                        {item.canonicalMarque} {item.canonicalFamille}
                                                     </span>
+                                                    <ExternalLink size={10} className="text-slate-800 shrink-0" />
                                                 </div>
                                             )}
                                         </div>
