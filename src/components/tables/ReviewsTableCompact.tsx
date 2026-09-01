@@ -29,9 +29,13 @@ export default function ReviewsTableCompact({ data, hideBrand = false, pageMarqu
         </thead>
         <tbody className="divide-y divide-slate-100">
           {data.map((row, index) => {
-            const marqueSlug = toSlug(row.Marque);
-            const familleSlug = toSlug(row.Famille);
-            const modeleSlug = toSlug(row.Modele);
+            const canonicalMarque = row.canonical_marque || row.Marque;
+            const canonicalFamille = row.canonical_famille || row.Famille;
+            const canonicalModele = row.canonical_modele || row.Modele;
+
+            const marqueSlug = toSlug(canonicalMarque);
+            const familleSlug = toSlug(canonicalFamille);
+            const modeleSlug = toSlug(canonicalModele);
             const typeSlug = toSlug(row.Type);
 
             const baseHref = `/${marqueSlug}/${familleSlug}/${row.MY}`;

@@ -42,4 +42,20 @@ describe("ReviewsTableCompact rebranding display", () => {
     expect(renderTitle(sampleData[0], true, "Chery")).toBe("Tiggo 7 Pro");
     expect(renderTitle(sampleData[1], true, "Chery")).toBe("Ebro S700 Luxury");
   });
+
+  it("should generate hrefs using canonical marque and famille while preserving display name", () => {
+    const rowWithCanonical = {
+      ...sampleData[1],
+      canonical_marque: "Chery",
+      canonical_famille: "Tiggo 7",
+      canonical_modele: "Tiggo 7",
+    };
+
+    const canonicalMarque = rowWithCanonical.canonical_marque || rowWithCanonical.Marque;
+    const canonicalFamille = rowWithCanonical.canonical_famille || rowWithCanonical.Famille;
+
+    const href = `/${canonicalMarque.toLowerCase()}/${canonicalFamille.toLowerCase()}/${rowWithCanonical.MY}`;
+    expect(href).toBe("/chery/tiggo 7/2024");
+    expect(rowWithCanonical.Marque).toBe("Ebro");
+  });
 });

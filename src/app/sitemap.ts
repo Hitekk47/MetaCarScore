@@ -12,13 +12,13 @@ interface ReviewRow {
   Modele: string;
 }
 
-// Interface pour la nouvelle fonction RPC optimisée
-interface SitemapGroup {
+interface SitemapCanonicalRoute {
+  route_type: 'family' | 'my' | 'model';
   marque: string;
   famille: string;
-  my: string; // Le RPC retourne MY en string visiblement
-  modele: string;
-  review_count: number;
+  my: string | null;
+  modele: string | null;
+  nb_essais: number;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -44,93 +44,76 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: item.priority || 0.9,
   }));
 
-  // 3. Récupération des données brute pour calcul des scores globaux (Famille / MY)
-  // On récupère toutes les lignes (20k+) pour calculer les counts par groupe
-  // car on ne veut indexer que les pages avec >= 3 essais au total.
-  const { data: allRows, error: fetchError } = await supabase
+  // 3. Marques (Toutes les marques ayant des essais pour la navigation 200 OK)
+  const { data: rawBrandRows, error: brandError } = await supabase
     .from('reviews')
-    .select('Marque, Famille, MY');
+    .select('Marque');
 
-  if (fetchError) {
-    console.error('Error fetching reviews for sitemap:', fetchError.message);
+  if (brandError) {
+    console.error('Error fetching brand rows for sitemap:', brandError.message);
   }
 
-  // 4. Récupération des groupes optimisés pour les Modèles (review_count >= 3)
-  const { data: modelGroups, error: rpcError } = await supabase.rpc('get_sitemap_groups_filtered_v2');
+  const brandRoutesSet = new Set<string>();
+  if (rawBrandRows && Array.isArray(rawBrandRows)) {
+    rawBrandRows.forEach((row: Partial<ReviewRow>) => {
+      if (row.Marque) {
+        brandRoutesSet.add(`${BASE_URL}/${toSlug(row.Marque)}`);
+      }
+    });
+  }
+
+  const brandRoutes = Array.from(brandRoutesSet).map((url) => ({
+    url,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
+  // 4. Routes Canoniques (Familles, MY, Modèles avec >= 3 essais cumulés via RPC unifié)
+  const { data: canonicalRoutesData, error: rpcError } = await supabase.rpc('get_sitemap_canonical_routes');
 
   if (rpcError) {
-    console.error('Error calling get_sitemap_groups_filtered:', rpcError.message);
+    console.error('Error calling get_sitemap_canonical_routes:', rpcError.message);
   }
 
-  // --- CALCUL DES COMPTEURS ET DÉDOUBLONNAGE ---
-
-  const brands = new Set<string>();
-  const familyCounts = new Map<string, number>();
-  const myCounts = new Map<string, number>();
+  const familyRoutesSet = new Set<string>();
+  const myRoutesSet = new Set<string>();
   const modelRoutesSet = new Set<string>();
 
-  // On traite les modèles via le RPC filtré (déjà >= 3 essais)
-  if (modelGroups && Array.isArray(modelGroups)) {
-    modelGroups.forEach((row: SitemapGroup) => {
+  if (canonicalRoutesData && Array.isArray(canonicalRoutesData)) {
+    canonicalRoutesData.forEach((row: SitemapCanonicalRoute) => {
       const m = toSlug(row.marque);
       const f = toSlug(row.famille);
-      const y = row.my;
-      const mo = toSlug(row.modele);
-      modelRoutesSet.add(`${BASE_URL}/${m}/${f}/${y}/${mo}`);
+      if (row.route_type === 'family') {
+        familyRoutesSet.add(`${BASE_URL}/${m}/${f}`);
+      } else if (row.route_type === 'my' && row.my) {
+        myRoutesSet.add(`${BASE_URL}/${m}/${f}/${row.my}`);
+      } else if (row.route_type === 'model' && row.my && row.modele) {
+        const mo = toSlug(row.modele);
+        modelRoutesSet.add(`${BASE_URL}/${m}/${f}/${row.my}/${mo}`);
+      }
     });
   }
 
-  // On traite les Familles / MY via les données brutes pour aggrégation large
-  if (allRows && Array.isArray(allRows)) {
-    allRows.forEach((row: Partial<ReviewRow>) => {
-      const m = toSlug(row.Marque!);
-      const f = toSlug(row.Famille!);
-      const y = row.MY;
+  const familyRoutes = Array.from(familyRoutesSet).map((url) => ({
+    url,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.9,
+  }));
 
-      const brandPath = `${BASE_URL}/${m}`;
-      const familyPath = `${BASE_URL}/${m}/${f}`;
-      const myPath = `${BASE_URL}/${m}/${f}/${y}`;
-
-      brands.add(brandPath);
-      familyCounts.set(familyPath, (familyCounts.get(familyPath) || 0) + 1);
-      myCounts.set(myPath, (myCounts.get(myPath) || 0) + 1);
-    });
-  }
-
-  // --- CONSTRUCTION DES ROUTES FILTRÉES ---
-
-  const familyRoutes = Array.from(familyCounts.entries())
-    .filter(([, count]) => count >= 3)
-    .map(([url]) => ({
-      url,
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.9,
-    }));
-
-  const myRoutes = Array.from(myCounts.entries())
-    .filter(([, count]) => count >= 3)
-    .map(([url]) => ({
-      url,
-      lastModified: new Date(),
-      changeFrequency: 'monthly' as const,
-      priority: 0.6,
-    }));
+  const myRoutes = Array.from(myRoutesSet).map((url) => ({
+    url,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.6,
+  }));
 
   const modelRoutes = Array.from(modelRoutesSet).map((url) => ({
     url,
     lastModified: new Date(),
     changeFrequency: 'monthly' as const,
     priority: 0.7,
-  }));
-
-  // --- CONSTRUCTION DES ROUTES MARQUES ---
-
-  const brandRoutes = Array.from(brands).map(url => ({
-    url,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.8,
   }));
 
   return [

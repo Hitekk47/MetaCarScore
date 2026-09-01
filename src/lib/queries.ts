@@ -14,6 +14,10 @@ export interface FullContext {
   real_famille: string | null;
   real_modele: string | null;
   real_powertrain: string | null;
+  is_alias?: boolean | null;
+  canonical_marque?: string | null;
+  canonical_famille?: string | null;
+  canonical_modele?: string | null;
 }
 
 export interface FamilyItem {
@@ -49,7 +53,7 @@ export const getBrandContext = cache(async (slug: string) => {
 
 // 2. Cached Full Context (Family, Model, Powertrain)
 export const getFullContext = cache(async (params: FullContextParams) => {
-  const { data, error } = await supabase.rpc('get_full_context_by_slugs_v2', params);
+  const { data, error } = await supabase.rpc('get_full_context_by_slugs_v3', params);
 
   if (error) {
     console.error('Error fetching full context: An unexpected error occurred');
@@ -212,7 +216,34 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
     return [];
   }
 
-  return (data as Review[]) || [];
+  const rawReviews = (data as Review[]) || [];
+
+  // Map canonical marque, famille, and modele for each review using aliases
+  return rawReviews.map((r) => {
+    const matchingAlias = aliases.find((a) => {
+      const isAliasMatch =
+        a.alias_marque.toLowerCase() === r.Marque.toLowerCase() &&
+        a.alias_famille.toLowerCase() === r.Famille.toLowerCase() &&
+        (a.alias_modele === null || a.alias_modele.toLowerCase() === r.Modele.toLowerCase());
+      return isAliasMatch;
+    });
+
+    if (matchingAlias) {
+      return {
+        ...r,
+        canonical_marque: matchingAlias.canonical_marque,
+        canonical_famille: matchingAlias.canonical_famille,
+        canonical_modele: matchingAlias.canonical_modele || r.Modele,
+      };
+    }
+
+    return {
+      ...r,
+      canonical_marque: r.Marque,
+      canonical_famille: r.Famille,
+      canonical_modele: r.Modele,
+    };
+  });
 });
 
 export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_famille: string; p_my?: number; p_modele?: string }) => {
