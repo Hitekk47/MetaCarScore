@@ -62,8 +62,10 @@ export default function DuelArena({ carA, carB }: Props) {
 
   const countA = carA.reviews.length;
   const countB = carB.reviews.length;
-  const isValidA = countA >= 3;
-  const isValidB = countB >= 3;
+  const sourcesA = useMemo(() => new Set(carA.reviews.map(r => r.Testeur?.trim().toLowerCase()).filter(Boolean)).size, [carA.reviews]);
+  const sourcesB = useMemo(() => new Set(carB.reviews.map(r => r.Testeur?.trim().toLowerCase()).filter(Boolean)).size, [carB.reviews]);
+  const isValidA = sourcesA >= 3;
+  const isValidB = sourcesB >= 3;
 
   const { matches, onlyA, onlyB, scoreA, scoreB, winsA, winsB, scoresArrayA, scoresArrayB } = useMemo(() => {
     const aggA = aggregateReviews(carA.reviews);
@@ -118,7 +120,7 @@ export default function DuelArena({ carA, carB }: Props) {
                     </Link>
                 </div>
                 
-                <ScoreBadge score={isValidA ? scoreA : 0} size="xl" reviewCount={countA} />
+                <ScoreBadge score={isValidA ? scoreA : 0} size="xl" sourceCount={sourcesA} />
                 
                 <div className="flex flex-col items-center max-h-24 opacity-100 mt-2">
                     {isValidA && (
@@ -153,7 +155,7 @@ export default function DuelArena({ carA, carB }: Props) {
                     </Link>
                 </div>
 
-                <ScoreBadge score={isValidB ? scoreB : 0} size="xl" reviewCount={countB} />
+                <ScoreBadge score={isValidB ? scoreB : 0} size="xl" sourceCount={sourcesB} />
 
                 <div className="flex flex-col items-center max-h-24 opacity-100 mt-2">
                     {isValidB && (
@@ -187,7 +189,7 @@ export default function DuelArena({ carA, carB }: Props) {
                             <div className="flex items-center justify-start gap-2">
                                 {/* Score à gauche */}
                                 <div className="shrink-0 scale-75 origin-left">
-                                    <ScoreBadge score={isValidA ? scoreA : 0} size="md" reviewCount={countA} />
+                                    <ScoreBadge score={isValidA ? scoreA : 0} size="md" sourceCount={sourcesA} />
                                 </div>
                                 <div className="flex flex-col items-start min-w-0">
                                     <span className="text-[10px] md:text-xs font-bold text-slate-500 uppercase truncate w-full text-left line-clamp-1">
@@ -219,7 +221,7 @@ export default function DuelArena({ carA, carB }: Props) {
                                 </div>
                                 {/* Score à droite */}
                                 <div className="shrink-0 scale-75 origin-right">
-                                    <ScoreBadge score={isValidB ? scoreB : 0} size="md" reviewCount={countB} />
+                                    <ScoreBadge score={isValidB ? scoreB : 0} size="md" sourceCount={sourcesB} />
                                 </div>
                             </div>
                         </div>

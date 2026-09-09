@@ -9,7 +9,7 @@ import ReviewsTableCompact from "@/components/tables/ReviewsTableCompact";
 import SmartBreadcrumb from "@/components/ui/SmartBreadcrumb";
 import { Review } from "@/lib/types";
 import { CalendarRange, Gauge, Search, SlidersHorizontal, X, Swords, ArrowRightLeft } from "lucide-react";
-import { cn, calculatePageStats, formatAliasDisplay, AliasItem } from "@/lib/utils";
+import { cn, calculatePageStats, formatAliasDisplay, getDistinctSourceCount, AliasItem } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import SeoSummaryCard from "@/components/seo/SeoSummaryCard";
@@ -111,6 +111,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
 
   // --- CALCULS STATS ---
   const { avgScore, minYear, maxYear, minPowerStat, maxPowerStat, scores } = calculatePageStats(filteredReviews);
+  const distinctSourceCount = useMemo(() => getDistinctSourceCount(filteredReviews), [filteredReviews]);
 
   const clearFilters = () => { setFilterMY("all"); setFilterType("all"); setFilterTrans("all"); setMinPower(""); setMaxPower(""); };
   const activeFiltersCount = (filterMY !== "all" ? 1 : 0) + (filterType !== "all" ? 1 : 0) + (filterTrans !== "all" ? 1 : 0) + (minPower || maxPower ? 1 : 0);
@@ -159,7 +160,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
 
                 <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-10">
                     <div className="shrink-0">
-                        <ScoreBadge score={avgScore} size="xl" isFiltered={isFiltered} reviewCount={filteredReviews.length} />
+                        <ScoreBadge score={avgScore} size="xl" isFiltered={isFiltered} sourceCount={distinctSourceCount} />
                     </div>
                     <div className="flex-grow pb-1">
                         

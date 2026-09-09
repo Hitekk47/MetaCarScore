@@ -117,6 +117,18 @@ export function aggregateReviews(reviews: Review[]): Record<string, AggregatedSo
   return map;
 }
 
+export function getDistinctSourceCount(reviews: Review[]): number {
+  if (!reviews || reviews.length === 0) return 0;
+  const sources = new Set<string>();
+  for (let i = 0; i < reviews.length; i++) {
+    const t = reviews[i].Testeur;
+    if (t) {
+      sources.add(t.trim().toLowerCase());
+    }
+  }
+  return sources.size;
+}
+
 export function calculatePageStats(filteredReviews: Review[]) {
   let scoreSum = 0;
   let minYear = Infinity;
