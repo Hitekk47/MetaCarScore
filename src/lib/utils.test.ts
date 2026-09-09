@@ -16,6 +16,23 @@ describe("utils", () => {
     utils = await import("./utils");
   });
 
+  describe("getDistinctSourceCount", () => {
+    test("should count distinct trimmed and lowercased testers", () => {
+      const reviews = [
+        { Testeur: "TopGear " } as any,
+        { Testeur: "topgear" } as any,
+        { Testeur: "AutoExpress" } as any,
+        { Testeur: "  AutoExpress  " } as any,
+        { Testeur: " L'Argus " } as any,
+      ];
+      expect(utils.getDistinctSourceCount(reviews)).toBe(3);
+    });
+
+    test("should return 0 for empty or undefined reviews", () => {
+      expect(utils.getDistinctSourceCount([])).toBe(0);
+    });
+  });
+
   describe("groupBy", () => {
     test("should group items by key", () => {
       const list = [

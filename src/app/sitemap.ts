@@ -10,6 +10,7 @@ interface ReviewRow {
   Famille: string;
   MY: number;
   Modele: string;
+  Testeur: string;
 }
 
 interface SitemapGroup {
@@ -54,9 +55,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // 3. Récupération des données brute des essais & des alias
   const [reviewsRes, aliasesRes, modelGroupsRes] = await Promise.all([
-    supabase.from('reviews').select('Marque, Famille, MY'),
+    supabase.from('reviews').select('Marque, Famille, MY, Testeur'),
     supabase.from('model_aliases').select('canonical_marque, canonical_famille, canonical_modele, alias_marque, alias_famille, alias_modele'),
-    supabase.rpc('get_sitemap_groups_filtered_v2'),
+    supabase.rpc('get_sitemap_groups_filtered_v3'),
   ]);
 
   if (reviewsRes.error) {
@@ -80,11 +81,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // --- CALCUL DES COMPTEURS ET DÉDOUBLONNAGE ---
 
   const brands = new Set<string>();
-  const familyCounts = new Map<string, number>();
-  const myCounts = new Map<string, number>();
+  const familySources = new Map<string, Set<string>>();
+  const mySources = new Map<string, Set<string>>();
   const modelRoutesSet = new Set<string>();
 
-  // Modèles optimisés via RPC get_sitemap_groups_filtered_v2
+  // Modèles optimisés via RPC get_sitemap_groups_filtered_v3
   if (modelGroups && Array.isArray(modelGroups)) {
     modelGroups.forEach((row: SitemapGroup) => {
       const m = toSlug(row.marque);
@@ -95,7 +96,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
-  // Traitement des familles & MYs avec unification canonique
+  // Traitement des familles & MYs avec unification canonique et comptage des sources distinctes
   allRows.forEach((row: Partial<ReviewRow>) => {
     if (!row.Marque || !row.Famille) return;
 
@@ -116,11 +117,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const familyPath = `${BASE_URL}/${m}/${f}`;
     const myPath = `${BASE_URL}/${m}/${f}/${y}`;
 
-    familyCounts.set(familyPath, (familyCounts.get(familyPath) || 0) + 1);
-    myCounts.set(myPath, (myCounts.get(myPath) || 0) + 1);
+    const tester = row.Testeur ? row.Testeur.trim().toLowerCase() : null;
+    if (tester) {
+      if (!familySources.has(familyPath)) familySources.set(familyPath, new Set());
+      familySources.get(familyPath)!.add(tester);
+
+      if (!mySources.has(myPath)) mySources.set(myPath, new Set());
+      mySources.get(myPath)!.add(tester);
+    }
   });
 
-  // --- CONSTRUCTION DES ROUTES FILTRÉES (>= 3 essais) ---
+  // --- CONSTRUCTION DES ROUTES FILTRÉES (>= 3 sources distinctes) ---
 
   const brandRoutes = Array.from(brands).map((url) => ({
     url,
@@ -129,8 +136,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  const familyRoutes = Array.from(familyCounts.entries())
-    .filter(([, count]) => count >= 3)
+  const familyRoutes = Array.from(familySources.entries())
+    .filter(([, sources]) => sources.size >= 3)
     .map(([url]) => ({
       url,
       lastModified: new Date(),
@@ -138,8 +145,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     }));
 
-  const myRoutes = Array.from(myCounts.entries())
-    .filter(([, count]) => count >= 3)
+  const myRoutes = Array.from(mySources.entries())
+    .filter(([, sources]) => sources.size >= 3)
     .map(([url]) => ({
       url,
       lastModified: new Date(),

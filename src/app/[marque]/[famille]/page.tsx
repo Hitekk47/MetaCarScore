@@ -1,7 +1,7 @@
 import { notFound, redirect, RedirectType } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
-import { serializeJsonLd } from "@/lib/utils";
+import { serializeJsonLd, getDistinctSourceCount } from "@/lib/utils";
 import { getFullContext, getReviews, getVehicleSeoStats, getModelAliases } from "@/lib/queries";
 import { generateSeoText, cleanSeoText } from "@/lib/seo-utils";
 import { toSlug } from "@/lib/slugify";
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? cleanSeoText(seoText)
     : `Découvrez l'historique de la gamme ${displayMarque} ${displayFamille}. Consultez l'historique des générations, le comparatif des versions et l'agrégation de tous les essais presse sur MetaCarScore.`;
 
-  const shouldIndex = reviews.length >= 3;
+  const shouldIndex = getDistinctSourceCount(reviews) >= 3;
 
   return {
     title,

@@ -16,18 +16,21 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
   
   // 1. AGRÉGATION DES DONNÉES
   const rawModelsData = useMemo(() => {
-    const groups: Record<string, { totalScore: number; maxPower: number; count: number; name: string; my: number }> = {};
+    const groups: Record<string, { totalScore: number; maxPower: number; count: number; name: string; my: number; sources: Set<string> }> = {};
 
     reviews.forEach(r => {
       const canonicalModele = r.canonical_modele || r.Modele;
       const uniqueKey = `${canonicalModele}_${r.MY}`;
       
       if (!groups[uniqueKey]) {
-        groups[uniqueKey] = { totalScore: 0, maxPower: 0, count: 0, name: canonicalModele, my: r.MY };
+        groups[uniqueKey] = { totalScore: 0, maxPower: 0, count: 0, name: canonicalModele, my: r.MY, sources: new Set() };
       }
       
       groups[uniqueKey].totalScore += r.Score;
       groups[uniqueKey].count += 1;
+      if (r.Testeur) {
+        groups[uniqueKey].sources.add(r.Testeur.trim().toLowerCase());
+      }
       
       if (r.Puissance > groups[uniqueKey].maxPower) {
         groups[uniqueKey].maxPower = r.Puissance;
@@ -39,6 +42,7 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
       avgScore: Math.round(g.totalScore / g.count),
       power: g.maxPower,
       count: g.count,
+      distinctSources: g.sources.size,
       my: g.my
     }));
   }, [reviews]);
@@ -46,9 +50,9 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
   // 2. CALCUL DES CLASSEMENTS PAR ONGLET
   const rankings = useMemo(() => {
     
-    // A. TOP SCORE (Règle : Min 3 essais)
+    // A. TOP SCORE (Règle : Min 3 sources)
     const byScore = rawModelsData
-      .filter(m => m.count >= 3)
+      .filter(m => m.distinctSources >= 3)
       .sort((a, b) => b.avgScore - a.avgScore)
       .slice(0, 3);
 
@@ -57,11 +61,11 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
       .sort((a, b) => b.power - a.power)
       .slice(0, 3);
 
-    // C. CHOIX RAISONNABLE (Règle : Min 3 essais + Puissance "médiane")
+    // C. CHOIX RAISONNABLE (Règle : Min 3 sources + Puissance "médiane")
     const avgPowerOfRange = rawModelsData.reduce((acc, curr) => acc + curr.power, 0) / (rawModelsData.length || 1);
     
     const bySmart = rawModelsData
-      .filter(m => m.count >= 3)
+      .filter(m => m.distinctSources >= 3)
       .filter(m => m.power <= avgPowerOfRange + 50) // Marge de tolérance
       .sort((a, b) => b.avgScore - a.avgScore)
       .slice(0, 3);
@@ -183,7 +187,7 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
                             <ScoreBadge 
                               score={model.avgScore} 
                               size="sm" 
-                              reviewCount={model.count} 
+                              sourceCount={model.distinctSources}
                             />
                         </div>
                     </Link>
@@ -193,7 +197,7 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
         ) : (
             <div className="text-center py-8 text-xs text-slate-400 italic">
                 Pas assez de données pour ce classement.
-                <br/>(Min. 3 essais par modèle requis)
+                <br/>(Min. 3 sources par modèle requises)
             </div>
         )}
       </div>
