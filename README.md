@@ -25,7 +25,7 @@ La transparence est au cœur de notre projet. Nous appliquons des règles strict
 
 - **Sources Certifiées** : Nous ne retenons que la presse automobile professionnelle. Aucun avis utilisateur non vérifié.
 - **Normalisation Universelle** : 5 étoiles, 20/20, ou système allemand : chaque notation est convertie mathématiquement en un score sur 100.
-- **La Règle de 3** : Pour éviter les biais, aucun score global n'est affiché tant qu'un véhicule n'a pas reçu au moins **3 essais distincts**.
+- **La Règle de 3** : Pour éviter les biais, aucun score global n'est affiché tant qu'un véhicule n'a pas reçu au moins **3 essais de sources distinctes**.
 - **Moyenne Pure** : Aucune pondération obscure. Le MetaCarScore est une moyenne arithmétique stricte.
 
 ## Stack Technique

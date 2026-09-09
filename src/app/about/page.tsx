@@ -61,7 +61,7 @@ export default function AboutPage() {
                     La Règle de Fiabilité
                 </h3>
                 <p className="text-slate-300 leading-relaxed">
-                    Pour éviter les biais d{"'"}un testeur isolé, nous n{"'"}affichons aucun score global (MetaCarScore) tant qu{"'"}un véhicule n{"'"}a pas reçu <strong>au moins 3 essais distincts</strong>. En dessous, le score reste confidentiel.
+                    Pour éviter les biais d{"'"}un testeur isolé, nous n{"'"}affichons aucun score global (MetaCarScore) tant qu{"'"}un véhicule n{"'"}a pas reçu <strong>au moins 3 essais de sources distinctes</strong>. En dessous, le score reste confidentiel.
                 </p>
             </div>
 
