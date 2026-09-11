@@ -22,9 +22,11 @@ export default function ScoreBadge({
 }) {
   const isPending = isReliable !== undefined
     ? !isReliable
-    : (sourceCount !== undefined
-      ? sourceCount < 3
-      : (reviewCount !== undefined && reviewCount < 3));
+    : (isFiltered && reviewCount !== undefined
+      ? reviewCount < 3
+      : (sourceCount !== undefined
+        ? sourceCount < 3
+        : (reviewCount !== undefined && reviewCount < 3)));
   
   // LOGIQUE D'ACTIVATION : On anime seulement les grands badges (Hero / Modales)
   // Les badges 'sm' et 'md' (Tableaux) sont statiques pour la perf et la lisibilité
@@ -115,14 +117,14 @@ export default function ScoreBadge({
         </motion.div>
       )}
 
-      {/* TOOLTIP "MIN 3 SOURCES REQUISES" (Uniquement pour le Hero XL) */}
+      {/* TOOLTIP "MIN 3 SOURCES REQUISES" / "MIN 3 ESSAIS REQUIS" (Uniquement pour le Hero XL) */}
       {isPending && size === 'xl' && (
          <motion.div 
          initial={{ opacity: 0, y: -5, x: "-50%" }}
          animate={{ opacity: 1, y: 0, x: "-50%" }}
          className="absolute top-full mt-2 left-1/2 w-max text-[10px] font-bold text-slate-400 bg-slate-800 px-3 py-1.5 rounded border border-slate-700 shadow-xl z-20"
        >
-         Min. 3 sources requises
+         {isFiltered ? "Min. 3 essais requis" : "Min. 3 sources requises"}
          <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-slate-800 border-t border-l border-slate-700 transform rotate-45"></div>
        </motion.div>
       )}

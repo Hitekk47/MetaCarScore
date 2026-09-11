@@ -160,7 +160,7 @@ export default function GenericPageClient({ initialReviews, marque, famille, my,
 
                 <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-10">
                     <div className="shrink-0">
-                        <ScoreBadge score={avgScore} size="xl" isFiltered={isFiltered} sourceCount={distinctSourceCount} />
+                        <ScoreBadge score={avgScore} size="xl" isFiltered={isFiltered} sourceCount={distinctSourceCount} reviewCount={filteredReviews.length} />
                     </div>
                     <div className="flex-grow pb-1">
                         
