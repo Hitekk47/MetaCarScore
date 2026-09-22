@@ -1,8 +1,5 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
 
-mock.module('react', () => ({
-  cache: <T>(fn: T): T => fn,
-}));
 
 const mockRpc = mock();
 const mockFrom = mock();
@@ -20,7 +17,7 @@ describe('getFamilies with get_families_by_brand_v2', () => {
   });
 
   it('calls get_families_by_brand_v2 and returns consolidated brand families with alias metadata', async () => {
-    mockRpc.mockImplementation((fnName: string, params: any) => {
+    mockRpc.mockImplementation((fnName: string, _params: Record<string, unknown>) => {
       if (fnName === 'get_families_by_brand_v2') {
         return Promise.resolve({
           data: [
@@ -81,7 +78,7 @@ describe('getReviews with aliases', () => {
       ),
     };
 
-    const mockReviewsChain: any = {
+    const mockReviewsChain: Record<string, unknown> = {
       select: mock(() => mockReviewsChain),
       or: mock((orStr: string) => {
         capturedOrQuery = orStr;
@@ -138,7 +135,7 @@ describe('getReviews with aliases', () => {
       ),
     };
 
-    const mockReviewsChain: any = {
+    const mockReviewsChain: Record<string, unknown> = {
       select: mock(() => mockReviewsChain),
       or: mock((orStr: string) => {
         capturedOrQuery = orStr;
@@ -195,13 +192,13 @@ describe('getReviews with aliases', () => {
       ),
     };
 
-    const mockReviewsChain: any = {
+    const mockReviewsChain: Record<string, unknown> = {
       select: mock(() => mockReviewsChain),
       or: mock((orStr: string) => {
         capturedOrQuery = orStr;
         return mockReviewsChain;
       }),
-      eq: mock((_key: string, _val: any) => mockReviewsChain),
+      eq: mock((_key: string, _val: unknown) => mockReviewsChain),
       ilike: mock(() => mockReviewsChain),
       order: mock(() =>
         Promise.resolve({

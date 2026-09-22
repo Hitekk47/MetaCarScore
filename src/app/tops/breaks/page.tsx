@@ -17,7 +17,7 @@ export default function BreaksPage() {
       subtitle="Les meilleures déménageuses selon la presse."
       iconType="luggage"
       colorTheme="slate"
-      customRpcName="get_break_ranking_v3"
+      customRpcName="get_break_ranking_v4"
     />
   );
 }
