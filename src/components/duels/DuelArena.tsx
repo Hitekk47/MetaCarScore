@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { Review, AggregatedSource } from "@/lib/types";
 import ScoreBadge from "@/components/ui/ScoreBadge";
-import { cn, aggregateReviews, getPowerRange } from "@/lib/utils";
+import { cn, aggregateReviews, getPowerRange, calculatePageStats } from "@/lib/utils";
 import { Trophy, Minus, Gauge } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -60,8 +60,6 @@ export default function DuelArena({ carA, carB }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  const countA = carA.reviews.length;
-  const countB = carB.reviews.length;
   const sourcesA = useMemo(() => new Set(carA.reviews.map(r => r.Testeur?.trim().toLowerCase()).filter(Boolean)).size, [carA.reviews]);
   const sourcesB = useMemo(() => new Set(carB.reviews.map(r => r.Testeur?.trim().toLowerCase()).filter(Boolean)).size, [carB.reviews]);
   const isValidA = sourcesA >= 3;
@@ -93,8 +91,8 @@ export default function DuelArena({ carA, carB }: Props) {
     onlyAList.sort((a, b) => a.sourceName.localeCompare(b.sourceName));
     onlyBList.sort((a, b) => a.sourceName.localeCompare(b.sourceName));
 
-    const finalScoreA = Math.round(Object.values(aggA).reduce((acc, curr) => acc + curr.avgScore, 0) / Object.keys(aggA).length || 0);
-    const finalScoreB = Math.round(Object.values(aggB).reduce((acc, curr) => acc + curr.avgScore, 0) / Object.keys(aggB).length || 0);
+    const finalScoreA = calculatePageStats(carA.reviews).avgScore;
+    const finalScoreB = calculatePageStats(carB.reviews).avgScore;
 
     const allScoresA = carA.reviews.map(r => r.Score);
     const allScoresB = carB.reviews.map(r => r.Score);
