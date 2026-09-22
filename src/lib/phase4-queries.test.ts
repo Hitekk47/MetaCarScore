@@ -1,8 +1,5 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
 
-mock.module('react', () => ({
-  cache: <T>(fn: T): T => fn,
-}));
 
 const mockRpc = mock();
 mock.module('@/lib/supabase', () => ({
@@ -16,9 +13,9 @@ describe('Phase 4 Queries and RPCs', () => {
     mockRpc.mockClear();
   });
 
-  it('getVehicleSeoStats calls get_vehicle_seo_stats_v4', async () => {
+  it('getVehicleSeoStats calls get_vehicle_seo_stats_v5', async () => {
     mockRpc.mockImplementation((fnName: string) => {
-      if (fnName === 'get_vehicle_seo_stats_v4') {
+      if (fnName === 'get_vehicle_seo_stats_v5') {
         return Promise.resolve({
           data: {
             review_count: 8,
@@ -34,7 +31,7 @@ describe('Phase 4 Queries and RPCs', () => {
     const { getVehicleSeoStats } = await import('./queries');
     const stats = await getVehicleSeoStats({ p_marque: 'Chery', p_famille: 'Tiggo 7' });
 
-    expect(mockRpc).toHaveBeenCalledWith('get_vehicle_seo_stats_v4', { p_marque: 'Chery', p_famille: 'Tiggo 7' });
+    expect(mockRpc).toHaveBeenCalledWith('get_vehicle_seo_stats_v5', { p_marque: 'Chery', p_famille: 'Tiggo 7' });
     expect(stats?.metacarscore).toBe(85);
   });
 

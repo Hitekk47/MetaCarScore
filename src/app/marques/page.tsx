@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 export default async function MarquesPage() {
-  const { data, error } = await supabase.rpc('get_brand_ranking_v7', {
+  const { data, error } = await supabase.rpc('get_brand_ranking_v8', {
     min_count: 1
   });
 
@@ -20,7 +20,7 @@ export default async function MarquesPage() {
 
   // Transformation strictement typée (Zéro erreur TypeScript TS7006)
   const items: DirectoryItem[] = (data || [])
-    .map((item: any) => {
+    .map((item: Record<string, unknown>) => {
       const name = String(item.brand || item.Marque || "").trim();
       const count = Number(item.review_count || item.global_count || 0);
 

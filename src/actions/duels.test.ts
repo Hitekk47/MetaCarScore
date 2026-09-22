@@ -5,13 +5,16 @@ mock.module("next/cache", () => ({
   unstable_cache: <T>(fn: T): T => fn,
 }));
 
-// Mock @/lib/queries
-const mockGetFullContext = mock();
-const mockGetReviews = mock();
-mock.module("@/lib/queries", () => ({
-  getFullContext: mockGetFullContext,
-  getReviews: mockGetReviews,
-}));
+import * as queries from "@/lib/queries";
+import { spyOn, afterAll } from "bun:test";
+
+const mockGetFullContext = spyOn(queries, "getFullContext");
+const mockGetReviews = spyOn(queries, "getReviews");
+
+afterAll(() => {
+  mockGetFullContext.mockRestore();
+  mockGetReviews.mockRestore();
+});
 
 // Mock @/lib/supabase
 const mockOr = mock(() => Promise.resolve({ data: [], error: null }));
