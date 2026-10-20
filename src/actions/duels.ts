@@ -9,7 +9,36 @@ import {
   isValidYear,
 } from "@/lib/validation";
 
-// --- New Cached Batch Function ---
+// DuelPageClient has two slots. Bound the raw input before deduplication so an
+// oversized request cannot spend unbounded time validating or building cache keys.
+const MAX_FIGHTERS = 2;
+// Leaves room for long vehicle names while bounding parsing and cache-key size.
+const MAX_FIGHTER_SLUG_LENGTH = 256;
+
+function parseFighterSlug(slug: string) {
+  if (slug.length === 0 || slug.length > MAX_FIGHTER_SLUG_LENGTH) {
+    throw new Error('Invalid fighter slug length');
+  }
+  if (/[^a-z0-9_-]/.test(slug)) {
+    throw new Error('Invalid fighter slug characters');
+  }
+
+  const [marqueSlug, familleSlug, yearPart, ...modelParts] = slug.split('_');
+  const modeleSlug = modelParts.join('_');
+  const my = Number(yearPart);
+
+  if (
+    !isValidSlugPart(marqueSlug ?? '') ||
+    !isValidSlugPart(familleSlug ?? '') ||
+    !/^\d{4}$/.test(yearPart ?? '') ||
+    !isValidYear(my) ||
+    !isValidModelPart(modeleSlug)
+  ) {
+    throw new Error('Invalid fighter slug format or model year');
+  }
+
+  return { marqueSlug, familleSlug, my, modeleSlug };
+}
 
 /**
  * Internal function to perform the actual DB query for multiple slugs.
@@ -20,19 +49,7 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
   // Resolve all slugs in parallel
   const resolvedContexts = await Promise.all(
     slugs.map(async (slug) => {
-      const parts = slug.split("_");
-      if (parts.length < 4) return null;
-
-      const marqueSlug = parts[0];
-      const familleSlug = parts[1];
-      const my = parseInt(parts[2]);
-      const modeleSlug = parts.slice(3).join("_");
-
-      // 🔒 Security Validation
-      if (!isValidSlugPart(marqueSlug) || !isValidSlugPart(familleSlug) || !isValidYear(my) || !isValidModelPart(modeleSlug)) {
-        console.warn("⚠️ Invalid slug component detected, skipping:", slug);
-        return null;
-      }
+      const { marqueSlug, familleSlug, my, modeleSlug } = parseFighterSlug(slug);
 
       // Call RPC
       const context = await getFullContext({
@@ -65,8 +82,6 @@ async function _fetchBatchReviews(slugs: string[]): Promise<Record<string, Revie
   // Initialize result arrays for requested slugs
   slugs.forEach(s => result[s] = []);
 
-  if (validContexts.length === 0) return result;
-
   await Promise.all(
     validContexts.map(async (ctx) => {
       const reviews = await getReviews({
@@ -97,9 +112,23 @@ const getCachedBatchReviews = unstable_cache(
  * Public Server Action to fetch reviews for multiple slugs efficiently.
  * Sorts slugs to ensure consistent cache hits.
  */
-export async function fetchBatchFighterReviews(slugs: string[]): Promise<Record<string, Review[]>> {
-  // Filter out empty slugs and duplicates
-  const uniqueSlugs = Array.from(new Set(slugs.filter(Boolean)));
+export async function fetchBatchFighterReviews(slugs: unknown): Promise<Record<string, Review[]>> {
+  if (!Array.isArray(slugs) || slugs.length > MAX_FIGHTERS) {
+    throw new Error('Expected an array of at most two fighter slugs');
+  }
+
+  // Validate the entire batch before touching the cache or resolving any vehicle.
+  // TypeScript types alone do not validate a remotely invoked Server Action.
+  const validatedSlugs: string[] = [];
+  for (const slug of slugs) {
+    if (typeof slug !== 'string') {
+      throw new Error('Expected fighter slugs to be strings');
+    }
+    parseFighterSlug(slug);
+    validatedSlugs.push(slug);
+  }
+
+  const uniqueSlugs = Array.from(new Set(validatedSlugs));
 
   if (uniqueSlugs.length === 0) return {};
 
