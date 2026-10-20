@@ -1,6 +1,8 @@
 -- Run only on an isolated test database after applying migrations.
 -- The supplied scripts/test-ranking-limits.mjs runner creates an in-memory
 -- PostgreSQL instance, replays migrations and executes this transaction.
+-- Only the newly versioned endpoints are expected to enforce bounds. Legacy
+-- endpoints remain available unchanged for a zero-downtime rollout.
 -- No pgTAP extension is required. All fixtures are rolled back.
 BEGIN;
 SET LOCAL search_path TO public;
@@ -31,7 +33,10 @@ BEGIN
   FOR rpc IN
     SELECT p.oid, p.proname
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND 'limit_val' = ANY(p.proargnames)
+    WHERE n.nspname = 'public' AND p.proname = ANY(ARRAY[
+      'get_model_ranking_v7', 'get_break_ranking_v5',
+      'get_convertible_ranking_v5', 'get_trending_models_v4'
+    ])
   LOOP
     rpc_count := rpc_count + 1;
     cap := CASE WHEN rpc.proname LIKE 'get_trending_models%' THEN 15 ELSE 100 END;
@@ -63,8 +68,8 @@ BEGIN
       RESET ROLE;
     END LOOP;
   END LOOP;
-  IF rpc_count <> 15 THEN
-    RAISE EXCEPTION 'Expected 15 current/legacy RPCs, found %', rpc_count;
+  IF rpc_count <> 4 THEN
+    RAISE EXCEPTION 'Expected 4 new versioned RPCs, found %', rpc_count;
   END IF;
 END;
 $$;
@@ -100,7 +105,7 @@ BEGIN
   FOREACH role_name IN ARRAY ARRAY['anon', 'authenticated', 'service_role'] LOOP
     EXECUTE format('SET LOCAL ROLE %I', role_name);
     FOREACH rpc_name IN ARRAY ARRAY[
-      'get_model_ranking_v6', 'get_break_ranking_v4', 'get_convertible_ranking_v4'
+      'get_model_ranking_v7', 'get_break_ranking_v5', 'get_convertible_ranking_v5'
     ] LOOP
       EXECUTE format('SELECT count(*) FROM public.%I(min_my => 2024, limit_val => NULL)', rpc_name)
         INTO actual_count;
@@ -123,11 +128,11 @@ BEGIN
       END IF;
     END LOOP;
 
-    SELECT count(*) INTO actual_count FROM public.get_trending_models_v3(limit_val => NULL);
+    SELECT count(*) INTO actual_count FROM public.get_trending_models_v4(limit_val => NULL);
     IF actual_count <> 2 THEN
       RAISE EXCEPTION 'Trending as %: family aliases must produce two separate MY groups', role_name;
     END IF;
-    SELECT * INTO STRICT item FROM public.get_trending_models_v3(limit_val => NULL) WHERE "MY" = 2024;
+    SELECT * INTO STRICT item FROM public.get_trending_models_v4(limit_val => NULL) WHERE "MY" = 2024;
     IF item."Marque" <> 'Canonical' OR item."Modele" <> 'Unified SW Cabriolet'
        OR item."ReviewCount" <> 3 OR item."AvgScore" <> 77 THEN
       RAISE EXCEPTION 'Trending as %: alias consolidation changed: %', role_name, row_to_json(item);
