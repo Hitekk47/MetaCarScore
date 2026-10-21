@@ -20,22 +20,6 @@ règles examinées, mais le contrat de portée reste à préciser avec Q5.
 **Suite proposée :** confronter les règles d'alias aux destinations canoniques et
 à leur éligibilité ; aucun contrôle HTTP exhaustif ne garantit ici « 200 OK ».
 
-## Q4 — Nettoyage des RPC inutilisées (migration préparée)
-
-Le mainteneur confirme l'absence de consommateurs externes et demande le retrait
-des fonctions inutilisées. Après le nettoyage sitemap de Q3,
-l'[inventaire](validation/Q4-rpc-cleanup.md) identifie 35 fonctions restantes à
-supprimer, dont les 15 anciens endpoints non bornés de
-[#88](https://github.com/Hitekk47/MetaCarScore/pull/88). La
-[migration](../supabase/migrations/20261021200000_drop_unused_public_functions.sql)
-conserve les 12 RPC applicatives actuelles, leurs deux helpers SQL et les fonctions
-des extensions. Le [test SQL](../scripts/test-ranking-limits.mjs) vérifie le retrait
-et la préservation des fonctions actives après rejeu de toutes les migrations.
-**Reste à vérifier :** application effective à Supabase après déploiement du client
-courant ; ne plus revenir à un ancien client sans restaurer ses fonctions.
-Les bornes de résultats ne limitent pas à elles seules le coût de calcul ni la
-fréquence des requêtes.
-
 ## Q5 — Portée et ambiguïtés des alias
 
 `getReviews` filtre les règles par `canonical_my` pour sélectionner les entités,
