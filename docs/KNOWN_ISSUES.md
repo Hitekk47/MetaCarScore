@@ -68,14 +68,6 @@ Elle reste `noindex`, sans que cela empêche le texte ou le JSON-LD de refléter
 périmètre plus large. **À décider :** conserver le contexte modèle explicitement
 ou produire des statistiques propres à la motorisation.
 
-## Q7 — Exception bZ4X dans les breaks
-
-`get_break_ranking_v5` exclut explicitement les modèles correspondant à `%bZ4X%`.
-L'exception est présente dans le schéma initial, restaurée dans [#78](https://github.com/Hitekk47/MetaCarScore/pull/78)
-et conservée depuis. Aucune justification produit n'a été retrouvée dans les
-sources examinées. **Arbitrage :** confirmer sa raison et sa pérennité ; ne pas la
-supprimer ni la généraliser à une règle de carrosserie sans cette décision.
-
 ## Q8 — Texte des égalités de distribution
 
 La mémoire historique décrit des phrases commençant par « Les avis sont partagés… ».

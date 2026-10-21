@@ -33,6 +33,9 @@ intention non implémentée est signalée comme telle dans les [questions ouvert
   meilleurs et pires modèles candidats doivent avoir 3 sources distinctes. L'annuaire
   `/marques` demande `min_count: 1` : ce n'est pas le même seuil que le classement.
 
+- Le classement des breaks exclut les bZ4X, y compris la version Touring :
+  [exception confirmée et justification D6](DECISIONS.md).
+
 Sources : [utils](../src/lib/utils.ts), [ScoreBadge](../src/components/ui/ScoreBadge.tsx),
 [GenericPageClient](../src/components/pages/GenericPageClient.tsx),
 [DuelArena](../src/components/duels/DuelArena.tsx),
