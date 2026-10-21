@@ -26,8 +26,8 @@ async function runBaseline() {
   await db.select('reviews');
 
   // 2. Page Component
-  // Simulates: supabase.rpc('get_full_context_by_slugs', ...)
-  await db.rpc('get_full_context_by_slugs', {});
+  // Simulates: supabase.rpc('get_full_context_by_slugs_v3', ...)
+  await db.rpc('get_full_context_by_slugs_v3', {});
 
   // Simulates: supabase.from('reviews').select(...)
   await db.select('reviews');
@@ -63,7 +63,7 @@ async function runOptimized() {
 
   // Define cached functions linked to this DB instance
   const getFullContext = cachedFn(
-    (params: Record<string, unknown>) => db.rpc('get_full_context_by_slugs', params),
+    (params: Record<string, unknown>) => db.rpc('get_full_context_by_slugs_v3', params),
     (params) => JSON.stringify(params)
   );
 

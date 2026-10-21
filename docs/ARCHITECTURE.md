@@ -77,8 +77,11 @@ partiel. Seule `get_sitemap_groups_filtered_v4` reste comme RPC de sitemap aprè
 la [migration de nettoyage](../supabase/migrations/20261021190000_remove_unused_sitemap_rpcs.sql) ;
 les migrations historiques sont conservées (décision D8).
 Les limites des trois classements modèle/break/découvrable sont bornées à 100,
-celle des tendances à 15, y compris avec `NULL`. Les versions précédentes restent
-inchangées et accessibles : voir Q4 dans [KNOWN_ISSUES](KNOWN_ISSUES.md).
+celle des tendances à 15, y compris avec `NULL`. La migration Q4 retire les
+35 autres fonctions inutilisées et conserve les 12 RPC applicatives ainsi que
+leurs helpers SQL `slugify_text` et `normalize_media_source` : voir
+l'[inventaire](validation/Q4-rpc-cleanup.md). Les migrations historiques restent
+disponibles pour reconstruire le schéma.
 
 ## Sécurité et migrations
 
@@ -119,7 +122,8 @@ Avec les outils installés, utiliser selon le changement :
 - Pour les limites RPC : [scripts/test-ranking-limits.mjs](../scripts/test-ranking-limits.mjs)
   explique l'installation de PGlite hors dépendances applicatives et exécute
   [ranking_limits.sql](../supabase/tests/ranking_limits.sql). Il rejoue les migrations
-  en mémoire avec adaptations des extensions Supabase. Les fixtures SQL tronquent
+  en mémoire avec adaptations des extensions Supabase, vérifie le retrait Q4
+  et la préservation des RPC actives sur le schéma final. Les fixtures SQL tronquent
   des tables : elles sont réservées à une base isolée. Ce n'est pas une validation
   de la base hébergée, de Vault ou du service realtime.
 - `npm run build` lorsque pertinent et avec l'environnement requis. Un build qui

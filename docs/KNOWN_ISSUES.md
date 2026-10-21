@@ -20,16 +20,6 @@ règles examinées, mais le contrat de portée reste à préciser avec Q5.
 **Suite proposée :** confronter les règles d'alias aux destinations canoniques et
 à leur éligibilité ; aucun contrôle HTTP exhaustif ne garantit ici « 200 OK ».
 
-## Q4 — Anciennes RPC de classement encore non bornées
-
-[#88](https://github.com/Hitekk47/MetaCarScore/pull/88) conserve volontairement les
-15 anciennes RPC avec leur comportement `LIMIT NULL` non borné. Le frontend appelle
-les quatre nouvelles versions bornées ; les anciennes restent accessibles. Le
-[test SQL](../scripts/test-ranking-limits.mjs) démontre cette compatibilité.
-**À décider :** calendrier et conditions de retrait/révocation après inventaire des
-consommateurs. Les bornes de résultats ne limitent pas à elles seules le coût de
-calcul ni la fréquence des requêtes.
-
 ## Q5 — Portée et ambiguïtés des alias
 
 `getReviews` filtre les règles par `canonical_my` pour sélectionner les entités,
