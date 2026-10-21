@@ -39,9 +39,8 @@ aux données autorisées avant toute correction. Sources : [queries](../src/lib/
 ## Validation et garanties à ne pas surévaluer
 
 - Certains tests recopient la logique au lieu d'exécuter le composant réel, et les
-  tests de requêtes simulent Supabase. Le fichier historique
-  `src/lib/supabase.security.test.ts` n'existe pas. Aucun test de ce nom ne doit être
-  cité comme garantie. Aucun workflow de tests applicatifs n'est versionné actuellement.
+  tests de requêtes simulent Supabase. Aucun workflow de tests applicatifs n'est
+  versionné actuellement.
 - Les migrations ne contraignent pas `Score` à `[0,100]` par un `CHECK`, ni les médias
   à un registre certifié. L'ingestion est hors de ce repository : qualité des données
   et conversion des notes originales restent des prérequis amont non vérifiés ici.
