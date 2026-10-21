@@ -81,7 +81,7 @@ try {
     export async function getVehicleSeoStats() { return null; }
     export async function getModelAliases() { return []; }
   `);
-  for (const path of ['src/lib/slugify.ts', 'src/lib/utils.ts', 'src/lib/seo-utils.ts', 'src/lib/constants.ts']) {
+  for (const path of ['src/lib/slugify.ts', 'src/lib/utils.ts', 'src/lib/media-source.ts', 'src/lib/seo-utils.ts', 'src/lib/constants.ts']) {
     await copy(path);
   }
   const routes = [

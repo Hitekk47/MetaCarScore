@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
 import { toSlug } from '@/lib/slugify';
 import { TOPS_MENU } from '@/lib/constants';
+import { getMediaSourceKey } from '@/lib/media-source';
 
 const BASE_URL = 'https://metacarscore.com';
 
@@ -57,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [reviewsRes, aliasesRes, modelGroupsRes] = await Promise.all([
     supabase.from('reviews').select('Marque, Famille, MY, Testeur'),
     supabase.from('model_aliases').select('canonical_marque, canonical_famille, canonical_modele, alias_marque, alias_famille, alias_modele'),
-    supabase.rpc('get_sitemap_groups_filtered_v3'),
+    supabase.rpc('get_sitemap_groups_filtered_v4'),
   ]);
 
   if (reviewsRes.error) {
@@ -85,7 +86,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const mySources = new Map<string, Set<string>>();
   const modelRoutesSet = new Set<string>();
 
-  // Modèles optimisés via RPC get_sitemap_groups_filtered_v3
+  // Modèles optimisés via RPC get_sitemap_groups_filtered_v4
   if (modelGroups && Array.isArray(modelGroups)) {
     modelGroups.forEach((row: SitemapGroup) => {
       const m = toSlug(row.marque);
@@ -117,8 +118,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const familyPath = `${BASE_URL}/${m}/${f}`;
     const myPath = `${BASE_URL}/${m}/${f}/${y}`;
 
-    const tester = row.Testeur ? row.Testeur.trim().toLowerCase() : null;
-    if (tester) {
+    const tester = getMediaSourceKey(row.Testeur);
+    if (tester !== null) {
       if (!familySources.has(familyPath)) familySources.set(familyPath, new Set());
       familySources.get(familyPath)!.add(tester);
 

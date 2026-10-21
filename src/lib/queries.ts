@@ -284,7 +284,7 @@ const getVehicleSeoStatsCached = cache(async (
   p_my?: number,
   p_modele?: string,
 ) => {
-  const { data, error } = await supabase.rpc('get_vehicle_seo_stats_v5', {
+  const { data, error } = await supabase.rpc('get_vehicle_seo_stats_v6', {
     p_marque, p_famille, p_my, p_modele,
   });
 

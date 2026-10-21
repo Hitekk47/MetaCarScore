@@ -4,20 +4,11 @@ Constats établis sur `a69e771` à partir du code, des migrations, des tests et 
 l'historique. L'impact sur les données réelles et l'état Supabase hébergé n'ont pas
 été vérifiés. Ces constats n'autorisent aucune modification fonctionnelle implicite.
 
-## Q2 — Identité d'un média non uniformisée
-
-Les RPC comptent `COUNT(DISTINCT TRIM("Testeur"))`, sensible à la casse ;
-`getDistinctSourceCount` dans [utils](../src/lib/utils.ts) applique aussi `toLowerCase`.
-Trois variantes de casse peuvent donc être trois sources en SQL et une en UI.
-Les valeurs vides/blanches sont également traitées différemment dans le sitemap.
-**À décider :** identité normalisée d'un média et traitement des valeurs manquantes.
-Puis aligner SQL, UI, SEO et tests sur ce contrat, sans confondre médias et essais.
-
 ## Q3 — Sitemap : complétude et canonicalisation non garanties
 
 [src/app/sitemap.ts](../src/app/sitemap.ts) lit `reviews` et `model_aliases` sans
 pagination pour les marques/familles/MY ; seule la liste des modèles utilise
-`get_sitemap_groups_filtered_v3`. La RPC `get_sitemap_canonical_routes_v2` existe
+`get_sitemap_groups_filtered_v4`. La RPC `get_sitemap_canonical_routes_v3` existe
 mais n'est pas appelée. Le plafond effectif PostgREST est inconnu ici : une
 troncature peut rendre les routes et comptages incomplets. Le mapping famille ne
 prend pas en compte toutes les restrictions modèle/MY des alias.
@@ -68,9 +59,8 @@ formulation souhaitée, puis tester le texte complet avant correction éditorial
 
 ## Validation et garanties à ne pas surévaluer
 
-- À la révision examinée, le lint a 6 erreurs `no-explicit-any` (`src/app/[marque]/page.tsx`
-  et `src/lib/utils.test.ts`) et 7 avertissements. Ils préexistent à la migration
-  documentaire ; leur correction relève d'une autre tâche.
+- Le lint conserve une erreur `no-explicit-any` dans `src/app/[marque]/page.tsx`
+  et des avertissements préexistants. Leur correction relève d'une autre tâche.
 - Certains tests recopient la logique au lieu d'exécuter le composant réel, et les
   tests de requêtes simulent Supabase. Le fichier historique
   `src/lib/supabase.security.test.ts` n'existe pas. Aucun test de ce nom ne doit être

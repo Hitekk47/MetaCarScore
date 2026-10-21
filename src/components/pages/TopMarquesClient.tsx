@@ -39,8 +39,8 @@ export default function TopMarquesClient() {
       if (timeRange === '1y') targetMY = currentYear - 1; // ex: 2024
       else if (timeRange === '5y') targetMY = currentYear - 5; // ex: 2020
       
-      // APPEL V8 : 'min_my' au lieu de 'min_date'
-      const { data: ranking } = await supabase.rpc('get_brand_ranking_v8', {
+      // Classement par année-modèle minimale.
+      const { data: ranking } = await supabase.rpc('get_brand_ranking_v9', {
         min_my: targetMY,
         min_count: 5
       });

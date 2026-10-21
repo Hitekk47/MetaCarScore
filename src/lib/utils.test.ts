@@ -1,13 +1,5 @@
-import { expect, test, describe, mock, beforeAll } from "bun:test";
-
-mock.module("clsx", () => ({
-  clsx: (...args: unknown[]) => args.join(" "),
-  default: (...args: unknown[]) => args.join(" "),
-}));
-
-mock.module("tailwind-merge", () => ({
-  twMerge: (arg: string) => arg,
-}));
+import { expect, test, describe, beforeAll } from "bun:test";
+import type { Review } from './types';
 
 describe("utils", () => {
   let utils: typeof import("./utils");
@@ -19,17 +11,43 @@ describe("utils", () => {
   describe("getDistinctSourceCount", () => {
     test("should count distinct trimmed and lowercased testers", () => {
       const reviews = [
-        { Testeur: "TopGear " } as any,
-        { Testeur: "topgear" } as any,
-        { Testeur: "AutoExpress" } as any,
-        { Testeur: "  AutoExpress  " } as any,
-        { Testeur: " L'Argus " } as any,
+        { Testeur: "TopGear " } as Review,
+        { Testeur: "topgear" } as Review,
+        { Testeur: "AutoExpress" } as Review,
+        { Testeur: "  AutoExpress  " } as Review,
+        { Testeur: " L'Argus " } as Review,
       ];
       expect(utils.getDistinctSourceCount(reviews)).toBe(3);
     });
 
-    test("should return 0 for empty or undefined reviews", () => {
+    test("should return 0 for empty reviews", () => {
       expect(utils.getDistinctSourceCount([])).toBe(0);
+    });
+
+    test('does not reach three sources through case variants or blank names', () => {
+      const reviews = ['TopGear', 'topgear', ' TOPGEAR ', '', ' \t\n ', '\u00a0']
+        .map(Testeur => ({ Testeur }) as Review);
+      expect(utils.getDistinctSourceCount(reviews)).toBe(1);
+    });
+  });
+
+  describe('aggregateReviews', () => {
+    test('matches media by identity while retaining every review in score calculations', () => {
+      const reviews = [
+        { Testeur: ' TopGear ', Score: 80 },
+        { Testeur: 'topgear', Score: 60 },
+        { Testeur: 'TOPGEAR', Score: 40 },
+        { Testeur: 'AutoExpress', Score: 100 },
+        { Testeur: '   ', Score: 20 },
+      ] as Review[];
+      const aggregated = utils.aggregateReviews(reviews);
+      expect(Object.keys(aggregated)).toEqual(['topgear', 'autoexpress']);
+      expect(aggregated.topgear).toEqual({
+        sourceName: 'TopGear', avgScore: 60, count: 3, rawScores: [80, 60, 40],
+      });
+      expect(utils.getDistinctSourceCount(reviews)).toBe(2);
+      expect(utils.calculatePageStats(reviews).scores).toHaveLength(5);
+      expect(utils.calculatePageStats(reviews).avgScore).toBe(60);
     });
   });
 

@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useRef, useSyncExternalStore } from "react";
 import { Review, AggregatedSource } from "@/lib/types";
 import ScoreBadge from "@/components/ui/ScoreBadge";
-import { cn, aggregateReviews, getPowerRange, calculatePageStats } from "@/lib/utils";
+import { cn, aggregateReviews, getPowerRange, calculatePageStats, getDistinctSourceCount } from "@/lib/utils";
 import { Trophy, Minus, Gauge } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -60,8 +60,8 @@ export default function DuelArena({ carA, carB }: Props) {
     return () => observer.disconnect();
   }, []);
 
-  const sourcesA = useMemo(() => new Set(carA.reviews.map(r => r.Testeur?.trim().toLowerCase()).filter(Boolean)).size, [carA.reviews]);
-  const sourcesB = useMemo(() => new Set(carB.reviews.map(r => r.Testeur?.trim().toLowerCase()).filter(Boolean)).size, [carB.reviews]);
+  const sourcesA = useMemo(() => getDistinctSourceCount(carA.reviews), [carA.reviews]);
+  const sourcesB = useMemo(() => getDistinctSourceCount(carB.reviews), [carB.reviews]);
   const isValidA = sourcesA >= 3;
   const isValidB = sourcesB >= 3;
 
@@ -254,7 +254,7 @@ export default function DuelArena({ carA, carB }: Props) {
                                 </div>
                                 <div className="flex justify-center">
                                     <MagazineBadge
-                                        name={source}
+                                        name={dataA.sourceName}
                                         className="text-[10px] md:text-xs font-bold uppercase text-slate-700 text-center truncate px-2"
                                     />
                                 </div>
