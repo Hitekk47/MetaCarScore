@@ -27,10 +27,15 @@ alias. Les interactions de recherche et de classement appellent aussi Supabase
 `src/lib/supabase.ts` utilise la configuration publique de connexion. Les droits
 réels reposent sur PostgreSQL, les politiques RLS et les privilèges des fonctions.
 
-Les helpers de requêtes sont enveloppés dans `React.cache`. Plusieurs pages ont
-`revalidate = 3600` ; l'action de duel utilise `unstable_cache` pendant une heure
-avec une liste de slugs triée. Ne pas déduire une déduplication garantie entre
-objets d'arguments recréés : les tests simulant le cache ne la démontrent pas.
+Les helpers de requêtes utilisent `React.cache`. `getFullContext` et
+`getVehicleSeoStats` conservent une interface objet mais délèguent à des caches
+à arguments primitifs pour partager les RPC entre métadonnées et page dans un
+même rendu serveur. Les lectures GET identiques des essais et alias bénéficient
+aussi de la mémoïsation de `fetch` par Next ; les RPC POST en sont exclues.
+Plusieurs pages ont `revalidate = 3600` ; l'action de duel utilise `unstable_cache`
+pendant une heure avec une liste de slugs triée. Le cache React ne persiste pas
+entre rendus. Vérifier ces propriétés en contexte serveur : voir le
+[diagnostic TEC-009](validation/TEC-009.md) et `scripts/test-query-cache.mjs`.
 
 `SearchBar` cherche les noms canoniques et les alias, affiche les désignations
 commerciales et navigue vers les identifiants canoniques. Son historique navigateur
