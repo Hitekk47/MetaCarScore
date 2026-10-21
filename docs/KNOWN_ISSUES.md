@@ -4,17 +4,6 @@ Constats établis sur `a69e771` à partir du code, des migrations, des tests et 
 l'historique. L'impact sur les données réelles et l'état Supabase hébergé n'ont pas
 été vérifiés. Ces constats n'autorisent aucune modification fonctionnelle implicite.
 
-## Q1 — Redirections annoncées permanentes
-
-**Intention intégrée :** la PR [#81](https://github.com/Hitekk47/MetaCarScore/pull/81)
-annonce des 308 vers les URL canoniques. **Implémentation :** les quatre pages sous
-`src/app/[marque]/[famille]` appellent `redirect(url, RedirectType.replace)`, et non
-`permanentRedirect`. Dans ce contexte Next.js, l'appel utilise la redirection
-307 (le rendu en streaming peut utiliser une balise de redirection) ; `replace`
-concerne l'historique de navigation, pas le statut 308. L'incohérence est confirmée
-par le code, sans mesure HTTP de production. Prévoir une correction et un test de
-navigation/statut dédiés ; ne pas documenter des 308 comme déjà garantis.
-
 ## Q2 — Identité d'un média non uniformisée
 
 Les RPC comptent `COUNT(DISTINCT TRIM("Testeur"))`, sensible à la casse ;

@@ -1,4 +1,4 @@
-import { notFound, redirect, RedirectType } from "next/navigation";
+import { notFound, permanentRedirect, RedirectType } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd, getDistinctSourceCount } from "@/lib/utils";
@@ -91,7 +91,7 @@ export default async function FamilyPage({ params }: PageProps) {
   // Redirection permanente si on est sur une URL d'alias
   if (context.is_alias && context.canonical_marque && context.canonical_famille) {
     const targetUrl = `/${toSlug(context.canonical_marque)}/${toSlug(context.canonical_famille)}`;
-    redirect(targetUrl, RedirectType.replace);
+    permanentRedirect(targetUrl, RedirectType.replace);
   }
 
   // 3. Chargement Data (avec cache)
