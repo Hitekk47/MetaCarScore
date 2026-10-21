@@ -44,7 +44,6 @@ export const getBrandContext = cache(async (slug: string) => {
   });
 
   if (error) {
-    console.error('Error fetching brand context: An unexpected error occurred');
     return null;
   }
 
@@ -66,7 +65,6 @@ const getFullContextCached = cache(async (
   });
 
   if (error) {
-    console.error('Error fetching full context: An unexpected error occurred');
     return null;
   }
 
@@ -88,7 +86,6 @@ export const getFamilies = cache(async (brandName: string) => {
   });
 
   if (error) {
-    console.error('Error fetching families:', error);
     return [];
   }
 
@@ -135,11 +132,7 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
     );
   }
 
-  const { data: aliasData, error: aliasError } = await aliasQuery;
-
-  if (aliasError) {
-    console.error('Error fetching model aliases:', aliasError);
-  }
+  const { data: aliasData } = await aliasQuery;
 
   const aliases = (aliasData as ModelAlias[] | null) || [];
 
@@ -230,7 +223,6 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
   const { data, error } = await query;
 
   if (error) {
-    console.error('Error fetching reviews: An unexpected error occurred');
     return [];
   }
 
@@ -289,7 +281,6 @@ const getVehicleSeoStatsCached = cache(async (
   });
 
   if (error) {
-    console.error('Error fetching vehicle SEO stats:', error);
     return null;
   }
 
@@ -322,7 +313,6 @@ export const getModelAliases = cache(async (params: GetModelAliasesParams): Prom
     );
 
   if (error) {
-    console.error('Error fetching model aliases:', error);
     return [];
   }
 

@@ -38,8 +38,6 @@ aux données autorisées avant toute correction. Sources : [queries](../src/lib/
 
 ## Validation et garanties à ne pas surévaluer
 
-- Le lint conserve une erreur `no-explicit-any` dans `src/app/[marque]/page.tsx`
-  et des avertissements préexistants. Leur correction relève d'une autre tâche.
 - Certains tests recopient la logique au lieu d'exécuter le composant réel, et les
   tests de requêtes simulent Supabase. Le fichier historique
   `src/lib/supabase.security.test.ts` n'existe pas. Aucun test de ce nom ne doit être
@@ -47,9 +45,6 @@ aux données autorisées avant toute correction. Sources : [queries](../src/lib/
 - Les migrations ne contraignent pas `Score` à `[0,100]` par un `CHECK`, ni les médias
   à un registre certifié. L'ingestion est hors de ce repository : qualité des données
   et conversion des notes originales restent des prérequis amont non vérifiés ici.
-- Les journaux d'erreur ne sont pas tous neutralisés : certains chemins de
-  `queries.ts` et de la page marque loguent encore des objets d'erreur/débogage.
-  Ne pas affirmer une absence exhaustive de données sensibles dans les logs.
 - Les statistiques SEO commentent une fenêtre de « 5 dernières MY », mais utilisent
   `MY >= année courante - 5` sans plafond supérieur. Si ce périmètre change, clarifier
   l'inclusion du millésime courant et des millésimes futurs avant de réécrire la règle.

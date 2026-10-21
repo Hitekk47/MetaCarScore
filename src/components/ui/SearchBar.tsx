@@ -62,8 +62,8 @@ const historyStore = {
       localStorage.setItem("mcs_search_history", raw);
       cachedRaw = raw;
       cachedHistory = newHistory;
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // L'historique reste facultatif si le stockage navigateur est indisponible.
     }
     emitHistoryChange();
   }
@@ -205,7 +205,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
       if (search.query.length < 2) {
         setResults([]);
         setLoading(false);
-        if (search.query.length === 0 && history.length > 0 && document.activeElement === inputRef.current) {
+        if (search.query.length === 0 && document.activeElement === inputRef.current) {
            setIsOpen(true); 
         }
         return;
@@ -220,7 +220,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
       setIsOpen(true);
 
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .rpc('search_cars_v14', { search_term: debouncedSearch.query });
 
         if (obsolete) return;
@@ -235,12 +235,10 @@ export default function SearchBar({ placeholder, variant = "header", className, 
 
           setResults(finalResults);
         } else {
-          console.error(error);
           setResults([]);
         }
-      } catch (error) {
+      } catch {
         if (obsolete) return;
-        console.error(error);
         setResults([]);
       } finally {
         if (!obsolete) {

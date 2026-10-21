@@ -305,6 +305,32 @@ describe("SearchBar", () => {
     });
   }
 
+  it('keeps the pending search when history changes and shows that history after clearing', async () => {
+    const pending = deferredResponse();
+    mockRpc.mockImplementationOnce(() => pending.promise);
+    const { user, input, getByText, getByTestId, queryByText } = await setup();
+
+    await user.type(input, 'pe');
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1));
+
+    await act(async () => {
+      localStorage.setItem('mcs_search_history', JSON.stringify([result('Other tab selection')]));
+      window.dispatchEvent(new window.StorageEvent('storage', { key: 'mcs_search_history' }));
+    });
+
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(getByTestId('loader-icon')).toBeTruthy();
+    expect(queryByText('Other tab selection')).toBeNull();
+
+    await resolveResults(pending, [result('Current model')]);
+    expect(getByText('Current model')).toBeTruthy();
+    await user.clear(input);
+    expect(getByText('Dernières recherches')).toBeTruthy();
+    expect(getByText('Other tab selection')).toBeTruthy();
+    expect(queryByText('Current model')).toBeNull();
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+  });
+
   it('invalidates the pending response when modelOnly changes', async () => {
     const first = deferredResponse();
     const second = deferredResponse();

@@ -42,8 +42,8 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
       if (context && context.real_marque && context.real_modele) {
         return `${context.real_marque} ${context.real_modele} (${my})`;
       }
-    } catch (e) {
-      console.error("Error resolving metadata context:", e);
+    } catch {
+      // Utiliser le nom de secours si la résolution échoue.
     }
 
     // Fallback si context non trouvé ou erreur
