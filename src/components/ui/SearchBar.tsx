@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useSyncExternalStore } from "react";
+import { useState, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { Search, Loader2, History, LayoutGrid, X } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -105,7 +105,9 @@ export default function SearchBar({ placeholder, variant = "header", className, 
   // État pour le placeholder animé
   const [placeholderText, setPlaceholderText] = useState(placeholder || "Rechercher...");
 
-  const debouncedQuery = useDebounce(query, 300);
+  // Une nouvelle saisie doit attendre le debounce, même si elle revient au même texte.
+  const search = useMemo(() => ({ query }), [query]);
+  const debouncedSearch = useDebounce(search, 300);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isHero = variant === "hero";
@@ -196,45 +198,62 @@ export default function SearchBar({ placeholder, variant = "header", className, 
   }, []);
 
   useEffect(() => {
+    // Invalider aussi pendant le debounce, lors d'un changement de mode ou au démontage.
+    let obsolete = false;
+
     async function fetchResults() {
-      if (debouncedQuery.length === 0) {
+      if (search.query.length < 2) {
         setResults([]);
-        if (history.length > 0 && document.activeElement === inputRef.current) {
+        setLoading(false);
+        if (search.query.length === 0 && history.length > 0 && document.activeElement === inputRef.current) {
            setIsOpen(true); 
         }
         return;
       }
       
-      if (debouncedQuery.length < 2) {
-        setResults([]);
+      if (search !== debouncedSearch) {
+        setLoading(false);
         return;
       }
 
       setLoading(true);
       setIsOpen(true);
 
-      const { data, error } = await supabase
-        .rpc('search_cars_v14', { search_term: debouncedQuery });
+      try {
+        const { data, error } = await supabase
+          .rpc('search_cars_v14', { search_term: debouncedSearch.query });
 
-      if (data) {
-        let finalResults = data as SearchResult[];
+        if (obsolete) return;
 
-        // --- FILTRAGE ICI ---
-        if (modelOnly) {
+        if (data) {
+          let finalResults = data as SearchResult[];
+
+          // --- FILTRAGE ICI ---
+          if (modelOnly) {
             finalResults = finalResults.filter(r => r.Type !== 'family');
-        }
+          }
 
-        setResults(finalResults);
-      } else {
+          setResults(finalResults);
+        } else {
+          console.error(error);
+          setResults([]);
+        }
+      } catch (error) {
+        if (obsolete) return;
         console.error(error);
         setResults([]);
+      } finally {
+        if (!obsolete) {
+          setLoading(false);
+        }
       }
-      
-      setLoading(false);
     }
 
     fetchResults();
-  }, [debouncedQuery, modelOnly]);
+    return () => {
+      obsolete = true;
+    };
+  }, [search, debouncedSearch, modelOnly]);
 
   const handleSelect = (res: SearchResult) => {
     addToHistory(res);
