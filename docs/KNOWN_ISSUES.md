@@ -35,14 +35,6 @@ aux données autorisées avant toute correction. Sources : [queries](../src/lib/
 [classements actuels](../supabase/migrations/20261020000000_bound_public_ranking_limits.sql),
 [schéma](../supabase/migrations/20260827171821_remote_schema.sql).
 
-## Q8 — Texte des égalités de distribution
-
-La mémoire historique décrit des phrases commençant par « Les avis sont partagés… ».
-[seo-utils.ts](../src/lib/seo-utils.ts) préfixe actuellement la distribution par
-« Les avis sont majoritairement », y compris dans les branches d'égalité. Les
-[tests SEO](../src/lib/seo-utils.test.ts) vérifient surtout des fragments, ce qui ne
-prouve pas la conformité de la phrase complète. **Arbitrage :** confirmer la
-formulation souhaitée, puis tester le texte complet avant correction éditoriale.
 
 ## Validation et garanties à ne pas surévaluer
 

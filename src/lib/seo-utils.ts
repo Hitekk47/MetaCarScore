@@ -154,7 +154,7 @@ export function generateSeoText(
     ? `${pronounToUse.charAt(0).toUpperCase() + pronounToUse.slice(1)} se classe actuellement ${formatOrdinal(rank)}/${total} ${isMultiSegment ? 'de ses catégories' : 'de sa catégorie'}, ${score >= avg ? '[[stats:above|au-dessus]]' : '[[stats:below|en-dessous]]'} de la moyenne ${isMultiSegment ? 'des segments' : 'du segment'} qui est de ${avg}.`
     : "";
 
-  const distributionText = skipDistribution ? "" : `Les avis sont majoritairement ${getDistributionPhrasing(data.distribution)}.`;
+  const distributionText = skipDistribution ? "" : getDistributionSentence(data.distribution);
 
   if (level === 'modele' || level === 'powertrain') {
     const parts = [
@@ -195,7 +195,7 @@ export function generateSeoText(
   return parts.filter(Boolean).join(" ").trim().replace(/\s+/g, ' ');
 }
 
-function getDistributionPhrasing(dist: SeoStats['distribution']): string {
+function getDistributionSentence(dist: SeoStats['distribution']): string {
   const { positive, mixed, negative } = dist;
   const categories = [
     { label: 'positifs', ...positive },
@@ -207,12 +207,12 @@ function getDistributionPhrasing(dist: SeoStats['distribution']): string {
   const topCategories = categories.filter(c => c.percentage === maxPercent);
 
   if (topCategories.length === 3) {
-    return `de manière équilibrée entre positifs, mitigés et négatifs (${maxPercent}% chacun)`;
+    return `Les avis se répartissent de manière équilibrée entre positifs, mitigés et négatifs (${maxPercent}% chacun).`;
   }
 
   if (topCategories.length === 2) {
-    return `partagés entre ${topCategories[0].label} et ${topCategories[1].label} (à égalité, ${maxPercent}% chacun)`;
+    return `Les avis sont majoritairement partagés entre ${topCategories[0].label} et ${topCategories[1].label} (à égalité, ${maxPercent}% chacun).`;
   }
 
-  return `${topCategories[0].label} (${maxPercent}%)`;
+  return `Les avis sont majoritairement ${topCategories[0].label} (${maxPercent}%).`;
 }

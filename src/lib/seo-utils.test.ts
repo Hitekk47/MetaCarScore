@@ -142,6 +142,71 @@ describe("generateSeoText", () => {
     expect(text).toContain("couvre les segments [[segment:SUV / Crossover:C|SUV Compacts]] et [[segment:Berline / Hatch:C|Compactes]].");
   });
 
+  test.each([
+    {
+      name: "Positive majority with a tie between the other categories",
+      counts: [6, 2, 2],
+      percentages: [60, 20, 20],
+      expectedSentence: "Les avis sont majoritairement positifs (60%)."
+    },
+    {
+      name: "Mixed majority with a tie between the other categories",
+      counts: [2, 6, 2],
+      percentages: [20, 60, 20],
+      expectedSentence: "Les avis sont majoritairement mitigés (60%)."
+    },
+    {
+      name: "Negative majority with a tie between the other categories",
+      counts: [2, 2, 6],
+      percentages: [20, 20, 60],
+      expectedSentence: "Les avis sont majoritairement négatifs (60%)."
+    },
+    {
+      name: "Tie between positive and mixed reviews",
+      counts: [4, 4, 2],
+      percentages: [40, 40, 20],
+      expectedSentence: "Les avis sont majoritairement partagés entre positifs et mitigés (à égalité, 40% chacun)."
+    },
+    {
+      name: "Tie between positive and negative reviews",
+      counts: [4, 2, 4],
+      percentages: [40, 20, 40],
+      expectedSentence: "Les avis sont majoritairement partagés entre positifs et négatifs (à égalité, 40% chacun)."
+    },
+    {
+      name: "Tie between mixed and negative reviews",
+      counts: [2, 4, 4],
+      percentages: [20, 40, 40],
+      expectedSentence: "Les avis sont majoritairement partagés entre mitigés et négatifs (à égalité, 40% chacun)."
+    },
+    {
+      name: "Tie between all three review categories",
+      counts: [1, 1, 1],
+      percentages: [33.33, 33.33, 33.33],
+      expectedSentence: "Les avis se répartissent de manière équilibrée entre positifs, mitigés et négatifs (33.33% chacun)."
+    }
+  ])("Full distribution text: $name", ({ counts, percentages, expectedSentence }) => {
+    const stats: SeoStats = {
+      ...baseStats,
+      review_count: counts.reduce((sum, count) => sum + count, 0),
+      consensus_label: 'division',
+      distribution: {
+        positive: { count: counts[0], percentage: percentages[0] },
+        mixed: { count: counts[1], percentage: percentages[1] },
+        negative: { count: counts[2], percentage: percentages[2] }
+      },
+      segments: [],
+      rank: null,
+      total_in_segment: null,
+      segment_avg: null
+    };
+    const text = generateSeoText(stats, {
+      marque: "X", famille: "Y", modele: "Z", level: "modele"
+    });
+
+    expect(text).toBe("Sur la base de " + stats.review_count + " essais, le X Z obtient un MetaCarScore de 92. La presse est [[iqr:division|fortement divisée]] au sujet de ce véhicule. " + expectedSentence);
+  });
+
   test("Strong positive majority with division (Case A)", () => {
     const stats: SeoStats = {
       ...baseStats,
