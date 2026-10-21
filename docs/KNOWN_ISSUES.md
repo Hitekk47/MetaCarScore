@@ -35,14 +35,6 @@ aux données autorisées avant toute correction. Sources : [queries](../src/lib/
 [classements actuels](../supabase/migrations/20261020000000_bound_public_ranking_limits.sql),
 [schéma](../supabase/migrations/20260827171821_remote_schema.sql).
 
-## Q6 — Périmètre SEO des motorisations
-
-La [page motorisation](../src/app/[marque]/[famille]/[my]/[modele]/[powertrain]/page.tsx)
-filtre les essais affichés mais demande les statistiques SEO au niveau modèle.
-Elle reste `noindex`, sans que cela empêche le texte ou le JSON-LD de refléter un
-périmètre plus large. **À décider :** conserver le contexte modèle explicitement
-ou produire des statistiques propres à la motorisation.
-
 ## Q8 — Texte des égalités de distribution
 
 La mémoire historique décrit des phrases commençant par « Les avis sont partagés… ».
