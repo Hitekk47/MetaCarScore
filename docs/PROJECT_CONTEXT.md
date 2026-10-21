@@ -76,6 +76,10 @@ Sources : [queries](../src/lib/queries.ts), [annuaire SQL](../supabase/migration
   l'indexation ; en dessous, elles restent consultables avec `noindex, follow`.
   Les marques sont des annuaires et ne suivent pas ce seuil. Les pages motorisation
   restent `noindex` et ne figurent pas dans le sitemap.
+- Sur les pages motorisation, les statistiques et le résumé SEO conservent le
+  périmètre du modèle pour le MY demandé, toutes motorisations confondues (D9).
+  Le résumé explicite ce périmètre dès son début ; les essais affichés restent
+  filtrés par motorisation.
 - Le sitemap vise les destinations canoniques éligibles. Sa complétude et les
   redirections permanentes ne sont pas garanties par l'implémentation actuelle
   (Q1 et Q3).
@@ -91,5 +95,4 @@ Sources : [queries](../src/lib/queries.ts), [annuaire SQL](../supabase/migration
 
 Sources : [seo-utils et tests](../src/lib/seo-utils.ts), [tests SEO](../src/lib/seo-utils.test.ts),
 [configuration](../src/lib/constants.ts), [routes](../src/app),
-[sitemap](../src/app/sitemap.ts). Le périmètre SEO des motorisations reste une
-question ouverte (Q6).
+[sitemap](../src/app/sitemap.ts), [D9](DECISIONS.md).

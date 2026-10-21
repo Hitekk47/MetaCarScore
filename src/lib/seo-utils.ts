@@ -165,7 +165,10 @@ export function generateSeoText(
       distributionText,
       comparisonText
     ];
-    return parts.filter(Boolean).join(" ").trim().replace(/\s+/g, ' ');
+    const text = parts.filter(Boolean).join(" ").trim().replace(/\s+/g, ' ');
+    return level === 'powertrain'
+      ? `Toutes motorisations confondues, ${text.charAt(0).toLowerCase()}${text.slice(1)}`
+      : text;
   }
 
   if (level === 'my') {
