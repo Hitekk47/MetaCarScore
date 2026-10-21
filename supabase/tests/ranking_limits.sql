@@ -1,8 +1,8 @@
 -- Run only on an isolated test database after applying migrations.
 -- The supplied scripts/test-ranking-limits.mjs runner creates an in-memory
 -- PostgreSQL instance, replays migrations and executes this transaction.
--- Only the newly versioned endpoints are expected to enforce bounds. Legacy
--- endpoints remain available unchanged for a zero-downtime rollout.
+-- The #88 endpoints must enforce bounds. The JS runners also reuse these cases
+-- against their Q2 successors, including after Q4 cleanup of the retired versions.
 -- No pgTAP extension is required. All fixtures are rolled back.
 BEGIN;
 SET LOCAL search_path TO public;
