@@ -1,4 +1,4 @@
-import { notFound, redirect, RedirectType } from "next/navigation";
+import { notFound, permanentRedirect, RedirectType } from "next/navigation";
 import GenericPageClient from "@/components/pages/GenericPageClient";
 import { Metadata } from 'next';
 import { serializeJsonLd } from "@/lib/utils";
@@ -122,7 +122,7 @@ export default async function PowertrainPage({ params }: PageProps) {
   if (context.is_alias && context.canonical_marque && context.canonical_famille) {
     const targetModele = context.canonical_modele || realModele;
     const targetUrl = `/${toSlug(context.canonical_marque)}/${toSlug(context.canonical_famille)}/${my}/${toSlug(targetModele)}/${sPowertrain}`;
-    redirect(targetUrl, RedirectType.replace);
+    permanentRedirect(targetUrl, RedirectType.replace);
   }
 
   // 4. Chargement Data via cache
