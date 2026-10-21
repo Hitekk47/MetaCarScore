@@ -55,23 +55,23 @@ conserver la navigation sémantique sans imbriquer des ancres, sans figer une re
 - `model_segments` : macro-catégorie et segment par modèle/MY. Les fonctions de
   classement privilégient la correspondance de MY puis leur repli défini en SQL.
 
-Appels du frontend à la révision de référence `a69e771` (chercher les usages avant
+Appels du frontend (chercher les usages avant
 une évolution ; une ancienne fonction peut toujours exister dans la base) :
 
 | Usage | RPC appelée |
 | --- | --- |
 | Contexte | `find_brand_by_slug_v2`, `get_full_context_by_slugs_v3` |
 | Familles / recherche | `get_families_by_brand_v2`, `search_cars_v14` |
-| Classements | `get_model_ranking_v7`, `get_break_ranking_v5`, `get_convertible_ranking_v5`, `get_brand_ranking_v8` |
-| Accueil | `get_homepage_stats`, `get_trending_models_v4` |
-| SEO / sitemap modèles | `get_vehicle_seo_stats_v5`, `get_sitemap_groups_filtered_v3` |
+| Classements | `get_model_ranking_v8`, `get_break_ranking_v6`, `get_convertible_ranking_v6`, `get_brand_ranking_v9` |
+| Accueil | `get_homepage_stats`, `get_trending_models_v5` |
+| SEO / sitemap modèles | `get_vehicle_seo_stats_v6`, `get_sitemap_groups_filtered_v4` |
 
 Les réponses RPC doivent être interprétées selon leur contrat SQL/PostgREST.
 Le générateur SEO convertit certains agrégats avec `Number()` ; ne pas généraliser
 que tout nombre arrive en chaîne, ni masquer une valeur absente/invalide par un cast.
 
 Le sitemap lit aussi directement `reviews` et `model_aliases` pour les marques,
-familles et MY ; il **n'appelle pas** `get_sitemap_canonical_routes_v2`.
+familles et MY ; il **n'appelle pas** `get_sitemap_canonical_routes_v3`.
 Les limites des trois classements modèle/break/découvrable sont bornées à 100,
 celle des tendances à 15, y compris avec `NULL`. Les versions précédentes restent
 inchangées et accessibles : voir Q4 dans [KNOWN_ISSUES](KNOWN_ISSUES.md).
@@ -122,5 +122,10 @@ Avec les outils installés, utiliser selon le changement :
   dépend de Supabase ou de ressources externes ne doit pas être présenté comme validé
   si ces prérequis manquent. Ne jamais lancer de migration de production pour tester
   une modification documentaire.
+- Pour l'identité des médias, [scripts/test-media-source-identity.mjs](../scripts/test-media-source-identity.mjs)
+  rejoue les migrations dans PGlite et vérifie la parité SQL/JavaScript, les huit
+  RPC successeures avec les trois rôles publics, les ACL des anciennes versions,
+  les moyennes par essai et les limites de classement. Les fixtures restent
+  réservées à cette base isolée ; elles ne valident pas la base hébergée.
 
 Les limites de validation persistantes sont recensées dans [KNOWN_ISSUES](KNOWN_ISSUES.md).

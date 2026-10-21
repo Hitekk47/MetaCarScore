@@ -57,8 +57,11 @@ mock.module("@/lib/supabase", () => ({
   },
 }));
 
-// Mock lucid-react (icons) as simple components
+// Preserve other exports so this mock does not break unrelated UI tests.
+const realIcons = { ...await import('lucide-react') };
+// Mock lucide-react (icons) as simple components
 mock.module("lucide-react", () => ({
+  ...realIcons,
   Search: () => <div data-testid="search-icon" />,
   Loader2: () => <div data-testid="loader-icon" />,
   History: () => <div data-testid="history-icon" />,

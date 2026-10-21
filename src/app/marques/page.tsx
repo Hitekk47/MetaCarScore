@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 export default async function MarquesPage() {
-  const { data, error } = await supabase.rpc('get_brand_ranking_v8', {
+  const { data, error } = await supabase.rpc('get_brand_ranking_v9', {
     min_count: 1
   });
 

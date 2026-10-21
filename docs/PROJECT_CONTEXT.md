@@ -19,6 +19,12 @@ intention non implémentée est signalée comme telle dans les [questions ouvert
 - Un score global de véhicule est fiable à partir de **3 médias distincts**, après
   consolidation des alias. Le nombre d'essais affiché reste le volume d'essais,
   distinct du nombre de sources.
+- L'identité d'un média ignore la casse et les espaces de bord. Les accents,
+  la ponctuation et les espaces internes restent significatifs. Un libellé vide
+  après normalisation ne compte pas comme source ; l'essai contribue toujours
+  aux volumes et aux moyennes. `reviews.Testeur` reste non nullable. Le libellé
+  original est conservé pour l'affichage ; les regroupements UI, SQL et SEO
+  utilisent la même règle ([D7](DECISIONS.md)).
 - **Exception explicite :** sur les fiches, lorsque les filtres ou la recherche
   activent `isFiltered`, le badge peut afficher un score dès **3 essais**, même
   issus du même média. L'interface le désigne comme « Score Filtré » et affiche
@@ -40,8 +46,8 @@ Sources : [utils](../src/lib/utils.ts), [ScoreBadge](../src/components/ui/ScoreB
 [GenericPageClient](../src/components/pages/GenericPageClient.tsx),
 [DuelArena](../src/components/duels/DuelArena.tsx),
 [moyennes SQL](../supabase/migrations/20260904000000_unrounded_score_averages.sql),
-[décisions D2 et D3](DECISIONS.md). La normalisation des noms de médias diverge encore
-entre SQL et JavaScript : voir Q2 dans les questions ouvertes.
+[décisions D2, D3 et D7](DECISIONS.md),
+[identité des médias SQL](../supabase/migrations/20261021000000_uniform_media_source_identity.sql).
 
 ## Identité des véhicules
 

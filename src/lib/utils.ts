@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Review, AggregatedSource } from "@/lib/types";
+import { getMediaSourceKey } from "@/lib/media-source";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -105,8 +106,9 @@ export function serializeJsonLd(data: unknown) {
 export function aggregateReviews(reviews: Review[]): Record<string, AggregatedSource> {
   const map: Record<string, AggregatedSource> = Object.create(null);
   reviews.forEach((r) => {
-    const source = r.Testeur.trim();
-    if (!map[source]) map[source] = { sourceName: source, avgScore: 0, count: 0, rawScores: [] };
+    const source = getMediaSourceKey(r.Testeur);
+    if (source === null) return;
+    if (!map[source]) map[source] = { sourceName: r.Testeur.trim(), avgScore: 0, count: 0, rawScores: [] };
     map[source].rawScores.push(r.Score);
     map[source].count += 1;
   });
@@ -121,9 +123,9 @@ export function getDistinctSourceCount(reviews: Review[]): number {
   if (!reviews || reviews.length === 0) return 0;
   const sources = new Set<string>();
   for (let i = 0; i < reviews.length; i++) {
-    const t = reviews[i].Testeur;
-    if (t) {
-      sources.add(t.trim().toLowerCase());
+    const source = getMediaSourceKey(reviews[i].Testeur);
+    if (source !== null) {
+      sources.add(source);
     }
   }
   return sources.size;

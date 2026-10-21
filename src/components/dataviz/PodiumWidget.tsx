@@ -6,6 +6,7 @@ import { Trophy, Gauge, Brain } from "lucide-react";
 import ScoreBadge from "../ui/ScoreBadge";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getMediaSourceKey } from "@/lib/media-source";
 import { motion } from "framer-motion";
 import { toSlug } from "@/lib/slugify";
 
@@ -28,8 +29,9 @@ export default function PodiumWidget({ reviews }: { reviews: Review[] }) {
       
       groups[uniqueKey].totalScore += r.Score;
       groups[uniqueKey].count += 1;
-      if (r.Testeur) {
-        groups[uniqueKey].sources.add(r.Testeur.trim().toLowerCase());
+      const source = getMediaSourceKey(r.Testeur);
+      if (source !== null) {
+        groups[uniqueKey].sources.add(source);
       }
       
       if (r.Puissance > groups[uniqueKey].maxPower) {
