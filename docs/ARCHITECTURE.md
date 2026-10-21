@@ -70,8 +70,12 @@ Les réponses RPC doivent être interprétées selon leur contrat SQL/PostgREST.
 Le générateur SEO convertit certains agrégats avec `Number()` ; ne pas généraliser
 que tout nombre arrive en chaîne, ni masquer une valeur absente/invalide par un cast.
 
-Le sitemap lit aussi directement `reviews` et `model_aliases` pour les marques,
-familles et MY ; il **n'appelle pas** `get_sitemap_canonical_routes_v3`.
+Le sitemap conserve un fichier unique et lit directement `reviews` et
+`model_aliases` sans pagination pour les marques, familles et MY. Une erreur de
+l'une des trois lectures interrompt la génération au lieu de produire un sitemap
+partiel. Seule `get_sitemap_groups_filtered_v4` reste comme RPC de sitemap après
+la [migration de nettoyage](../supabase/migrations/20261021190000_remove_unused_sitemap_rpcs.sql) ;
+les migrations historiques sont conservées (décision D8).
 Les limites des trois classements modèle/break/découvrable sont bornées à 100,
 celle des tendances à 15, y compris avec `NULL`. Les versions précédentes restent
 inchangées et accessibles : voir Q4 dans [KNOWN_ISSUES](KNOWN_ISSUES.md).
@@ -125,7 +129,9 @@ Avec les outils installés, utiliser selon le changement :
 - Pour l'identité des médias, [scripts/test-media-source-identity.mjs](../scripts/test-media-source-identity.mjs)
   rejoue les migrations dans PGlite et vérifie la parité SQL/JavaScript, les huit
   RPC successeures avec les trois rôles publics, les ACL des anciennes versions,
-  les moyennes par essai et les limites de classement. Les fixtures restent
+  les moyennes par essai et les limites de classement. Il vérifie ensuite le retrait
+  des six RPC de sitemap inutilisées, le blocage en présence d'une dépendance SQL
+  et la conservation des fonctions restantes et de leurs ACL. Les fixtures restent
   réservées à cette base isolée ; elles ne valident pas la base hébergée.
 
 Les limites de validation persistantes sont recensées dans [KNOWN_ISSUES](KNOWN_ISSUES.md).

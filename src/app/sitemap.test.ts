@@ -1,20 +1,26 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test';
 
 let rows: { Marque: string; Famille: string; MY: number; Testeur: string }[];
-const rpc = mock(async () => ({ data: [], error: null }));
+type QueryName = 'reviews' | 'aliases' | 'models';
+let errors: Partial<Record<QueryName, { message: string }>>;
+const rpc = mock(async () => ({ data: [], error: errors.models ?? null }));
 mock.module('@/lib/supabase', () => ({
   supabase: {
     from: (table: string) => ({
-      select: async () => ({ data: table === 'reviews' ? rows : [], error: null }),
+      select: async () => ({
+        data: table === 'reviews' ? rows : [],
+        error: errors[table === 'reviews' ? 'reviews' : 'aliases'] ?? null,
+      }),
     }),
     rpc,
   },
 }));
 const { default: sitemap } = await import('./sitemap');
 
-describe('sitemap media eligibility', () => {
+describe('sitemap', () => {
   beforeEach(() => {
     rows = [];
+    errors = {};
     rpc.mockClear();
   });
 
@@ -35,5 +41,23 @@ describe('sitemap media eligibility', () => {
       expect(urls).not.toContain('https://metacarscore.com/fixture/' + path + '/2025');
     }
     expect(rpc).toHaveBeenCalledWith('get_sitemap_groups_filtered_v4');
+  });
+
+  test.each<QueryName>(['reviews', 'aliases', 'models'])(
+    'rejects instead of returning a partial sitemap when %s fails',
+    async (name) => {
+      rows = ['First', 'Second', 'Third'].map(Testeur => ({
+        Marque: 'Fixture', Famille: 'Reliable', MY: 2025, Testeur,
+      }));
+      errors[name] = { message: 'Private upstream error details' };
+
+      await expect(sitemap()).rejects.toThrow(`Failed to fetch ${name} for sitemap`);
+    },
+  );
+
+  test('allows successful empty results', async () => {
+    const urls = (await sitemap()).map(route => route.url);
+    expect(urls).toContain('https://metacarscore.com');
+    expect(urls).toContain('https://metacarscore.com/marques');
   });
 });

@@ -1,19 +1,24 @@
 # Limites et questions ouvertes
 
-Constats établis sur `a69e771` à partir du code, des migrations, des tests et de
-l'historique. L'impact sur les données réelles et l'état Supabase hébergé n'ont pas
-été vérifiés. Ces constats n'autorisent aucune modification fonctionnelle implicite.
+Constats initiaux établis sur `a69e771` à partir du code, des migrations, des tests
+et de l'historique. Les vérifications ultérieures sont précisées dans les sections
+concernées ; elles ne constituent pas une validation exhaustive de Supabase hébergé.
+Ces constats n'autorisent aucune modification fonctionnelle implicite.
 
-## Q3 — Sitemap : complétude et canonicalisation non garanties
+## Q3 — Sitemap : portée des alias et validation des destinations
 
-[src/app/sitemap.ts](../src/app/sitemap.ts) lit `reviews` et `model_aliases` sans
-pagination pour les marques/familles/MY ; seule la liste des modèles utilise
-`get_sitemap_groups_filtered_v4`. La RPC `get_sitemap_canonical_routes_v3` existe
-mais n'est pas appelée. Le plafond effectif PostgREST est inconnu ici : une
-troncature peut rendre les routes et comptages incomplets. Le mapping famille ne
-prend pas en compte toutes les restrictions modèle/MY des alias.
-**Suite proposée :** vérifier la pagination et les règles d'alias, puis valider que
-chaque URL émise est canonique et éligible ; ne pas supposer la garantie « 200 OK ».
+[src/app/sitemap.ts](../src/app/sitemap.ts) conserve un fichier unique et lit
+`reviews` et `model_aliases` sans pagination pour les marques/familles/MY ; les
+modèles utilisent `get_sitemap_groups_filtered_v4` (décision D8). La vérification
+API de cette étude n'a montré aucune troncature. Une erreur de l'une des trois
+requêtes interrompt désormais la génération ; ce contrôle ne détecte pas une
+réponse réussie mais tronquée.
+
+Le mapping famille ne prend pas en compte toutes les restrictions modèle/MY des
+alias. Aucun effet incorrect de cette simplification n'a été constaté sur les
+règles examinées, mais le contrat de portée reste à préciser avec Q5.
+**Suite proposée :** confronter les règles d'alias aux destinations canoniques et
+à leur éligibilité ; aucun contrôle HTTP exhaustif ne garantit ici « 200 OK ».
 
 ## Q4 — Anciennes RPC de classement encore non bornées
 

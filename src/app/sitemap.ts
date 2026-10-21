@@ -61,8 +61,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     supabase.rpc('get_sitemap_groups_filtered_v4'),
   ]);
 
-  if (reviewsRes.error) {
-    console.error('Error fetching reviews for sitemap:', reviewsRes.error.message);
+  const results = { reviews: reviewsRes, aliases: aliasesRes, models: modelGroupsRes };
+  for (const [name, result] of Object.entries(results)) {
+    if (result.error) {
+      throw new Error(`Failed to fetch ${name} for sitemap`);
+    }
   }
 
   const allRows = reviewsRes.data || [];
@@ -101,7 +104,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   allRows.forEach((row: Partial<ReviewRow>) => {
     if (!row.Marque || !row.Famille) return;
 
-    // Ajout de la marque (catalogues 200 OK)
+    // Ajout des marques présentes dans les essais
     brands.add(`${BASE_URL}/${toSlug(row.Marque)}`);
 
     // Unification sous l'identité canonique si la ligne est un alias

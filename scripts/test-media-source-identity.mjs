@@ -92,6 +92,37 @@ try {
   for (const [oldName, newName] of successors) limits = limits.replaceAll(oldName, newName);
   await db.exec(limits);
   console.log('PASS: successor ranking limits (100/15), aliases and separate MY groups');
+
+  // Validate the separately authorized sitemap cleanup after the Q2 regression.
+  const retiredSitemapNames = new Set([
+    'get_sitemap_groups_filtered',
+    'get_sitemap_groups_filtered_v2',
+    'get_sitemap_groups_filtered_v3',
+    'get_sitemap_canonical_routes',
+    'get_sitemap_canonical_routes_v2',
+    'get_sitemap_canonical_routes_v3',
+  ]);
+  const cleanup = await readFile(resolve(root,
+    'supabase/migrations/20261021190000_remove_unused_sitemap_rpcs.sql'), 'utf8');
+  const beforeCleanup = await snapshot();
+  assert.equal(beforeCleanup.filter(fn => retiredSitemapNames.has(fn.proname)).length, 6);
+
+  // A remaining SQL consumer must block the cleanup, never be removed by CASCADE.
+  await db.exec('BEGIN; CREATE VIEW public.sitemap_dependency_fixture AS SELECT * FROM public.get_sitemap_groups_filtered_v3();');
+  await assert.rejects(db.exec(cleanup), error => error.code === '2BP01');
+  await db.exec('ROLLBACK;');
+  assert.deepEqual(await snapshot(), beforeCleanup,
+    'A dependency-blocked cleanup must leave every function intact');
+  console.log('PASS: cleanup refuses a dependent view and rolls back without changing functions');
+
+  await db.exec(cleanup);
+  assert.deepEqual(await snapshot(), beforeCleanup.filter(fn => !retiredSitemapNames.has(fn.proname)),
+    'Remove only six unused sitemap RPCs; preserve every retained identity, definition and effective ACL');
+  await db.exec('SET row_security TO on;');
+  for (const role of ['anon', 'authenticated', 'service_role']) {
+    await db.exec(`SET ROLE ${role}; SELECT * FROM public.get_sitemap_groups_filtered_v4(); RESET ROLE;`);
+  }
+  console.log('PASS: six unused sitemap RPCs removed; active v4 and every retained function/ACL unchanged');
 } catch (error) {
   console.error('FAIL: ' + error.message);
   if (error.detail) console.error(error.detail);
