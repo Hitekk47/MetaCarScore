@@ -3,13 +3,13 @@ const LATENCY_MS = 50;
 class DBBenchmark {
   queryCount = 0;
 
-  async select(_table: string) {
+  async select() {
     await new Promise(resolve => setTimeout(resolve, LATENCY_MS));
     this.queryCount++;
     return { data: [{ mock: 'data' }], error: null };
   }
 
-  async rpc(functionName: string, params: Record<string, unknown>) {
+  async rpc() {
     await new Promise(resolve => setTimeout(resolve, LATENCY_MS));
     this.queryCount++;
     return { data: [{ mock: 'context' }], error: null };
@@ -23,14 +23,14 @@ async function runBaseline() {
 
   // 1. generateMetadata
   // Simulates: supabase.from('reviews').select(...)
-  await db.select('reviews');
+  await db.select();
 
   // 2. Page Component
   // Simulates: supabase.rpc('get_full_context_by_slugs_v3', ...)
-  await db.rpc('get_full_context_by_slugs_v3', {});
+  await db.rpc();
 
   // Simulates: supabase.from('reviews').select(...)
-  await db.select('reviews');
+  await db.select();
 
   const end = performance.now();
   return {
@@ -62,12 +62,15 @@ async function runOptimized() {
   cache.clear(); // New request context
 
   // Define cached functions linked to this DB instance
-  const getFullContext = cachedFn(
-    (params: Record<string, unknown>) => db.rpc('get_full_context_by_slugs_v3', params),
+  const getFullContext = cachedFn<
+    Awaited<ReturnType<DBBenchmark['rpc']>>,
+    [Record<string, unknown>]
+  >(
+    () => db.rpc(),
     (params) => JSON.stringify(params)
   );
 
-  const getReviews = async () => db.select('reviews');
+  const getReviews = async () => db.select();
 
   const start = performance.now();
 

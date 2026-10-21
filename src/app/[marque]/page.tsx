@@ -70,7 +70,7 @@ export default async function BrandPage({ params }: PageProps) {
   // -----------------------------------------------------------
   // 3. TRANSFORMATION (Avec slugification des liens)
   // -----------------------------------------------------------
-  const items: DirectoryItem[] = families.map((item: any) => {
+  const items: DirectoryItem[] = families.map((item) => {
     const familyName = String(item.Famille || item.famille || "");
     const isAlias = Boolean(item.is_alias);
     const canonicalMarque = item.canonical_marque || null;

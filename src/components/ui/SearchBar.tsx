@@ -205,7 +205,7 @@ export default function SearchBar({ placeholder, variant = "header", className, 
       if (search.query.length < 2) {
         setResults([]);
         setLoading(false);
-        if (search.query.length === 0 && history.length > 0 && document.activeElement === inputRef.current) {
+        if (search.query.length === 0 && document.activeElement === inputRef.current) {
            setIsOpen(true); 
         }
         return;

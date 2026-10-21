@@ -17,7 +17,7 @@ describe('getFamilies with get_families_by_brand_v2', () => {
   });
 
   it('calls get_families_by_brand_v2 and returns consolidated brand families with alias metadata', async () => {
-    mockRpc.mockImplementation((fnName: string, _params: Record<string, unknown>) => {
+    mockRpc.mockImplementation((fnName: string) => {
       if (fnName === 'get_families_by_brand_v2') {
         return Promise.resolve({
           data: [
@@ -198,7 +198,7 @@ describe('getReviews with aliases', () => {
         capturedOrQuery = orStr;
         return mockReviewsChain;
       }),
-      eq: mock((_key: string, _val: unknown) => mockReviewsChain),
+      eq: mock(() => mockReviewsChain),
       ilike: mock(() => mockReviewsChain),
       order: mock(() =>
         Promise.resolve({

@@ -38,8 +38,6 @@ aux données autorisées avant toute correction. Sources : [queries](../src/lib/
 
 ## Validation et garanties à ne pas surévaluer
 
-- Le lint conserve une erreur `no-explicit-any` dans `src/app/[marque]/page.tsx`
-  et des avertissements préexistants. Leur correction relève d'une autre tâche.
 - Certains tests recopient la logique au lieu d'exécuter le composant réel, et les
   tests de requêtes simulent Supabase. Le fichier historique
   `src/lib/supabase.security.test.ts` n'existe pas. Aucun test de ce nom ne doit être
