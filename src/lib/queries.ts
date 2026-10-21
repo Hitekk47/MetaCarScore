@@ -52,8 +52,18 @@ export const getBrandContext = cache(async (slug: string) => {
 });
 
 // 2. Cached Full Context (Family, Model, Powertrain)
-export const getFullContext = cache(async (params: FullContextParams) => {
-  const { data, error } = await supabase.rpc('get_full_context_by_slugs_v3', params);
+// React compares cache arguments by identity. Keep the object API, but key the
+// request cache by primitive values shared by metadata and page renders.
+const getFullContextCached = cache(async (
+  p_marque_slug?: string,
+  p_famille_slug?: string,
+  p_my?: number,
+  p_modele_slug?: string,
+  p_powertrain_slug?: string,
+) => {
+  const { data, error } = await supabase.rpc('get_full_context_by_slugs_v3', {
+    p_marque_slug, p_famille_slug, p_my, p_modele_slug, p_powertrain_slug,
+  });
 
   if (error) {
     console.error('Error fetching full context: An unexpected error occurred');
@@ -62,6 +72,14 @@ export const getFullContext = cache(async (params: FullContextParams) => {
 
   return (data?.[0] as FullContext) || null;
 });
+
+export const getFullContext = (params: FullContextParams) => getFullContextCached(
+  params.p_marque_slug,
+  params.p_famille_slug,
+  params.p_my,
+  params.p_modele_slug,
+  params.p_powertrain_slug,
+);
 
 // 3. Cached Families List
 export const getFamilies = cache(async (brandName: string) => {
@@ -260,8 +278,15 @@ export const getReviews = cache(async (filters: ReviewFilters) => {
   });
 });
 
-export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_famille: string; p_my?: number; p_modele?: string }) => {
-  const { data, error } = await supabase.rpc('get_vehicle_seo_stats_v5', params);
+const getVehicleSeoStatsCached = cache(async (
+  p_marque: string,
+  p_famille: string,
+  p_my?: number,
+  p_modele?: string,
+) => {
+  const { data, error } = await supabase.rpc('get_vehicle_seo_stats_v5', {
+    p_marque, p_famille, p_my, p_modele,
+  });
 
   if (error) {
     console.error('Error fetching vehicle SEO stats:', error);
@@ -270,6 +295,13 @@ export const getVehicleSeoStats = cache(async (params: { p_marque: string; p_fam
 
   return data as SeoStats | null;
 });
+
+export const getVehicleSeoStats = (params: { p_marque: string; p_famille: string; p_my?: number; p_modele?: string }) => getVehicleSeoStatsCached(
+  params.p_marque,
+  params.p_famille,
+  params.p_my,
+  params.p_modele,
+);
 
 export type GetModelAliasesParams = {
   marque: string;
