@@ -4,26 +4,6 @@ Constats établis sur `a69e771` à partir du code, des migrations, des tests et 
 l'historique. L'impact sur les données réelles et l'état Supabase hébergé n'ont pas
 été vérifiés. Ces constats n'autorisent aucune modification fonctionnelle implicite.
 
-## Q1 — Redirections annoncées permanentes : correction du code
-
-**Intention intégrée :** la PR [#81](https://github.com/Hitekk47/MetaCarScore/pull/81)
-annonce des 308 vers les URL canoniques. Les quatre pages sous
-`src/app/[marque]/[famille]` utilisaient `redirect(url, RedirectType.replace)` :
-`replace` choisit l'historique de navigation, pas le statut permanent.
-Elles appellent désormais `permanentRedirect(url, RedirectType.replace)`.
-
-`npm run test:canonical-redirects` compile les quatre pages réelles dans un serveur
-Next de production isolé, avec données et UI fictives, puis vérifie par HTTP les
-308 et `Location`, le suivi vers une URL canonique en 200 sans boucle, la conservation
-du MY et de la motorisation, le repli sur le modèle réel et les contextes absents en
-404. Le test vérifie aussi le rendu sous Suspense : une fois le streaming commencé,
-la réponse reste 200 et Next émet une balise de redirection immédiate. Il échoue sur
-l'ancien appel `redirect`, qui répond 307 avant streaming.
-
-Ces contrôles locaux ne mesurent ni les statuts HTTP de production, ni les données
-Supabase hébergées, ni la navigation côté client/historique dans un navigateur.
-Ne pas annoncer un statut 308 garanti pour toutes les réponses en production.
-
 ## Q2 — Identité d'un média non uniformisée
 
 Les RPC comptent `COUNT(DISTINCT TRIM("Testeur"))`, sensible à la casse ;

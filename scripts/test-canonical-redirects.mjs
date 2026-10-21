@@ -6,12 +6,12 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { copyFile, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
-await mkdir(join(root, 'work'), { recursive: true });
-const fixture = await mkdtemp(join(root, 'work/canonical-redirects-'));
+const fixture = await mkdtemp(join(tmpdir(), 'metacarscore-canonical-redirects-'));
 const nextBin = join(root, 'node_modules/next/dist/bin/next');
 let server;
 let serverExit;
