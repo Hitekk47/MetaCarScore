@@ -118,7 +118,7 @@ await verifyMemoization('getFullContext', 'get_full_context_by_slugs_v3', getFul
   { ...context, p_modele_slug: 'other-model' },
   { ...context, p_powertrain_slug: 'hybride-204ch-automatique' },
 ]);
-await verifyMemoization('getVehicleSeoStats', 'get_vehicle_seo_stats_v5', getVehicleSeoStats, seo, [
+await verifyMemoization('getVehicleSeoStats', 'get_vehicle_seo_stats_v6', getVehicleSeoStats, seo, [
   { ...seo, p_marque: 'Other Brand' },
   { ...seo, p_famille: 'Other Family' },
   { ...seo, p_my: 2025 },
@@ -155,7 +155,7 @@ try {
     assert.deepEqual(values, [null, null, null, null]);
   });
   assert.equal(calls.length - before, 2, 'Error results dedupe within the request');
-  assert.equal(loggedErrors.length, 2, 'One existing error log per executed RPC');
+  assert.equal(loggedErrors.length, 0, 'Handled RPC errors must not be logged');
 } finally {
   console.error = originalConsoleError;
   responseMode = 'success';

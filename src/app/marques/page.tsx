@@ -10,13 +10,9 @@ export const metadata = {
 };
 
 export default async function MarquesPage() {
-  const { data, error } = await supabase.rpc('get_brand_ranking_v9', {
+  const { data } = await supabase.rpc('get_brand_ranking_v9', {
     min_count: 1
   });
-
-  if (error) {
-    console.error("Erreur lors de la récupération des marques :", error);
-  }
 
   // Transformation strictement typée (Zéro erreur TypeScript TS7006)
   const items: DirectoryItem[] = (data || [])

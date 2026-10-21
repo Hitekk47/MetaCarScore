@@ -115,8 +115,8 @@ export default function DuelPageClient() {
              loading: false
            });
         }
-      } catch (err) {
-        console.error("Erreur chargement batch duels:", err);
+      } catch {
+        // Conserver l'état courant si le chargement échoue.
       }
     };
 

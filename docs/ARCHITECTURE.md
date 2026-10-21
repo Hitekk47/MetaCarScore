@@ -85,6 +85,12 @@ disponibles pour reconstruire le schéma.
 
 ## Sécurité et migrations
 
+L'application ne journalise pas les erreurs prises en charge ni les données de
+débogage via `console` dans `src` (hors tests). Les retours de secours et les
+contrôles d'erreur restent actifs ; ces incidents n'ont plus de trace applicative
+dédiée. Ce choix ne couvre pas les journaux de Next.js, des dépendances, de
+Supabase ou de l'hébergeur et ne garantit pas leur absence de données sensibles.
+
 Le schéma versionné active RLS sur les trois tables. Il autorise la lecture publique
 de `reviews` et `model_aliases`, sans politique publique sur `model_segments`.
 Certaines fonctions sont `SECURITY DEFINER` : lire leurs privilèges, propriétaire et
