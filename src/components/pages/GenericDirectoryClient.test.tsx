@@ -63,7 +63,7 @@ describe("GenericDirectoryClient brand views", () => {
     expect(within(suv.getByRole("link", { name: /Zulu/ })).getByText("MY 2024")).toBeTruthy();
     const hatch = within(view.getByRole("region", { name: "Compactes · Berline / Hatch" }));
     expect(hatch.getByText("MY 2026")).toBeTruthy();
-    expect(within(view.getByRole("region", { name: "Segment non renseigné" })).getByRole("link", { name: /Inconnu/ })).toBeTruthy();
+    expect(within(view.getByRole("region", { name: "Gammes sans segmentation" })).getByRole("link", { name: /Inconnu/ })).toBeTruthy();
   });
 
   it("keeps the original review order and alphabetical selection when returning from the segmented view", async () => {
@@ -71,14 +71,14 @@ describe("GenericDirectoryClient brand views", () => {
     await view.user.click(view.getByRole("button", { name: "Simple", exact: true }));
     const links = () => view.getAllByRole("link").map(link => link.getAttribute("href"));
     expect(links()).toEqual(["/fixture/zulu", "/fixture/alpha", "/fixture/beta", "/fixture/inconnu"]);
-    await view.user.selectOptions(view.getByRole("combobox", { name: "Trier par" }), "alpha");
+    await view.user.click(view.getByRole("button", { name: "Trier par ordre alphabétique" }));
     expect(links()).toEqual(["/fixture/alpha", "/fixture/beta", "/fixture/inconnu", "/fixture/zulu"]);
 
     await view.user.click(view.getByRole("button", { name: "Par segment", exact: true }));
     await view.user.click(view.getByRole("button", { name: "Simple", exact: true }));
-    expect((view.getByRole("combobox") as HTMLSelectElement).value).toBe("alpha");
+    expect(view.getByRole("button", { name: "Trier par nombre d’essais" }).getAttribute("aria-pressed")).toBe("true");
     expect(links()).toEqual(["/fixture/alpha", "/fixture/beta", "/fixture/inconnu", "/fixture/zulu"]);
-    await view.user.selectOptions(view.getByRole("combobox"), "reviews");
+    await view.user.click(view.getByRole("button", { name: "Trier par nombre d’essais" }));
     expect(links()).toEqual(["/fixture/zulu", "/fixture/alpha", "/fixture/beta", "/fixture/inconnu"]);
   });
 
@@ -96,6 +96,30 @@ describe("GenericDirectoryClient brand views", () => {
     expect((search as HTMLInputElement).value).toBe("");
     expect(document.activeElement).toBe(search);
     expect(view.getAllByRole("link")).toHaveLength(items.length);
+  });
+
+  it("places unsegmented families below the columns with an independent sort", async () => {
+    const view = setup(true, [...items,
+      { id: "autre", title: "Autre", subtitle: "1 Essai", href: "/fixture/autre", segments: [] },
+    ]);
+    const columns = view.getByRole("region", { name: "Gamme par segment" });
+    const others = view.getByRole("region", { name: "Gammes sans segmentation" });
+    expect(columns.compareDocumentPosition(others) & window.Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(columns).queryByRole("link", { name: /Inconnu/ })).toBeNull();
+    const links = () => within(others).getAllByRole("link").map(link => link.getAttribute("href"));
+    expect(links()).toEqual(["/fixture/inconnu", "/fixture/autre"]);
+    await view.user.click(within(others).getByRole("button", { name: "Trier par ordre alphabétique" }));
+    expect(links()).toEqual(["/fixture/autre", "/fixture/inconnu"]);
+    await view.user.click(view.getByRole("button", { name: "Simple", exact: true }));
+    expect(view.getAllByRole("link")[0].getAttribute("href")).toBe("/fixture/zulu");
+    await view.user.click(view.getByRole("button", { name: "Par segment", exact: true }));
+    expect(within(view.getByRole("region", { name: "Gammes sans segmentation" })).getByRole("button", { name: "Trier par nombre d’essais" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("shows only the lower grid when no family has a segment", () => {
+    const view = setup(true, [items[3]]);
+    expect(view.queryByRole("region", { name: "Gamme par segment" })).toBeNull();
+    expect(within(view.getByRole("region", { name: "Gammes sans segmentation" })).getAllByRole("link")).toHaveLength(1);
   });
 
   it("retains canonical destinations and alias information in both views", async () => {
