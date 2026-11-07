@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import { PAGE_CONTAINER } from '@/lib/layout';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -44,7 +45,7 @@ export default function Header() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between relative">
+        <div className={cn(PAGE_CONTAINER, "h-16 flex items-center justify-between relative")}>
           
           {/* LOGO */}
           <div className="flex shrink-0 items-center z-20 pointer-events-none">

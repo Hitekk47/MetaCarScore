@@ -2,59 +2,43 @@
 
 import { useState, useRef } from "react";
 import Header from "@/components/Header";
-import { motion, AnimatePresence } from "framer-motion";
+import { PAGE_CONTAINER } from "@/lib/layout";
+import DirectorySortButton from "./DirectorySortButton";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Search, ChevronRight, X, Trophy, Zap, Leaf, Fuel, Cog, LayoutGrid, Layers, LucideIcon, Luggage, ArrowDownAZ, Sun, ExternalLink } from "lucide-react";
-import Link from "next/link";
+import { Search, X, Columns3, LayoutGrid } from "lucide-react";
+import DirectoryCard from "./DirectoryCard";
+import BrandSegmentColumns from "./BrandSegmentColumns";
+import type { DirectoryItem } from "./directory-types";
 
-const ICON_MAP: Record<string, LucideIcon> = {
-  trophy: Trophy,
-  zap: Zap,
-  leaf: Leaf,
-  fuel: Fuel,
-  cog: Cog,
-  grid: LayoutGrid,
-  layers: Layers,
-  luggage: Luggage,
-  sun : Sun
-};
-
-export type DirectoryItem = {
-  id: string;
-  title: string;
-  subtitle: string;
-  href: string;
-  iconName?: keyof typeof ICON_MAP;
-  letter?: string;
-  colorClass?: string;
-  isAlias?: boolean;
-  canonicalMarque?: string | null;
-  canonicalFamille?: string | null;
-};
+export type { DirectoryItem } from "./directory-types";
 
 type Props = {
   title: string;
   subtitle: string;
   items: DirectoryItem[];
   placeholderSearch: string;
+  segmented?: boolean;
 };
 
-export default function GenericDirectoryClient({ title, subtitle, items, placeholderSearch }: Props) {
+export default function GenericDirectoryClient({ title, subtitle, items, placeholderSearch, segmented = false }: Props) {
   const [query, setQuery] = useState("");
-  const [sortAlpha, setSortAlpha] = useState(false); // <--- NOUVEAU STATE
+  const [sortAlpha, setSortAlpha] = useState(false);
+  const [sortOtherAlpha, setSortOtherAlpha] = useState(false);
+  const [view, setView] = useState<"simple" | "segments">(segmented ? "segments" : "simple");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // 1. FILTRAGE
+  const reducedMotion = useReducedMotion();
+  const showSegments = segmented && view === "segments";
   const lowerQuery = query.toLowerCase();
-  const filteredItems = items.filter(item => 
-    item.title.toLowerCase().includes(lowerQuery)
-  );
-
-  // 2. TRI CONDITIONNEL
-  const displayItems = sortAlpha 
-    ? [...filteredItems].sort((a, b) => a.title.localeCompare(b.title)) 
+  const filteredItems = items.filter(item => item.title.toLowerCase().includes(lowerQuery));
+  const displayItems = sortAlpha
+    ? [...filteredItems].sort((a, b) => a.title.localeCompare(b.title, "fr"))
     : filteredItems;
-
+  const segmentedItems = filteredItems.filter(item => item.segments?.length);
+  const otherItems = filteredItems.filter(item => !item.segments?.length);
+  const displayOtherItems = sortOtherAlpha
+    ? [...otherItems].sort((a, b) => a.title.localeCompare(b.title, "fr"))
+    : otherItems;
   const handleClear = () => {
     setQuery("");
     inputRef.current?.focus();
@@ -63,144 +47,73 @@ export default function GenericDirectoryClient({ title, subtitle, items, placeho
   return (
     <div className="min-h-screen text-slate-900 font-sans pb-20">
       <Header />
-
-      <main className="max-w-7xl mx-auto px-4 py-12">
-        
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12 border-b border-slate-200 pb-8">
-            <div>
-                <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter mb-2 uppercase">{title}</h1>
-                <p className="text-slate-500 font-medium max-w-xl">{subtitle}</p>
-            </div>
-
-            {/* ZONE ACTIONS (Recherche + Tri) */}
-            <div className="flex items-center gap-3 w-full md:w-auto">
-                
-                {/* BARRE DE RECHERCHE */}
-                <div className={cn(
-                    "relative flex items-center group flex-grow md:w-80 transition-all duration-300",
-                    "bg-white border border-slate-200 rounded-full shadow-sm",
-                    "focus-within:ring-2 focus-within:ring-slate-900 focus-within:ring-offset-2 focus-within:border-transparent"
-                )}>
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <Search size={18} className="text-slate-400 group-focus-within:text-slate-900 transition" />
-                    </div>
-                    
-                    <input 
-                        ref={inputRef}
-                        type="text" 
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder={placeholderSearch}
-                        className="pl-11 pr-10 py-3 w-full bg-transparent border-none rounded-full text-sm font-bold focus:ring-0 outline-none placeholder-slate-400"
-                    />
-
-                    {query.length > 0 && (
-                        <button 
-                            type="button"
-                            onClick={handleClear}
-                            className="absolute right-3 p-1 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition z-10"
-                        >
-                            <X size={16} />
-                        </button>
-                    )}
+      <main className="py-8 sm:py-12">
+        <div className={cn(PAGE_CONTAINER, "mb-8")}>
+          <div className="border-b border-slate-200 pb-8">
+            <h1 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter mb-2 uppercase break-words">{title}</h1>
+            <p className="text-slate-500 font-medium max-w-xl">{subtitle}</p>
+            <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              {segmented && (
+                <div role="group" aria-label="Affichage de la gamme" className="flex self-start rounded-full border border-slate-200 bg-slate-100 p-1">
+                  {([
+                    { value: "simple", label: "Simple", icon: LayoutGrid },
+                    { value: "segments", label: "Par segment", icon: Columns3 },
+                  ] as const).map(({ value, label, icon: Icon }) => (
+                    <button key={value} type="button" aria-pressed={view === value} onClick={() => setView(value)} className={cn("flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-bold transition-colors focus-visible:outline-blue-600", view === value ? "bg-slate-900 text-white shadow-sm" : "text-slate-500 hover:text-slate-900")}>
+                      <Icon size={16} aria-hidden="true" />{label}
+                    </button>
+                  ))}
                 </div>
-
-                {/* BOUTON DE TRI (A-Z) */}
-                <button
-                    onClick={() => setSortAlpha(!sortAlpha)}
-                    className={cn(
-                        "w-11 h-11 rounded-full flex items-center justify-center border transition-all shadow-sm shrink-0",
-                        sortAlpha 
-                            ? "bg-slate-900 text-white border-slate-900" 
-                            : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-900"
-                    )}
-                    title={sortAlpha ? "Tri par défaut" : "Trier par ordre alphabétique"}
-                >
-                    <ArrowDownAZ size={20} />
-                </button>
-
+              )}
+              <div className={cn("flex w-full min-w-0 flex-wrap items-center gap-3", segmented ? "lg:w-auto" : "lg:max-w-xl")}>
+                <div className="relative flex min-w-0 flex-1 items-center rounded-full border border-slate-200 bg-white shadow-sm focus-within:ring-2 focus-within:ring-slate-900 focus-within:ring-offset-2 lg:w-80">
+                  <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-4 text-slate-400" />
+                  <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)} placeholder={placeholderSearch} aria-label={placeholderSearch} className="w-full rounded-full border-none bg-transparent py-3 pl-11 pr-12 text-sm font-bold outline-none placeholder-slate-400" />
+                  {query.length > 0 && (
+                    <button type="button" onClick={handleClear} aria-label="Effacer la recherche" className="absolute right-0 flex h-11 w-11 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-blue-600"><X size={16} aria-hidden="true" /></button>
+                  )}
+                </div>
+                {!showSegments && <DirectorySortButton active={sortAlpha} onClick={() => setSortAlpha(!sortAlpha)} />}
+              </div>
             </div>
+          </div>
         </div>
-
-        {/* GRILLE */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <AnimatePresence mode="popLayout">
-                {displayItems.map((item) => { // <-- ON UTILISE displayItems ICI
-                    const IconComponent = item.iconName ? ICON_MAP[item.iconName] : null;
-
-                    return (
-                        <motion.div 
-                            key={item.id}
-                            layout
-                            initial={{ opacity: 0, scale: 0.9 }} 
-                            animate={{ opacity: 1, scale: 1 }} 
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <Link 
-                                href={item.href}
-                                className={cn(
-                                    "group relative block h-40 rounded-2xl overflow-hidden border transition-all duration-300 hover:shadow-lg",
-                                    item.colorClass 
-                                        ? item.colorClass.split(' ').filter(cls => cls.startsWith('bg-') || cls.startsWith('border-')).join(' ')
-                                        : "bg-white border-slate-200 hover:border-slate-400"
-                                )}
-                            >
-                                <div className="absolute -right-4 -bottom-6 opacity-10 pointer-events-none select-none transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-12">
-                                    {IconComponent ? (
-                                        <IconComponent size={140} />
-                                    ) : (
-                                        <span className="text-[160px] font-black leading-none tracking-tighter text-slate-900">
-                                            {item.letter}
-                                        </span>
-                                    )}
-                                </div>
-
-                                <div className="relative z-10 p-6 h-full flex flex-col justify-between">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-2">
-                                            {IconComponent && (
-                                                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0", item.colorClass?.replace('bg-', 'bg-opacity-20 '))} >
-                                                    <IconComponent size={20} />
-                                                </div>
-                                            )}
-                                            {item.isAlias && item.canonicalMarque && item.canonicalFamille && (
-                                                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-900/10 border border-slate-900/15 backdrop-blur-xs">
-                                                    <span className="text-[10px] font-bold text-slate-800 tracking-tight whitespace-nowrap">
-                                                        {item.canonicalMarque} {item.canonicalFamille}
-                                                    </span>
-                                                    <ExternalLink size={10} className="text-slate-800 shrink-0" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        {!IconComponent && !item.isAlias && <div className="h-10"></div>}
-                                        
-                                        <span className="w-8 h-8 rounded-full bg-white/80 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm shrink-0">
-                                            <ChevronRight size={16} className="text-slate-900" />
-                                        </span>
-                                    </div>
-
-                                    <div>
-                                        <h3 className="text-xl font-black uppercase tracking-tight leading-none mb-1 group-hover:translate-x-1 transition-transform truncate">
-                                            {item.title}
-                                        </h3>
-                                        <p className="text-xs font-bold opacity-60 uppercase tracking-wider">
-                                            {item.subtitle}
-                                        </p>
-                                    </div>
-                                </div>
-                            </Link>
-                        </motion.div>
-                    );
-                })}
-            </AnimatePresence>
-        </div>
-
-        {displayItems.length === 0 && (
-            <div className="text-center py-20 text-slate-400">Aucun résultat pour {"\""}{query}{"\""}</div>
+        {displayItems.length === 0 ? (
+          <div role="status" className={cn(PAGE_CONTAINER, "py-20 text-center text-slate-500")}>Aucun résultat pour {"\""}{query}{"\""}</div>
+        ) : showSegments ? (
+          <>
+            {segmentedItems.length > 0 && <BrandSegmentColumns items={segmentedItems} />}
+            {otherItems.length > 0 && (
+              <section aria-label="Gammes sans segmentation" className={cn(PAGE_CONTAINER, segmentedItems.length > 0 && "mt-10")}>
+                <div className={cn(segmentedItems.length > 0 && "border-t border-slate-200 pt-8")}>
+                  <div className="mb-5 flex items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-black tracking-tight">Autres gammes</h2>
+                      <p className="mt-1 text-sm text-slate-500">{otherItems.length} gamme{otherItems.length > 1 ? "s" : ""} · Modèles anciens ou sans segmentation disponible</p>
+                    </div>
+                    <DirectorySortButton active={sortOtherAlpha} onClick={() => setSortOtherAlpha(!sortOtherAlpha)} />
+                  </div>
+                  <DirectoryGrid items={displayOtherItems} reducedMotion={!!reducedMotion} />
+                </div>
+              </section>
+            )}
+          </>
+        ) : (
+          <div className={PAGE_CONTAINER}><DirectoryGrid items={displayItems} reducedMotion={!!reducedMotion} /></div>
         )}
-
       </main>
+    </div>
+  );
+}
+
+function DirectoryGrid({ items, reducedMotion }: { items: DirectoryItem[]; reducedMotion: boolean }) {
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] gap-4">
+      <AnimatePresence mode="popLayout">
+        {items.map(item => (
+          <motion.div key={item.id} layout={!reducedMotion} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0 : 0.2 }}><DirectoryCard item={item} /></motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

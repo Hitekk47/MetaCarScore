@@ -1,3 +1,9 @@
+export type FamilySegment = {
+  macro: string;
+  size: string;
+  latest_my: number | null;
+};
+
 export type Review = {
   supabase_id: number;
   MY: number; // Model Year

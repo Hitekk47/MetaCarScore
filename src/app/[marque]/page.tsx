@@ -89,7 +89,9 @@ export default async function BrandPage({ params }: PageProps) {
       colorClass: "bg-slate-50 text-slate-700 border-slate-200",
       isAlias,
       canonicalMarque,
-      canonicalFamille
+      canonicalFamille,
+      latestMy: item.latest_my,
+      segments: item.segments,
     };
   });
 
@@ -103,6 +105,7 @@ export default async function BrandPage({ params }: PageProps) {
       subtitle={subtitle}
       items={items}
       placeholderSearch={`Filtrer la gamme ${realMarque}...`}
+      segmented
     />
   );
 }
