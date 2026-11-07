@@ -61,7 +61,7 @@ une évolution ; une ancienne fonction peut toujours exister dans la base) :
 | Usage | RPC appelée |
 | --- | --- |
 | Contexte | `find_brand_by_slug_v2`, `get_full_context_by_slugs_v3` |
-| Familles / recherche | `get_families_by_brand_v2`, `search_cars_v14` |
+| Familles / recherche | `get_families_by_brand_v3`, `search_cars_v14` |
 | Classements | `get_model_ranking_v8`, `get_break_ranking_v6`, `get_convertible_ranking_v6`, `get_brand_ranking_v9` |
 | Accueil | `get_homepage_stats`, `get_trending_models_v5` |
 | SEO / sitemap modèles | `get_vehicle_seo_stats_v6`, `get_sitemap_groups_filtered_v4` |

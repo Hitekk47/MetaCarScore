@@ -11,14 +11,14 @@ mock.module('@/lib/supabase', () => ({
   },
 }));
 
-describe('getFamilies with get_families_by_brand_v2', () => {
+describe('getFamilies with get_families_by_brand_v3', () => {
   beforeEach(() => {
     mockRpc.mockClear();
   });
 
-  it('calls get_families_by_brand_v2 and returns consolidated brand families with alias metadata', async () => {
+  it('returns consolidated brand families with alias and segmentation metadata', async () => {
     mockRpc.mockImplementation((fnName: string) => {
-      if (fnName === 'get_families_by_brand_v2') {
+      if (fnName === 'get_families_by_brand_v3') {
         return Promise.resolve({
           data: [
             {
@@ -27,6 +27,8 @@ describe('getFamilies with get_families_by_brand_v2', () => {
               is_alias: true,
               canonical_marque: 'Chery',
               canonical_famille: 'Tiggo 7',
+              latest_my: 2026,
+              segments: [{ macro: 'SUV / Crossover', size: 'C', latest_my: 2026 }],
             },
           ],
           error: null,
@@ -38,13 +40,21 @@ describe('getFamilies with get_families_by_brand_v2', () => {
     const { getFamilies } = await import('./queries');
     const families = await getFamilies('Ebro');
 
-    expect(mockRpc).toHaveBeenCalledWith('get_families_by_brand_v2', { brand_name: 'Ebro' });
+    expect(mockRpc).toHaveBeenCalledWith('get_families_by_brand_v3', { brand_name: 'Ebro' });
     expect(families).toHaveLength(1);
     expect(families[0].Famille).toBe('S700');
     expect(families[0].review_count).toBe(8);
     expect(families[0].is_alias).toBe(true);
     expect(families[0].canonical_marque).toBe('Chery');
     expect(families[0].canonical_famille).toBe('Tiggo 7');
+    expect(families[0].latest_my).toBe(2026);
+    expect(families[0].segments).toEqual([{ macro: 'SUV / Crossover', size: 'C', latest_my: 2026 }]);
+  });
+
+  it('returns an empty list on RPC failure', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'Unavailable' } });
+    const { getFamilies } = await import('./queries');
+    expect(await getFamilies('Unknown')).toEqual([]);
   });
 });
 

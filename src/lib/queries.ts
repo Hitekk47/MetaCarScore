@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Review } from '@/lib/types';
+import { FamilySegment, Review } from '@/lib/types';
 import { SeoStats } from './seo-utils';
 import { escapePostgrestValue } from './validation';
 
@@ -27,6 +27,8 @@ export interface FamilyItem {
   is_alias?: boolean;
   canonical_marque?: string | null;
   canonical_famille?: string | null;
+  latest_my: number | null;
+  segments: FamilySegment[];
 }
 
 export type FullContextParams = {
@@ -81,7 +83,7 @@ export const getFullContext = (params: FullContextParams) => getFullContextCache
 
 // 3. Cached Families List
 export const getFamilies = cache(async (brandName: string) => {
-  const { data, error } = await supabase.rpc('get_families_by_brand_v2', {
+  const { data, error } = await supabase.rpc('get_families_by_brand_v3', {
     brand_name: brandName
   });
 

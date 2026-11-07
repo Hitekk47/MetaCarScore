@@ -82,8 +82,13 @@ async function assertApplicationInventory() {
       for (const match of source.matchAll(pattern)) calledNames.add(match[1]);
     }
   }
-  assert.deepEqual([...calledNames].sort(), [...activeCalls.keys()].filter(name => !sqlHelpers.has(name)).sort(),
-    'The retained RPC inventory must match application calls, including dynamic rankings');
+  // activeCalls describes the historical Q4 cleanup being replayed below. The
+  // brand-directory successor was added later without retiring its predecessor.
+  const currentCalls = new Set([...activeCalls.keys()].filter(name => !sqlHelpers.has(name)));
+  currentCalls.delete('get_families_by_brand_v2');
+  currentCalls.add('get_families_by_brand_v3');
+  assert.deepEqual([...calledNames].sort(), [...currentCalls].sort(),
+    'The current RPC inventory must match application calls, including dynamic rankings');
 }
 
 try {
@@ -204,9 +209,7 @@ try {
   assert.deepEqual(await snapshot(), beforeCleanup,
     'A dependency-blocked cleanup must leave every function intact');
   console.log('PASS: a dependent view blocks the entire cleanup without cascading or partial removal');
-  for (const name of names.filter(name => name.endsWith('.sql') && name >= cleanupMigrationName)) {
-    await db.exec(await readFile(resolve(root, 'supabase/migrations', name), 'utf8'));
-  }
+  await db.exec(cleanupSql);
   assert.deepEqual(await snapshot(), beforeCleanup.filter(fn => !retired.includes(fn)),
     'Only the 35 retired functions may change; retained functions and extension functions must be identical');
   for (const role of ['anon', 'authenticated', 'service_role']) {
@@ -222,6 +225,9 @@ try {
   assert.deepEqual(await activeResults(), resultsBefore,
     'All 12 application RPCs and both SQL helpers must return the same results after cleanup for each role');
   console.log('PASS: 12 active RPCs + 2 SQL helpers: identical OIDs, definitions, owners, ACLs, security and results');
+  for (const name of names.filter(name => name.endsWith('.sql') && name > cleanupMigrationName)) {
+    await db.exec(await readFile(resolve(root, 'supabase/migrations', name), 'utf8'));
+  }
   let currentRegressionSql = regressionSql;
   for (const [oldName, newName] of [
     ['get_model_ranking_v7', 'get_model_ranking_v8'],
