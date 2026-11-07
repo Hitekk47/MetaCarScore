@@ -73,6 +73,7 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
       </div>
       <div style={{ gridTemplateColumns: macros.map(macro => `repeat(${macro.segments.length}, var(--segment-width))`).join(" 1rem ") }} ref={scrollRef} id="brand-segments" role="region" aria-label="Segments de la marque, défilement horizontal" tabIndex={0} className={cn(
         "grid items-start gap-4 overflow-x-auto overscroll-x-contain snap-x snap-proximity [@media(hover:hover)_and_(pointer:fine)]:snap-none pb-5 rounded-2xl focus-visible:outline-blue-600",
+        groups.length >= 4 && "[justify-content:safe_center]",
         groups.length === 1 ? "[--segment-width:100%] sm:[--segment-width:20rem]" : "[--segment-width:85%] sm:[--segment-width:18rem] lg:[--segment-width:19rem]"
       )}>
         {macros.map(macro => (
