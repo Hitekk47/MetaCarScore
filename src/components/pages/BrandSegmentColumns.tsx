@@ -22,6 +22,8 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
       macros.push({ label, start, segments: [group] });
     }
   }
+  // Column widths, gaps, and the extra spacer track at each macro boundary.
+  const contentWidth = `calc(${groups.length} * var(--segment-width) + ${groups.length + 2 * macros.length - 3}rem)`;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scroll, setScroll] = useState({ previous: false, next: false });
   useEffect(() => {
@@ -56,8 +58,11 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
     });
   };
   return (
-    <section aria-label="Gamme par segment" className={cn("min-w-0", groups.length >= 4 ? WIDE_PAGE_CONTAINER : PAGE_CONTAINER)}>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <section aria-label="Gamme par segment" className={cn(
+      "min-w-0", groups.length >= 4 ? WIDE_PAGE_CONTAINER : PAGE_CONTAINER,
+      groups.length === 1 ? "[--segment-width:100%] sm:[--segment-width:20rem]" : "[--segment-width:85%] sm:[--segment-width:18rem] lg:[--segment-width:19rem]"
+    )}>
+      <div style={groups.length >= 4 ? { maxWidth: contentWidth } : undefined} className="mx-auto mb-5 flex w-full flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-black tracking-tight">La gamme par segment</h2>
           <p className="mt-1 text-sm text-slate-500">{groups.length} segment{groups.length > 1 ? "s" : ""} · Années-modèles les plus récentes en premier</p>
@@ -73,8 +78,7 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
       </div>
       <div style={{ gridTemplateColumns: macros.map(macro => `repeat(${macro.segments.length}, var(--segment-width))`).join(" 1rem ") }} ref={scrollRef} id="brand-segments" role="region" aria-label="Segments de la marque, défilement horizontal" tabIndex={0} className={cn(
         "grid items-start gap-4 overflow-x-auto overscroll-x-contain snap-x snap-proximity [@media(hover:hover)_and_(pointer:fine)]:snap-none pb-5 rounded-2xl focus-visible:outline-blue-600",
-        groups.length >= 4 && "[justify-content:safe_center]",
-        groups.length === 1 ? "[--segment-width:100%] sm:[--segment-width:20rem]" : "[--segment-width:85%] sm:[--segment-width:18rem] lg:[--segment-width:19rem]"
+        groups.length >= 4 && "[justify-content:safe_center]"
       )}>
         {macros.map(macro => (
           <Fragment key={macro.label}>
