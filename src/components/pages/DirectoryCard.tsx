@@ -3,7 +3,7 @@ import { ChevronRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DIRECTORY_ICONS, type DirectoryItem } from "./directory-types";
 
-export default function DirectoryCard({ item, latestMy }: { item: DirectoryItem; latestMy?: number | null }) {
+export default function DirectoryCard({ item, latestMy, headingAs: Heading = "h3" }: { item: DirectoryItem; latestMy?: number | null; headingAs?: "h3" | "h5" }) {
   const Icon = item.iconName ? DIRECTORY_ICONS[item.iconName] : null;
   return (
     <Link href={item.href} className={cn(
@@ -33,7 +33,7 @@ export default function DirectoryCard({ item, latestMy }: { item: DirectoryItem;
           )}
         </div>
         <div className="min-w-0">
-          <h3 className="text-xl font-black uppercase tracking-tight leading-tight mb-1 line-clamp-2 break-words">{item.title}</h3>
+          <Heading className="text-xl font-black uppercase tracking-tight leading-tight mb-1 line-clamp-2 break-words">{item.title}</Heading>
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{item.subtitle}</p>
         </div>
       </div>

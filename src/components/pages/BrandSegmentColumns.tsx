@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, MoveHorizontal } from "lucide-react";
 import { groupDirectoryBySegment } from "@/lib/directory-segments";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,18 @@ import type { DirectoryItem } from "./directory-types";
 
 export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] }) {
   const groups = groupDirectoryBySegment(items);
+  const macros: { label: string; start: number; segments: typeof groups }[] = [];
+  for (const group of groups) {
+    const label = group.macro ?? "Autres segments";
+    const previous = macros[macros.length - 1];
+    if (previous?.label === label) {
+      previous.segments.push(group);
+    } else {
+      // One extra grid track separates each macro-category from the next.
+      const start = previous ? previous.start + previous.segments.length + 1 : 1;
+      macros.push({ label, start, segments: [group] });
+    }
+  }
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scroll, setScroll] = useState({ previous: false, next: false });
   useEffect(() => {
@@ -31,9 +43,14 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
   const move = (direction: number) => {
     const element = scrollRef.current;
     if (!element) return;
-    const column = element.firstElementChild as HTMLElement | null;
-    element.scrollBy({
-      left: direction * ((column?.offsetWidth ?? element.clientWidth) + 16),
+    const left = element.getBoundingClientRect().left;
+    const positions = [...element.querySelectorAll<HTMLElement>("[data-segment-column]")]
+      .map(column => column.getBoundingClientRect().left - left + element.scrollLeft);
+    const target = direction > 0
+      ? positions.find(position => position > element.scrollLeft + 1)
+      : positions.reverse().find(position => position < element.scrollLeft - 1);
+    element.scrollTo({
+      left: target ?? (direction > 0 ? element.scrollWidth : 0),
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
     });
   };
@@ -53,24 +70,33 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
           </div>
         )}
       </div>
-      <div ref={scrollRef} id="brand-segments" role="region" aria-label="Segments de la marque, défilement horizontal" tabIndex={0} className={cn(
-        "grid grid-flow-col items-start gap-4 overflow-x-auto overscroll-x-contain snap-x snap-proximity pb-5 rounded-2xl focus-visible:outline-blue-600",
-        groups.length === 1 ? "auto-cols-[100%] sm:auto-cols-[20rem]" : "auto-cols-[85%] sm:auto-cols-[18rem] lg:auto-cols-[19rem]"
+      <div style={{ gridTemplateColumns: macros.map(macro => `repeat(${macro.segments.length}, var(--segment-width))`).join(" 1rem ") }} ref={scrollRef} id="brand-segments" role="region" aria-label="Segments de la marque, défilement horizontal" tabIndex={0} className={cn(
+        "grid items-start gap-4 overflow-x-auto overscroll-x-contain snap-x snap-proximity pb-5 rounded-2xl focus-visible:outline-blue-600",
+        groups.length === 1 ? "[--segment-width:100%] sm:[--segment-width:20rem]" : "[--segment-width:85%] sm:[--segment-width:18rem] lg:[--segment-width:19rem]"
       )}>
-        {groups.map(group => (
-          <section key={group.id} aria-label={group.macro ? `${group.label} · ${group.macro}` : group.label} className="min-w-0 snap-start rounded-2xl border border-slate-200 bg-slate-50 p-3">
-            <div className="flex min-h-28 items-start gap-3 px-1 py-3">
-              <span aria-hidden="true" className="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 px-2 text-xs font-black text-blue-700">{group.code ?? "?"}</span>
-              <div className="min-w-0">
-                {group.macro && <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{group.macro}</p>}
-                <h3 className="mt-1 text-lg font-black leading-tight text-slate-900">{group.label}</h3>
-                <p className="mt-1 text-xs text-slate-500">{group.items.length} gamme{group.items.length > 1 ? "s" : ""}</p>
+        {macros.map(macro => (
+          <Fragment key={macro.label}>
+            <div style={{ gridColumn: `${macro.start} / span ${macro.segments.length}`, gridRow: 1 }} className="self-stretch rounded-xl border-l-4 border-blue-600 bg-blue-50">
+              <div className="sticky left-0 flex w-fit max-w-[85vw] flex-wrap items-center gap-2 px-4 py-3">
+                <h3 className="text-base font-black tracking-tight text-slate-900">{macro.label}</h3>
+                <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-blue-700">{macro.segments.length} segment{macro.segments.length > 1 ? "s" : ""}</span>
               </div>
             </div>
-            <div className="space-y-3">
-              {group.items.map(({ item, latestMy }) => <DirectoryCard key={item.id} item={{ ...item, colorClass: "bg-white border-slate-200 text-slate-700" }} latestMy={latestMy} />)}
-            </div>
-          </section>
+            {macro.segments.map((group, index) => (
+              <section data-segment-column style={{ gridColumn: macro.start + index, gridRow: 2 }} key={group.id} aria-label={group.macro ? `${group.label} · ${group.macro}` : group.label} className="min-w-0 snap-start rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <div className="flex min-h-28 items-start gap-3 px-1 py-3">
+                  <span aria-hidden="true" className="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 px-2 text-xs font-black text-blue-700">{group.code ?? "?"}</span>
+                  <div className="min-w-0">
+                    <h4 className="mt-1 text-lg font-black leading-tight text-slate-900">{group.label}</h4>
+                    <p className="mt-1 text-xs text-slate-500">{group.items.length} gamme{group.items.length > 1 ? "s" : ""}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {group.items.map(({ item, latestMy }) => <DirectoryCard key={item.id} item={{ ...item, colorClass: "bg-white border-slate-200 text-slate-700" }} latestMy={latestMy} headingAs="h5" />)}
+                </div>
+              </section>
+            ))}
+          </Fragment>
         ))}
       </div>
     </section>

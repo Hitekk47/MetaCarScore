@@ -56,6 +56,10 @@ describe("GenericDirectoryClient brand views", () => {
     const view = setup();
     expect(view.getByRole("button", { name: "Par segment" }).getAttribute("aria-pressed")).toBe("true");
     expect(view.queryByRole("combobox")).toBeNull();
+    const range = within(view.getByRole("region", { name: "Gamme par segment", exact: true }));
+    expect(range.getAllByRole("heading", { level: 3 }).map(heading => heading.textContent)).toEqual([
+      "Berline / Hatch", "SUV / Crossover",
+    ]);
     const suv = within(view.getByRole("region", { name: "SUV Compacts · SUV / Crossover" }));
     expect(suv.getAllByRole("link").map(link => link.getAttribute("href"))).toEqual([
       "/fixture/alpha", "/fixture/beta", "/fixture/zulu",
