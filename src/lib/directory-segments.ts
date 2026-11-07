@@ -27,11 +27,12 @@ export function groupDirectoryBySegment<T extends SegmentedItem>(items: T[]): Di
       let group = groups.get(id);
       if (!group) {
         const config = MACRO_CONFIG.find(macro => macro.label === segment.macro);
+        const definition = config?.segments.find(s => s.code === segment.size);
         group = {
           id,
           macro: segment.macro,
           code: segment.size,
-          label: config?.segments.find(s => s.code === segment.size)?.label
+          label: definition?.singularLabel ?? definition?.label
             ?? segment.size ?? "Segment non renseigné",
           items: [],
         };

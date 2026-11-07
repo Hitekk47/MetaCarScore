@@ -3,7 +3,7 @@ import { ChevronRight, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DIRECTORY_ICONS, type DirectoryItem } from "./directory-types";
 
-export default function DirectoryCard({ item, latestMy, headingAs: Heading = "h3" }: { item: DirectoryItem; latestMy?: number | null; headingAs?: "h3" | "h5" }) {
+export default function DirectoryCard({ item, headingAs: Heading = "h3" }: { item: DirectoryItem; headingAs?: "h3" | "h5" }) {
   const Icon = item.iconName ? DIRECTORY_ICONS[item.iconName] : null;
   return (
     <Link href={item.href} className={cn(
@@ -26,11 +26,7 @@ export default function DirectoryCard({ item, latestMy, headingAs: Heading = "h3
               </span>
             )}
           </div>
-          {latestMy != null ? (
-            <span className="shrink-0 rounded-full border border-slate-200 bg-white/90 px-2 py-1 text-[11px] font-bold text-slate-600">MY {latestMy}</span>
-          ) : (
-            <span aria-hidden="true" className="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity shadow-sm shrink-0"><ChevronRight size={16} /></span>
-          )}
+          <span aria-hidden="true" className="w-8 h-8 rounded-full bg-white/80 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity shadow-sm shrink-0"><ChevronRight size={16} /></span>
         </div>
         <div className="min-w-0">
           <Heading className="text-xl font-black uppercase tracking-tight leading-tight mb-1 line-clamp-2 break-words">{item.title}</Heading>

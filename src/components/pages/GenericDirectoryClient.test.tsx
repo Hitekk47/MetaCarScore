@@ -52,7 +52,7 @@ function setup(segmented = true, directoryItems = items) {
 afterEach(() => cleanup());
 
 describe("GenericDirectoryClient brand views", () => {
-  it("starts with segmented columns, preserves multi-segment families and uses the segment-specific MY", () => {
+  it("starts with segmented columns and sorts by segment-specific MY without displaying years", () => {
     const view = setup();
     expect(view.getByRole("button", { name: "Par segment" }).getAttribute("aria-pressed")).toBe("true");
     expect(view.queryByRole("combobox")).toBeNull();
@@ -60,13 +60,13 @@ describe("GenericDirectoryClient brand views", () => {
     expect(range.getAllByRole("heading", { level: 3 }).map(heading => heading.textContent)).toEqual([
       "Berline / Hatch", "SUV / Crossover",
     ]);
-    const suv = within(view.getByRole("region", { name: "SUV Compacts · SUV / Crossover" }));
+    const suv = within(view.getByRole("region", { name: "SUV Compact · SUV / Crossover" }));
     expect(suv.getAllByRole("link").map(link => link.getAttribute("href"))).toEqual([
       "/fixture/alpha", "/fixture/beta", "/fixture/zulu",
     ]);
-    expect(within(suv.getByRole("link", { name: /Zulu/ })).getByText("MY 2024")).toBeTruthy();
-    const hatch = within(view.getByRole("region", { name: "Compactes · Berline / Hatch" }));
-    expect(hatch.getByText("MY 2026")).toBeTruthy();
+    expect(range.queryByText(/^MY \d/)).toBeNull();
+    const hatch = within(view.getByRole("region", { name: "Compacte · Berline / Hatch" }));
+    expect(hatch.getByRole("link", { name: /Zulu/ })).toBeTruthy();
     expect(within(view.getByRole("region", { name: "Gammes sans segmentation" })).getByRole("link", { name: /Inconnu/ })).toBeTruthy();
   });
 
@@ -91,7 +91,7 @@ describe("GenericDirectoryClient brand views", () => {
     const search = view.getByRole("textbox", { name: "Filtrer la gamme" });
     await view.user.type(search, "ALPHA");
     expect(view.getAllByRole("link").map(link => link.getAttribute("href"))).toEqual(["/fixture/alpha"]);
-    expect(view.queryByRole("region", { name: "Compactes · Berline / Hatch" })).toBeNull();
+    expect(view.queryByRole("region", { name: "Compacte · Berline / Hatch" })).toBeNull();
     await view.user.click(view.getByRole("button", { name: "Simple", exact: true }));
     expect(view.getAllByRole("link").map(link => link.getAttribute("href"))).toEqual(["/fixture/alpha"]);
     await view.user.type(search, "introuvable");

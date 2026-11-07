@@ -93,7 +93,7 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
                   </div>
                 </div>
                 <div className="space-y-3">
-                  {group.items.map(({ item, latestMy }) => <DirectoryCard key={item.id} item={{ ...item, colorClass: "bg-white border-slate-200 text-slate-700" }} latestMy={latestMy} headingAs="h5" />)}
+                  {group.items.map(({ item }) => <DirectoryCard key={item.id} item={item} headingAs="h5" />)}
                 </div>
               </section>
             ))}

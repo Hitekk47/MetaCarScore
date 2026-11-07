@@ -14,10 +14,10 @@ describe("groupDirectoryBySegment", () => {
     ]);
 
     expect(groups.map(group => [group.macro, group.code, group.label])).toEqual([
-      ["Berline / Hatch", "B", "Citadines"],
-      ["Berline / Hatch", "C", "Compactes"],
-      ["SUV / Crossover", "C", "SUV Compacts"],
-      ["SUV / Crossover", "D", "SUV Familiaux"],
+      ["Berline / Hatch", "B", "Citadine"],
+      ["Berline / Hatch", "C", "Compacte"],
+      ["SUV / Crossover", "C", "SUV Compact"],
+      ["SUV / Crossover", "D", "SUV Familial"],
     ]);
     expect(new Set(groups.map(group => group.id)).size).toBe(4);
   });
@@ -59,7 +59,7 @@ describe("groupDirectoryBySegment", () => {
       { id: "code", title: "Code futur", segments: [segment("Berline / Hatch", "Z", 2025)] },
     ]);
 
-    expect(groups.map(group => group.label)).toEqual(["Citadines", "Z", "Z", "Segment non renseigné"]);
+    expect(groups.map(group => group.label)).toEqual(["Citadine", "Z", "Z", "Segment non renseigné"]);
     expect(groups.at(-1)?.items.map(entry => [entry.item.id, entry.latestMy])).toEqual([
       ["missing", 2024], ["empty", null],
     ]);

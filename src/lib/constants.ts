@@ -57,19 +57,19 @@ export const TOPS_MENU = [
 ];
 
 export type GrammaticalGender = "masculine" | "feminine";
-export type SegmentDef = { code: string; label: string };
+export type SegmentDef = { code: string; label: string; singularLabel?: string };
 
 export const MACRO_CONFIG: { label: string; segments: SegmentDef[]; gender: GrammaticalGender }[] = [
   {
     label: "Berline / Hatch",
     gender: "feminine",
     segments: [
-      { code: "A", label: "Micro-Citadines" },  // Twingo, Panda
-      { code: "B", label: "Citadines" },        // Clio, 208
-      { code: "C", label: "Compactes" },        // Golf, 308
-      { code: "D", label: "Berlines Familiales" }, // Passat, Model 3
-      { code: "E", label: "Routières / Luxe" }, // Série 5, Classe E
-      { code: "F", label: "Limousines" }        // Série 7, Classe S
+      { code: "A", label: "Micro-Citadines", singularLabel: "Micro-Citadine" },  // Twingo, Panda
+      { code: "B", label: "Citadines", singularLabel: "Citadine" },        // Clio, 208
+      { code: "C", label: "Compactes", singularLabel: "Compacte" },        // Golf, 308
+      { code: "D", label: "Berlines Familiales", singularLabel: "Berline Familiale" }, // Passat, Model 3
+      { code: "E", label: "Routières / Luxe", singularLabel: "Routière / Luxe" }, // Série 5, Classe E
+      { code: "F", label: "Limousines", singularLabel: "Limousine" }        // Série 7, Classe S
     ]
   },
   {
@@ -77,10 +77,10 @@ export const MACRO_CONFIG: { label: string; segments: SegmentDef[]; gender: Gram
     gender: "masculine",
     segments: [
       { code: "A", label: "Micro-SUV" },     // Ignis
-      { code: "B", label: "SUV Urbains" },   // 2008, Captur
-      { code: "C", label: "SUV Compacts" },  // 3008, Tiguan
-      { code: "D", label: "SUV Familiaux" }, // X3, GLC
-      { code: "E", label: "Grands SUV Luxe" }, // X5, Cayenne
+      { code: "B", label: "SUV Urbains", singularLabel: "SUV Urbain" },   // 2008, Captur
+      { code: "C", label: "SUV Compacts", singularLabel: "SUV Compact" },  // 3008, Tiguan
+      { code: "D", label: "SUV Familiaux", singularLabel: "SUV Familial" }, // X3, GLC
+      { code: "E", label: "Grands SUV Luxe", singularLabel: "Grand SUV Luxe" }, // X5, Cayenne
       { code: "F", label: "SUV Prestige" }   // Range Rover, Bentayga
     ]
   },
@@ -88,19 +88,19 @@ export const MACRO_CONFIG: { label: string; segments: SegmentDef[]; gender: Gram
     label: "Sport / Coupé / Cab",
     gender: "feminine",
     segments: [
-      { code: "SPORT", label: "Sportives Light" }, // MX-5, Alpine
+      { code: "SPORT", label: "Sportives Light", singularLabel: "Sportive Light" }, // MX-5, Alpine
       { code: "GT", label: "Grand Tourisme" },     // 911, AMG GT
-      { code: "SUPER", label: "Supercars" }        // Ferrari, McLaren
+      { code: "SUPER", label: "Supercars", singularLabel: "Supercar" }        // Ferrari, McLaren
     ]
   },
   {
     label: "Familiale / Van",
     gender: "masculine",
     segments: [
-      { code: "B", label: "Ludospaces" },          // Kangoo, Berlingo
-      { code: "C", label: "Monospaces Compacts" }, // Scénic, Touran
-      { code: "D", label: "Grands Monospaces" },   // Espace, Sharan
-      { code: "E", label: "Vans VIP / Navettes" }  // Classe V, Multivan
+      { code: "B", label: "Ludospaces", singularLabel: "Ludospace" },          // Kangoo, Berlingo
+      { code: "C", label: "Monospaces Compacts", singularLabel: "Monospace Compact" }, // Scénic, Touran
+      { code: "D", label: "Grands Monospaces", singularLabel: "Grand Monospace" },   // Espace, Sharan
+      { code: "E", label: "Vans VIP / Navettes", singularLabel: "Van VIP / Navette" }  // Classe V, Multivan
     ]
   },
   {
