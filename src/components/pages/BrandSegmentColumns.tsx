@@ -27,10 +27,11 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
   useEffect(() => {
     const element = scrollRef.current;
     if (!element) return;
-    const update = () => setScroll({
-      previous: element.scrollLeft > 1,
-      next: element.scrollLeft + element.clientWidth < element.scrollWidth - 1,
-    });
+    const update = () => {
+      const previous = element.scrollLeft > 1;
+      const next = element.scrollLeft + element.clientWidth < element.scrollWidth - 1;
+      setScroll(current => current.previous === previous && current.next === next ? current : { previous, next });
+    };
     update();
     element.addEventListener("scroll", update, { passive: true });
     const observer = new ResizeObserver(update);
@@ -71,7 +72,7 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
         )}
       </div>
       <div style={{ gridTemplateColumns: macros.map(macro => `repeat(${macro.segments.length}, var(--segment-width))`).join(" 1rem ") }} ref={scrollRef} id="brand-segments" role="region" aria-label="Segments de la marque, défilement horizontal" tabIndex={0} className={cn(
-        "grid items-start gap-4 overflow-x-auto overscroll-x-contain snap-x snap-proximity pb-5 rounded-2xl focus-visible:outline-blue-600",
+        "grid items-start gap-4 overflow-x-auto overscroll-x-contain snap-x snap-proximity [@media(hover:hover)_and_(pointer:fine)]:snap-none pb-5 rounded-2xl focus-visible:outline-blue-600",
         groups.length === 1 ? "[--segment-width:100%] sm:[--segment-width:20rem]" : "[--segment-width:85%] sm:[--segment-width:18rem] lg:[--segment-width:19rem]"
       )}>
         {macros.map(macro => (
