@@ -1,2 +1,3 @@
-// Shared outer alignment for the site header and full-width directories.
-export const PAGE_CONTAINER = "w-full px-4 sm:px-6 lg:px-8";
+// Keep the header and standard page sections aligned with the rest of the site.
+export const PAGE_CONTAINER = "w-full max-w-7xl mx-auto px-4";
+export const WIDE_PAGE_CONTAINER = "w-full px-4";

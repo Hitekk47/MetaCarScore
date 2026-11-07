@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, MoveHorizontal } from "lucide-react";
 import { groupDirectoryBySegment } from "@/lib/directory-segments";
 import { cn } from "@/lib/utils";
+import { PAGE_CONTAINER, WIDE_PAGE_CONTAINER } from "@/lib/layout";
 import DirectoryCard from "./DirectoryCard";
 import type { DirectoryItem } from "./directory-types";
 
@@ -37,7 +38,7 @@ export default function BrandSegmentColumns({ items }: { items: DirectoryItem[] 
     });
   };
   return (
-    <section aria-label="Gamme par segment" className="min-w-0">
+    <section aria-label="Gamme par segment" className={cn("min-w-0", groups.length >= 4 ? WIDE_PAGE_CONTAINER : PAGE_CONTAINER)}>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-black tracking-tight">La gamme par segment</h2>
